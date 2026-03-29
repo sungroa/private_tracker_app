@@ -1,16 +1,44 @@
-# private_tracker_app
+# Privacy-First Women's Health Tracker
 
-A new Flutter project.
+A high-fidelity, native Flutter application designed with a security-first mindset. No data ever leaves your device; everything is stored locally using Hive with AES-256 encryption.
 
-## Getting Started
+## Key Features
+- **Privacy-First**: Zero-tracking, zero-telemetry. All data is encrypted and stored locally.
+- **Premium Aesthetics**: High-end glassmorphic UI with vibrant colors and smooth animations.
+- **Cycle & Period Tracking**: Intuitive calendar interface for logging cycles and predicting future periods.
+- **Symptom & Mood Logging**: Detailed daily logging for symptoms (cramps, bloating, etc.) and mood.
+- **Summary & Trends**: Advanced data aggregation to visualize your patterns and health trends over time.
 
-This project is a starting point for a Flutter application.
+## Architecture
+- **Clean Architecture**: Clear separation of concern between Domain (models/logic), Data (storage/encryption), and Presentation (UI).
+- **Security**: Uses `flutter_secure_storage` for key management and `Hive` for encrypted persisted storage.
 
-A few resources to get you started if this is your first Flutter project:
+## Testing
+The project maintains a high-quality codebase with mandatory testing.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Run All Tests
+```bash
+flutter test
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Specific Test Areas
+- **Unit Tests**: `test/domain/` for logic and calculators.
+- **Widget Tests**: `test/presentation/` for UI rendering and sheet behavior.
+- **Integration/Storage**: `test/data/` for encryption and Hive service verification.
+
+## Development Setup
+
+1. **Install Dependencies**:
+   ```bash
+   flutter pub get
+   ```
+
+2. **Run Dev Server** (for web development):
+   ```bash
+   flutter run -d chrome
+   ```
+
+3. **Format Code**:
+   ```bash
+   flutter format .
+   ```

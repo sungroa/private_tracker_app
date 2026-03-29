@@ -34,10 +34,22 @@ class SymptomLog extends HiveObject {
   @HiveField(3)
   final String? notes;
 
+  @HiveField(4)
+  final double? basalBodyTemperature;
+
+  @HiveField(5)
+  final String? cervicalFluidType;
+
+  @HiveField(6)
+  final bool? lhTestPositive;
+
   SymptomLog({
     required this.date,
     required this.symptoms,
     required this.moodRating,
     this.notes,
+    this.basalBodyTemperature,
+    this.cervicalFluidType,
+    this.lhTestPositive,
   });
 }

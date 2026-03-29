@@ -14,7 +14,7 @@ class AppTheme {
         seedColor: primaryColor,
         primary: primaryColor,
         secondary: accentColor,
-        background: backgroundColor,
+        surface: backgroundColor,
       ),
       scaffoldBackgroundColor: backgroundColor,
       appBarTheme: const AppBarTheme(
@@ -27,9 +27,9 @@ class AppTheme {
           fontWeight: FontWeight.bold,
         ),
       ),
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelColor: primaryColor,
-        unselectedLabelColor: primaryColor.withOpacity(0.5),
+        unselectedLabelColor: primaryColor.withValues(alpha: 0.5),
         indicator: const UnderlineTabIndicator(
           borderSide: BorderSide(color: primaryColor, width: 3),
         ),
@@ -42,12 +42,12 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.2), width: 1),
         ),
       ),
     );
@@ -58,10 +58,10 @@ class AppTheme {
     return BoxDecoration(
       color: color ?? surfaceColor,
       borderRadius: BorderRadius.circular(24),
-      border: BorderSide(color: Colors.white.withOpacity(0.4), width: 1.5),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.5),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: 20,
           offset: const Offset(0, 10),
         ),
