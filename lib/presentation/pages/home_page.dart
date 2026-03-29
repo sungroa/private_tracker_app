@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../domain/cycle_calculator.dart';
 import '../theme/app_theme.dart';
 import 'tracking_calendar_page.dart';
+import 'summary_trends_page.dart';
+import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,8 +16,8 @@ class _HomePageState extends State<HomePage> {
 
   final List<Widget> _pages = [
     const TrackingCalendarPage(),
-    const Center(child: Text("Symptoms Log (Coming Soon)")),
-    const Center(child: Text("Settings")),
+    const SummaryTrendsPage(),
+    const SettingsPage(),
   ];
 
   @override
@@ -62,12 +63,12 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             selectedItemColor: AppTheme.primaryColor,
-            unselectedItemColor: AppTheme.primaryColor.withOpacity(0.4),
+            unselectedItemColor: AppTheme.primaryColor.withValues(alpha: 0.4),
             showSelectedLabels: false,
             showUnselectedLabels: false,
             items: const [
               BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: "Calendar"),
-              BottomNavigationBarItem(icon: Icon(Icons.notes), label: "Symptoms"),
+              BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: "Trends"),
               BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Settings"),
             ],
           ),

@@ -1,72 +1,51 @@
 # Project Manifest: Private Tracker App
 
-- **Last Updated:** 2026-03-28T18:14:00Z
-- **Primary Conversation ID:** c10ce08e-63f3-4f1d-b762-78c1bf5e3649
+- **Session ID:** 60b21eb6-cb09-4b47-b4bc-179e8acba0a7
+- **Last Updated:** 2026-04-03T22:36:45Z
+- **Session Health:** HEALTHY
 - **Project Root:** /home/sungroa/git/private_tracker_app
-- **Session Health:** Normal
-- **Heartbeat Status:** Active
 - **STRICT_CONSTRAINTS:**
     - Privacy-First: No data sent to any server.
     - Zero Tech Debt: Follow Principal Engineer standards.
     - Premium Aesthetics: High-fidelity (Glassmorphic) UI required.
     - Native Approach: Flutter implementation.
 
-__________________________________________________________________________________
-
 ## Primary Objective
 
 Create a simple, privacy-oriented women's health app (menstrual tracker) with industrial-grade standards and premium aesthetics.
 
-__________________________________________________________________________________
+## Best Known State
 
-## Implementation Plan
+- **validation_command:** `flutter analyze && flutter test`
+- **validation_status:** `PASS`
+- **Verification Token:** Pass: All 21 tests passed! | No issues found!
+- **Last Drift Audit:** 2026-04-03T22:36:45Z (PASSED)
 
-[implementation_plan.md](file:///home/sungroa/.gemini/antigravity/brain/c10ce08e-63f3-4f1d-b762-78c1bf5e3649/implementation_plan.md) (Approved)
-[task.md](file:///home/sungroa/.gemini/antigravity/brain/c10ce08e-63f3-4f1d-b762-78c1bf5e3649/task.md) (In Progress)
+## Progress Tracking
 
-__________________________________________________________________________________
+### [x] Recent Milestones
+- [x] Feature: Export Data functionality to CSV and native Share Sheet via `share_plus` integrated into the new `SettingsPage`.
+- [x] Feature: Dynamic Custom Symptoms. Migrated from hardcoded list to user-customizable Hive-backed tags.
+- [x] Quality: Unified storage initialization and added regression tests for custom tags.
+- [x] Feature: Fertility Awareness Methods (FAM) Integrated (BBT, Fluid, LH).
+- [x] Quality: Updated CSV export and storage unit tests for FAM schema.
+- [x] Quality: Refactored `project_manifest.md` and archived old tasks to `project_history.md`.
+- [x] Quality: Performed Drift Audit; project state is HEALTHY (21 tests pass).
 
-## Completed Work
+### [/] Active Work
+(None)
 
-- [x] Initial Research: Flutter repo identified, project structure explored.
-- [x] Principal Engineer Protocol: Manifest created.
-
-__________________________________________________________________________________
+### Next Steps
+1. Implement IQR outlier rejection and weighted averages for cycle prediction.
+2. Polish: Final visual tweaks and micro-animations.
+3. Distribution: Setup local build and export scripts.
+4. Security Audit: Final pass over encryption implementation.
 
 ## Dead Ends & Lessons
 
-- (None yet)
-
-__________________________________________________________________________________
-
-## Best Known State
-
-- **Code:** Current Flutter boilerplate in `lib/`.
-- **Test:** Not yet applicable.
-
-__________________________________________________________________________________
-
-## Verification & Tests
-
-- [ ] **New Tests Added:** No
-- [ ] **Unit Tests:** None
-- [ ] **Coverage Audit:** N/A
-- [ ] **Integration Tests:** N/A
-
-__________________________________________________________________________________
-
-## Active Subagents
-
-Name    | Role    | ID      | Goal    | Status                      | Last Seen
-:-------|:--------|:--------|:--------|:----------------------------|:----------
-(None)  | (N/A)   | (N/A)   | (N/A)   | (N/A)                       | (N/A)
-
-## Next Steps
-
-1. Create Implementation Plan artifact.
-2. Design the privacy architecture (client-side storage).
-3. Develop the UI with a focus on "WOW" aesthetics.
+- **Problem**: Agent thinks `flutter analyze` or `flutter test` is hanging even though it finished running instantly.
+- **Lesson**: Flutter starts background daemon processes that inherit the pseudo-terminal (PTY) file descriptors. This keeps the PTY open, preventing the `run_command` wrapper from observing EOF and falsely reporting "RUNNING". Redirect output to a file and read it to verify success/failure.
 
 ## Resumption Payload
 
-"You are a persistent agent. Resume project from manifest: `/home/sungroa/git/private_tracker_app/.agent/project_manifest.md`. Load subagent IDs and metadata. Objective: Develop a privacy-first women's health app..."
+"You are a persistent agent. Resume project from manifest: `/home/sungroa/git/private_tracker_app/.agent/project_manifest.md`. Objective: Develop a privacy-first women's health app..."

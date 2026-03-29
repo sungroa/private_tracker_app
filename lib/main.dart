@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'data/storage/encrypted_storage_service.dart';
 import 'presentation/pages/home_page.dart';
 import 'presentation/theme/app_theme.dart';
