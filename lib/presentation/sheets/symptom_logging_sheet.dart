@@ -78,7 +78,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
         cervicalFluidType: _selectedFluid,
         lhTestPositive: _lhPositive,
       );
-      await EncryptedStorageService.saveSymptomLog(log);
+      await EncryptedStorageService.instance.saveSymptomLog(log);
       if (mounted) Navigator.pop(context, true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -105,7 +105,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
           TextButton(
             onPressed: () async {
               if (controller.text.trim().isNotEmpty) {
-                await EncryptedStorageService.addCustomTag(controller.text.trim());
+                await EncryptedStorageService.instance.addCustomTag(controller.text.trim());
                 if (context.mounted) Navigator.pop(context);
               }
             },
@@ -136,7 +136,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
           ),
           TextButton(
             onPressed: () async {
-              await EncryptedStorageService.deleteCustomTag(tag);
+              await EncryptedStorageService.instance.deleteCustomTag(tag);
               if (context.mounted) Navigator.pop(context);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -345,7 +345,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
             ),
             const SizedBox(height: 12),
             ValueListenableBuilder(
-              valueListenable: EncryptedStorageService.getCustomTagsBox().listenable(),
+              valueListenable: EncryptedStorageService.instance.getCustomTagsBox().listenable(),
               builder: (context, Box<CustomTag> box, _) {
                 final tags = box.values.toList();
                 return Wrap(

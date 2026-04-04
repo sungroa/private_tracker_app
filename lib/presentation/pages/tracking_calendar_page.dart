@@ -29,8 +29,8 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
 
   void _loadLogs() {
     setState(() {
-      _symptomLogs = EncryptedStorageService.getSymptomLogs();
-      _cycleLogs = EncryptedStorageService.getCycleLogs();
+      _symptomLogs = EncryptedStorageService.instance.getSymptomLogs();
+      _cycleLogs = EncryptedStorageService.instance.getCycleLogs();
       _symptomMap = {
         for (var log in _symptomLogs)
           DateTime(log.date.year, log.date.month, log.date.day): log

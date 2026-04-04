@@ -1,7 +1,7 @@
 # Project Manifest: Private Tracker App
 
-- **Session ID:** 60b21eb6-cb09-4b47-b4bc-179e8acba0a7
-- **Last Updated:** 2026-04-03T22:36:45Z
+- **Session ID:** 70edbf91-2dab-43ca-a81b-51417dc62ff4
+- **Last Updated:** 2026-04-03T23:15:00Z
 - **Session Health:** HEALTHY
 - **Project Root:** /home/sungroa/git/private_tracker_app
 - **STRICT_CONSTRAINTS:**
@@ -17,35 +17,34 @@ Create a simple, privacy-oriented women's health app (menstrual tracker) with in
 ## Best Known State
 
 - **validation_command:** `flutter analyze && flutter test`
-- **validation_status:** `PASS`
-- **Verification Token:** Pass: All 21 tests passed! | No issues found!
-- **Last Drift Audit:** 2026-04-03T22:36:45Z (PASSED)
+- **validation_status:** `FAILING (Test Regressions)`
+- **Verification Token:** AuthService & Overlay tests PASS. Some widget tests (sheets_test) need stabilization due to animation timeouts.
+- **Last Drift Audit:** 2026-04-03T23:10:00Z (PASSED - Services Refactored)
 
 ## Progress Tracking
 
 ### [x] Recent Milestones
-- [x] Feature: Export Data functionality to CSV and native Share Sheet via `share_plus` integrated into the new `SettingsPage`.
+- [x] Feature: **Biometric App Security** (local_auth). Implemented FaceID/TouchID/PIN lock on app-start and resume-from-background.
+- [x] Architecture: **Core Service Refactoring**. `AuthService` and `EncryptedStorageService` converted to Singleton/DI pattern to support clean unit and widget testing.
+- [x] Quality: Added 8+ new tests for biometrics and storage stability.
+- [x] UI: Created high-fidelity glassmorphic `AuthenticationOverlay`.
+- [x] Feature: Export Data functionality to CSV and native Share Sheet via `share_plus`.
 - [x] Feature: Dynamic Custom Symptoms. Migrated from hardcoded list to user-customizable Hive-backed tags.
-- [x] Quality: Unified storage initialization and added regression tests for custom tags.
-- [x] Feature: Fertility Awareness Methods (FAM) Integrated (BBT, Fluid, LH).
-- [x] Quality: Updated CSV export and storage unit tests for FAM schema.
-- [x] Quality: Refactored `project_manifest.md` and archived old tasks to `project_history.md`.
-- [x] Quality: Performed Drift Audit; project state is HEALTHY (21 tests pass).
 
 ### [/] Active Work
-(None)
+- [/] Quality: **Test Suite Stabilization**. Resolving `pumpAndSettle` timeouts in `sheets_test.dart` and `widget_test.dart` caused by new app-lock orchestration.
+- [/] Refactor: Deferring `EncryptedStorageService` initialization until after successful biometric authentication. (Integrated in `main.dart`).
 
 ### Next Steps
-1. Implement IQR outlier rejection and weighted averages for cycle prediction.
-2. Polish: Final visual tweaks and micro-animations.
-3. Distribution: Setup local build and export scripts.
-4. Security Audit: Final pass over encryption implementation.
+1. **Improve Predictive Accuracy**: Implement IQR outlier rejection and weighted averages (50/30/20) for cycle duration calculation in `CycleCalculator`.
+2. **UI Polishing**: Final visual tweaks to `TrackingCalendarPage` and micro-animations.
+3. **Distribution**: Setup local build scripts and CI/CD foundations.
 
 ## Dead Ends & Lessons
 
-- **Problem**: Agent thinks `flutter analyze` or `flutter test` is hanging even though it finished running instantly.
-- **Lesson**: Flutter starts background daemon processes that inherit the pseudo-terminal (PTY) file descriptors. This keeps the PTY open, preventing the `run_command` wrapper from observing EOF and falsely reporting "RUNNING". Redirect output to a file and read it to verify success/failure.
+- **Architecture**: Static-only services (like the old `EncryptedStorageService`) are difficult to mock in Flutter widget tests. **Lesson**: Always use a Singleton with a `test` constructor and a static `instance` setter for high-integrity testing.
+- **Testing**: `Hive.initFlutter()` fails in unit tests because it relies on `path_provider` platform channels. **Lesson**: Modify initialization to accept an optional `basePath` (e.g., `Directory.systemTemp`) for isolated test environments.
 
 ## Resumption Payload
 
-"You are a persistent agent. Resume project from manifest: `/home/sungroa/git/private_tracker_app/.agent/project_manifest.md`. Objective: Develop a privacy-first women's health app..."
+"You are a persistent agent. Resume project from manifest: `/home/sungroa/git/private_tracker_app/.agent/project_manifest.md`. Current Goal: Stabilize the test suite (resolving remaining pumpAndSettle timeouts) and then proceed to implement IQR-based cycle prediction in CycleCalculator. Refer to the recent refactor of EncryptedStorageService and AuthService singletons."

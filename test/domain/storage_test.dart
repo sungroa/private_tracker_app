@@ -1,31 +1,33 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/models/custom_tag.dart';
 
+class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 void main() {
   group('EncryptedStorageService Tests', () {
     late Directory tempDir;
+    late MockFlutterSecureStorage mockStorage;
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('hive_test');
       Hive.init(tempDir.path);
       
-      // We can't easily test the encrypted secure storage in a unit test without mocking 
-      // FlutterSecureStorage. For now, we'll manually register adapters and open boxes 
-      // without encryption for logic verification.
-      
-      if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(CycleLogAdapter());
-      if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SymptomLogAdapter());
-      if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(CustomTagAdapter());
+      mockStorage = MockFlutterSecureStorage();
+      EncryptedStorageService.instance = EncryptedStorageService.test(mockStorage);
 
-      await Hive.openBox<CycleLog>(EncryptedStorageService.cycleLogBox);
-      await Hive.openBox<SymptomLog>(EncryptedStorageService.symptomLogBox);
-      await Hive.openBox<CustomTag>(EncryptedStorageService.customTagBox);
+      // Mock encryption key logic
+      final key = Hive.generateSecureKey();
+      when(() => mockStorage.containsKey(key: any(named: 'key'))).thenAnswer((_) async => true);
+      when(() => mockStorage.read(key: any(named: 'key'))).thenAnswer((_) async => base64UrlEncode(key));
 
+      await EncryptedStorageService.instance.initialize(basePath: tempDir.path);
     });
 
     tearDown(() async {
@@ -43,26 +45,26 @@ void main() {
         moodRating: 4,
       );
 
-      await EncryptedStorageService.saveSymptomLog(log);
+      await EncryptedStorageService.instance.saveSymptomLog(log);
 
-      final savedLogs = EncryptedStorageService.getSymptomLogsForMonth(date);
+      final savedLogs = EncryptedStorageService.instance.getSymptomLogsForMonth(date);
       expect(savedLogs.length, 1);
       expect(savedLogs.first.symptoms, contains('Cramps'));
     });
 
     test('getSymptomLogsForMonth should filter correctly', () async {
-      await EncryptedStorageService.saveSymptomLog(SymptomLog(
+      await EncryptedStorageService.instance.saveSymptomLog(SymptomLog(
         date: DateTime(2026, 3, 28),
         symptoms: ['Cramps'],
         moodRating: 3,
       ));
-      await EncryptedStorageService.saveSymptomLog(SymptomLog(
+      await EncryptedStorageService.instance.saveSymptomLog(SymptomLog(
         date: DateTime(2026, 4, 1),
         symptoms: ['Bloating'],
         moodRating: 2,
       ));
 
-      final marchLogs = EncryptedStorageService.getSymptomLogsForMonth(DateTime(2026, 3, 1));
+      final marchLogs = EncryptedStorageService.instance.getSymptomLogsForMonth(DateTime(2026, 3, 1));
       expect(marchLogs.length, 1);
       expect(marchLogs.first.symptoms, contains('Cramps'));
     });
@@ -71,28 +73,27 @@ void main() {
       final log1 = CycleLog(startDate: DateTime(2026, 2, 1));
       final log2 = CycleLog(startDate: DateTime(2026, 3, 1));
 
-      await EncryptedStorageService.saveCycleLog(log1);
-      await EncryptedStorageService.saveCycleLog(log2);
+      await EncryptedStorageService.instance.saveCycleLog(log1);
+      await EncryptedStorageService.instance.saveCycleLog(log2);
 
-      final allLogs = EncryptedStorageService.getCycleLogs();
+      final allLogs = EncryptedStorageService.instance.getCycleLogs();
       expect(allLogs.length, 2);
       expect(allLogs.first.startDate, DateTime(2026, 3, 1)); // Sorted newest first
     });
 
     test('exportDataToCsv should format CSV string correctly', () async {
-      // Clear before test
       await Hive.box<CycleLog>(EncryptedStorageService.cycleLogBox).clear();
       await Hive.box<SymptomLog>(EncryptedStorageService.symptomLogBox).clear();
 
-      await EncryptedStorageService.saveCycleLog(CycleLog(startDate: DateTime(2026, 3, 1), notes: 'Cycle note'));
-      await EncryptedStorageService.saveSymptomLog(SymptomLog(
+      await EncryptedStorageService.instance.saveCycleLog(CycleLog(startDate: DateTime(2026, 3, 1), notes: 'Cycle note'));
+      await EncryptedStorageService.instance.saveSymptomLog(SymptomLog(
         date: DateTime(2026, 3, 5),
         symptoms: ['Cramps', 'Fatigue'],
         moodRating: 3,
         notes: 'Symptom note',
       ));
 
-      final csvString = await EncryptedStorageService.exportDataToCsv();
+      final csvString = await EncryptedStorageService.instance.exportDataToCsv();
       
       expect(csvString, contains('Log Type,Start Date/Date,End Date,Symptoms,Mood Rating,BBT,Fluid,LH Test,Notes'));
       expect(csvString, contains('Cycle,2026-03-01,,,,,,,Cycle note'));
@@ -100,19 +101,18 @@ void main() {
     });
 
     test('addCustomTag and deleteCustomTag should work', () async {
-      final box = EncryptedStorageService.getCustomTagsBox();
+      final box = EncryptedStorageService.instance.getCustomTagsBox();
       await box.clear();
 
-      await EncryptedStorageService.addCustomTag('New Symptom');
+      await EncryptedStorageService.instance.addCustomTag('New Symptom');
       expect(box.length, 1);
       expect(box.values.first.name, 'New Symptom');
 
-      // Duplicate check
-      await EncryptedStorageService.addCustomTag('NEW SYMPTOM'); // Case insensitive duplicate
+      await EncryptedStorageService.instance.addCustomTag('NEW SYMPTOM');
       expect(box.length, 1);
 
       final tag = box.values.first;
-      await EncryptedStorageService.deleteCustomTag(tag);
+      await EncryptedStorageService.instance.deleteCustomTag(tag);
       expect(box.length, 0);
     });
   });

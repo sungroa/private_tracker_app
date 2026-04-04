@@ -1,0 +1,56 @@
+00:00 +0: loading /home/sungroa/git/private_tracker_app/test/domain/trends_test.dart
+00:00 +0: /home/sungroa/git/private_tracker_app/test/domain/trends_test.dart: TrendsCalculator Tests calculateAverageCycleLength calculates correctly from multiple logs
+00:00 +1: /home/sungroa/git/private_tracker_app/test/domain/trends_test.dart: TrendsCalculator Tests calculateAveragePeriodDuration calculates correctly from completed logs
+00:00 +2: /home/sungroa/git/private_tracker_app/test/domain/trends_test.dart: TrendsCalculator Tests calculateTopSymptoms counts and sorts correctly
+00:00 +3: /home/sungroa/git/private_tracker_app/test/domain/trends_test.dart: TrendsCalculator Tests getMoodHistory returns sorted points within 30 days
+00:00 +4: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests predictNextPeriod with empty logs should return today + 28 days
+00:00 +5: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests predictNextPeriod with one log should return startDate + 28 days
+00:00 +6: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests predictNextPeriod with multiple logs should use weighted average
+00:00 +7: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests predictNextPeriod should filter outliers with IQR
+00:00 +8: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests predictNextPeriod should apply decaying weights (50/30/20)
+00:00 +9: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests isCurrentlyInPeriod should detect active period if no endDate
+00:00 +10: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests isCurrentlyInPeriod should expire after 7 days if no endDate
+00:00 +11: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService Tests saveSymptomLog should save with date-based key
+00:00 +12: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService Tests getSymptomLogsForMonth should filter correctly
+00:00 +13: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService Tests saveCycleLog and getCycleLogs should work
+00:00 +14: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService Tests exportDataToCsv should format CSV string correctly
+00:00 +15: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService Tests addCustomTag and deleteCustomTag should work
+00:05 +16: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +17: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +18: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +19: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +20: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +21: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:06 +22: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:06 +23: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:06 +24: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:07 +25: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:08 +26: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:08 +27: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:09 +28: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test:
+pumpAndSettle timed out
+
+When the exception was thrown, this was the stack:
+#0      WidgetTester.pumpAndSettle.<anonymous closure> (package:flutter_test/src/widget_tester.dart:717:11)
+<asynchronous suspension>
+#1      TestAsyncUtils.guard.<anonymous closure> (package:flutter_test/src/test_async_utils.dart:130:27)
+<asynchronous suspension>
+#2      main.<anonymous closure>.<anonymous closure> (file:///home/sungroa/git/private_tracker_app/test/widget_test.dart:47:7)
+<asynchronous suspension>
+#3      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#4      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1682:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  App smoke test renders home page
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:10 +28 -1: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page [E]
+  Test failed. See exception logs above.
+  The test description was: App smoke test renders home page
+  
+00:10 +28 -1: Some tests failed.
