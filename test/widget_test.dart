@@ -6,8 +6,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:private_tracker_app/main.dart';
 import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
-import 'package:private_tracker_app/domain/models/cycle_log.dart';
-import 'package:private_tracker_app/domain/models/custom_tag.dart';
 import 'package:private_tracker_app/core/services/auth_service.dart';
 
 class MockAuthService extends Mock implements AuthService {}
@@ -38,8 +36,6 @@ void main() {
       Hive.init(tempDir.path);
       
       await EncryptedStorageService.instance.initialize(basePath: tempDir.path);
-      
-      // We don't call EncryptedStorageService.instance.initialize() here because the app will call it
     });
 
     tearDown(() async {
@@ -50,9 +46,16 @@ void main() {
     });
 
     testWidgets('App smoke test renders home page', (WidgetTester tester) async {
-      // Build our app and trigger a frame.
       await tester.pumpWidget(const PrivacyTrackerApp());
-      await tester.pumpAndSettle();
+
+      // Use explicit pump() calls instead of pumpAndSettle() to avoid
+      // hanging on the CircularProgressIndicator that AppLockWrapper
+      // shows while _isInitializing is true. The async _checkInitialAuth
+      // completes within a few frames (mocked services return instantly),
+      // after which the spinner is replaced by the HomePage.
+      await tester.pump(); // Trigger initState and start _checkInitialAuth
+      await tester.pump(); // Allow async futures (isBiometricEnabled, initialize) to complete
+      await tester.pump(); // Render final state after setState(_isInitializing = false)
 
       // Verify that the title is present in the AppBar.
       expect(find.text('Cycle Tracker'), findsOneWidget);

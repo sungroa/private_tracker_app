@@ -7,8 +7,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/models/custom_tag.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
+class MockPathProviderPlatform extends Mock with MockPlatformInterfaceMixin implements PathProviderPlatform {}
 
 void main() {
   group('EncryptedStorageService Tests', () {
@@ -20,6 +23,11 @@ void main() {
       Hive.init(tempDir.path);
       
       mockStorage = MockFlutterSecureStorage();
+      final mockPathProvider = MockPathProviderPlatform();
+      PathProviderPlatform.instance = mockPathProvider;
+      when(() => mockPathProvider.getTemporaryPath()).thenAnswer((_) async => tempDir.path);
+      when(() => mockPathProvider.getApplicationDocumentsPath()).thenAnswer((_) async => tempDir.path);
+
       EncryptedStorageService.instance = EncryptedStorageService.test(mockStorage);
 
       // Mock encryption key logic
@@ -114,6 +122,65 @@ void main() {
       final tag = box.values.first;
       await EncryptedStorageService.instance.deleteCustomTag(tag);
       expect(box.length, 0);
+    });
+
+    test('Encrypted backup and restore should preserve all data', () async {
+      // 1. Prepare data
+      await Hive.box<CycleLog>(EncryptedStorageService.cycleLogBox).clear();
+      await Hive.box<SymptomLog>(EncryptedStorageService.symptomLogBox).clear();
+      await Hive.box<CustomTag>(EncryptedStorageService.customTagBox).clear();
+
+      await EncryptedStorageService.instance.saveCycleLog(CycleLog(startDate: DateTime(2026, 3, 1), notes: 'Backup test'));
+      await EncryptedStorageService.instance.saveSymptomLog(SymptomLog(
+        date: DateTime(2026, 3, 5),
+        symptoms: ['Cramps'],
+        moodRating: 5,
+      ));
+      await EncryptedStorageService.instance.addCustomTag('Backup Tag');
+
+      // 2. Export
+      final password = 'test-password-123';
+      final backupFile = await EncryptedStorageService.instance.exportEncryptedBackup(password);
+      expect(await backupFile.exists(), isTrue);
+
+      // 3. Clear local state
+      await Hive.box<CycleLog>(EncryptedStorageService.cycleLogBox).clear();
+      await Hive.box<SymptomLog>(EncryptedStorageService.symptomLogBox).clear();
+      await Hive.box<CustomTag>(EncryptedStorageService.customTagBox).clear();
+      expect(EncryptedStorageService.instance.getCycleLogs(), isEmpty);
+
+      // 4. Restore
+      await EncryptedStorageService.instance.importEncryptedBackup(backupFile, password);
+
+      // 5. Verify
+      final cycles = EncryptedStorageService.instance.getCycleLogs();
+      final symptoms = EncryptedStorageService.instance.getSymptomLogs();
+      final tags = EncryptedStorageService.instance.getCustomTagsBox().values.toList();
+
+      expect(cycles.length, 1);
+      expect(cycles.first.notes, 'Backup test');
+      expect(symptoms.length, 1);
+      expect(symptoms.first.moodRating, 5);
+      expect(tags.any((t) => t.name == 'Backup Tag'), isTrue);
+
+      // Clean up
+      if (await backupFile.exists()) {
+        await backupFile.delete();
+      }
+    });
+
+    test('Restore should fail with wrong password', () async {
+      final password = 'right-password';
+      final backupFile = await EncryptedStorageService.instance.exportEncryptedBackup(password);
+      
+      expect(
+        () => EncryptedStorageService.instance.importEncryptedBackup(backupFile, 'wrong-password'),
+        throwsException,
+      );
+
+      if (await backupFile.exists()) {
+        await backupFile.delete();
+      }
     });
   });
 }

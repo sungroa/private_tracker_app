@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/services/auth_service.dart';
+import 'core/services/notification_service.dart';
 import 'data/storage/encrypted_storage_service.dart';
 import 'presentation/pages/home_page.dart';
 import 'presentation/theme/app_theme.dart';
@@ -7,6 +8,7 @@ import 'presentation/widgets/authentication_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.instance.initialize();
   runApp(const PrivacyTrackerApp());
 }
 
@@ -107,9 +109,35 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     if (_isInitializing) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryColor),
+      return Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppTheme.backgroundColor,
+                AppTheme.accentColor.withValues(alpha: 0.3),
+              ],
+            ),
+          ),
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.security_rounded,
+                  size: 64,
+                  color: AppTheme.primaryColor,
+                ),
+                SizedBox(height: 24),
+                CircularProgressIndicator(
+                  color: AppTheme.primaryColor,
+                  strokeWidth: 3,
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }

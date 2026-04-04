@@ -1,8 +1,14 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:archive/archive.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:path_provider/path_provider.dart';
 import 'package:csv/csv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:meta/meta.dart';
+import 'package:pointycastle/export.dart' as pc;
 import '../../domain/models/cycle_log.dart';
 import '../../domain/models/custom_tag.dart';
 
@@ -22,6 +28,11 @@ class EncryptedStorageService {
   @visibleForTesting
   static set instance(EncryptedStorageService mock) => _instance = mock;
 
+  @visibleForTesting
+  static void resetForTesting() {
+    _instance = EncryptedStorageService._internal(const FlutterSecureStorage());
+  }
+
   EncryptedStorageService._internal(this._secureStorage);
 
   // For testing
@@ -34,7 +45,9 @@ class EncryptedStorageService {
 
   /// Initializes Hive and the encrypted boxes.
   Future<void> initialize({String? basePath}) async {
-    if (_isInitialized) return;
+    // If already initialized and boxes are open, we can skip.
+    // In tests, boxes might be closed between runs while the singleton persists.
+    if (_isInitialized && Hive.isBoxOpen(symptomLogBox)) return;
     
     if (basePath != null) {
       Hive.init(basePath);
@@ -196,5 +209,131 @@ class EncryptedStorageService {
     }
     
     return csv.encode(rows);
+  }
+
+  // --- Encrypted Backup & Restore Implementation ---
+
+  /// Exports all data to an encrypted and compressed (.enc) file.
+  Future<File> exportEncryptedBackup(String userPassword) async {
+    // 1. Serialize all data
+    final data = {
+      'version': 1,
+      'createdAt': DateTime.now().toIso8601String(),
+      'cycleLogs': getCycleLogs().map((l) => l.toMap()).toList(),
+      'symptomLogs': getSymptomLogs().map((l) => l.toMap()).toList(),
+      'customTags': getBox<CustomTag>(customTagBox).values.map((t) => t.toMap()).toList(),
+    };
+
+    final jsonString = jsonEncode(data);
+
+    // 2. Compress (GZip)
+    final jsonBytes = utf8.encode(jsonString);
+    final compressedBytes = GZipEncoder().encode(jsonBytes);
+    if (compressedBytes == null) throw Exception("Compression failed");
+
+    // 3. Encrypt (AES-256-CBC)
+    final salt = encrypt.IV.fromSecureRandom(16).bytes;
+    final iv = encrypt.IV.fromSecureRandom(16);
+    
+    final keyBytes = await _deriveKeyFromPassword(userPassword, Uint8List.fromList(salt));
+    final key = encrypt.Key(keyBytes);
+    final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc));
+    
+    final encrypted = encrypter.encryptBytes(compressedBytes, iv: iv);
+
+    // 4. Build payload: [Salt(16)] [IV(16)] [Ciphertext]
+    final payload = BytesBuilder();
+    payload.add(salt);
+    payload.add(iv.bytes);
+    payload.add(encrypted.bytes);
+
+    // 5. Write to temp file
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/private_tracker_backup_${DateTime.now().millisecondsSinceEpoch}.enc');
+    await file.writeAsBytes(payload.toBytes());
+    
+    return file;
+  }
+
+  /// Imports and restores data from an encrypted backup file.
+  Future<void> importEncryptedBackup(File file, String userPassword) async {
+    final bytes = await file.readAsBytes();
+    if (bytes.length < 32) throw Exception("Invalid backup file: too small");
+
+    // 1. Extract Salt, IV, and Ciphertext
+    final salt = bytes.sublist(0, 16);
+    final iv = encrypt.IV(bytes.sublist(16, 32));
+    final ciphertext = bytes.sublist(32);
+
+    // 2. Decrypt
+    final List<int> decryptedBytes;
+    try {
+      final keyBytes = await _deriveKeyFromPassword(userPassword, salt);
+      final key = encrypt.Key(keyBytes);
+      final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc));
+      decryptedBytes = encrypter.decryptBytes(encrypt.Encrypted(ciphertext), iv: iv);
+    } catch (e) {
+      throw Exception("Decryption failed: possible incorrect password or corrupted file");
+    }
+
+    // 3. Decompress
+    final List<int> decompressedBytes;
+    try {
+      decompressedBytes = GZipDecoder().decodeBytes(decryptedBytes);
+    } catch (e) {
+      throw Exception("Decompression failed: corrupted data");
+    }
+
+    final jsonString = utf8.decode(decompressedBytes);
+    final Map<String, dynamic> data;
+    try {
+      data = jsonDecode(jsonString);
+    } catch (e) {
+      throw Exception("Invalid backup format: not a valid JSON");
+    }
+
+    // 4. Validate Version (Basic check)
+    if (data['version'] == null) throw Exception("Invalid backup format: missing version");
+    
+    // 5. Clear and Restore
+    await _restoreData(data);
+  }
+
+  Future<Uint8List> _deriveKeyFromPassword(String password, Uint8List salt) async {
+    // We use PointyCastle's PBKDF2 for strong key derivation.
+    // iteration count: 10,000 is a reasonable balance for mobile performance vs security.
+    final pbkdf2 = pc.PBKDF2KeyDerivator(pc.HMac(pc.SHA256Digest(), 64));
+    pbkdf2.init(pc.Pbkdf2Parameters(salt, 10000, 32));
+    return pbkdf2.process(Uint8List.fromList(utf8.encode(password)));
+  }
+
+  Future<void> _restoreData(Map<String, dynamic> data) async {
+    // Clear boxes
+    await Hive.box<CycleLog>(cycleLogBox).clear();
+    await Hive.box<SymptomLog>(symptomLogBox).clear();
+    await Hive.box<CustomTag>(customTagBox).clear();
+
+    // Import Custom Tags first (to maintain defaults behavior)
+    final customTagsBox = Hive.box<CustomTag>(customTagBox);
+    final List<dynamic> tagsJson = data['customTags'] ?? [];
+    for (var tagMap in tagsJson) {
+      await customTagsBox.add(CustomTag.fromMap(Map<String, dynamic>.from(tagMap)));
+    }
+
+    // Import Cycle Logs
+    final cycleLogBoxLocal = Hive.box<CycleLog>(cycleLogBox);
+    final List<dynamic> cycleLogsJson = data['cycleLogs'] ?? [];
+    for (var logMap in cycleLogsJson) {
+      await cycleLogBoxLocal.add(CycleLog.fromMap(Map<String, dynamic>.from(logMap)));
+    }
+
+    // Import Symptom Logs
+    final symptomLogBoxLocal = Hive.box<SymptomLog>(symptomLogBox);
+    final List<dynamic> symptomLogsJson = data['symptomLogs'] ?? [];
+    for (var logMap in symptomLogsJson) {
+      final log = SymptomLog.fromMap(Map<String, dynamic>.from(logMap));
+      final key = "${log.date.year}-${log.date.month.toString().padLeft(2, '0')}-${log.date.day.toString().padLeft(2, '0')}";
+      await symptomLogBoxLocal.put(key, log);
+    }
   }
 }

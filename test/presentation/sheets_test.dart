@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/models/custom_tag.dart';
 import 'package:private_tracker_app/presentation/sheets/symptom_logging_sheet.dart';
 import 'package:private_tracker_app/presentation/sheets/cycle_logging_sheet.dart';
@@ -58,6 +57,11 @@ void main() {
         ),
       );
 
+      // Use pump() instead of pumpAndSettle() to avoid hanging on
+      // AnimatedContainer (mood selector) animations.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
       expect(find.text('How are you feeling?'), findsOneWidget);
       expect(find.text('Symptoms'), findsOneWidget);
       expect(find.text('Notes'), findsOneWidget);
@@ -67,6 +71,11 @@ void main() {
 
     testWidgets('Selecting a symptom and clicking save should persist data', (WidgetTester tester) async {
       final date = DateTime(2026, 3, 28);
+      
+      // Set larger screen size so chips aren't cut off
+      await tester.binding.setSurfaceSize(const Size(1080, 2400));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
@@ -76,18 +85,21 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final crampsChip = find.text('Cramps');
-      await tester.ensureVisible(crampsChip);
       await tester.tap(crampsChip);
-      await tester.pumpAndSettle();
+      // Wait for FilterChip selection animation
+      await tester.pump(const Duration(milliseconds: 300));
 
       final saveButton = find.byKey(const Key('symptom_save_button'));
-      await tester.ensureVisible(saveButton);
-
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      
+      // We CANNOT use pumpAndSettle here because during the bottom sheet 
+      // pop animation, the CircularProgressIndicator is still technically 
+      // in the tree animating. By jumping time forward by 1 second, the 
+      // closing animation finishes entirely and the widget is disposed.
+      await tester.pump(const Duration(seconds: 1));
 
       final logs = EncryptedStorageService.instance.getSymptomLogsForMonth(date);
       expect(logs.isNotEmpty, true);
@@ -130,6 +142,9 @@ void main() {
         ),
       );
 
+      // Simple pump — no infinite animations on initial render
+      await tester.pump();
+
       expect(find.text('Log Your Cycle'), findsOneWidget);
       expect(find.text('Save Cycle Info'), findsOneWidget);
     });
@@ -145,11 +160,13 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final saveButton = find.text('Save Cycle Info');
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      
+      // Let the test settle (jump over the dismiss animation to avoid spinner hang)
+      await tester.pump(const Duration(seconds: 1));
 
       final logs = EncryptedStorageService.instance.getCycleLogs();
       expect(logs.length, 1);
