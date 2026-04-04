@@ -20,7 +20,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: '>=2.18.2 <3.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -36,9 +36,8 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
+  meta: ^1.7.0
 
-  # https://pub.dev/packages/table_calendar
-  table_calendar: ^3.0.8
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   flutter_secure_storage: ^8.0.0
@@ -49,6 +48,13 @@ dependencies:
   csv: ^8.0.0
   share_plus: ^12.0.2
   local_auth: ^2.1.6
+  flutter_local_notifications: ^21.0.0
+  timezone: ^0.11.0
+  flutter_timezone: ^5.0.2
+  archive: ^3.6.1
+  encrypt: ^5.0.3
+  file_picker: ^8.1.7
+  pointycastle: ^3.7.4
 
 dev_dependencies:
   flutter_test:

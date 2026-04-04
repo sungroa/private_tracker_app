@@ -5,34 +5,101 @@ class CycleCalculator {
   static const int defaultCycleLength = 28;
 
   /// Predicts the next period start date based on previous logs.
-  static DateTime predictNextPeriod(List<CycleLog> logs) {
-    if (logs.isEmpty) {
+  /// If [symptomLogs] are provided, it attempts to mathematically confirm ovulation
+  /// using the 3-over-6 rule and overrides the average prediction.
+  static DateTime predictNextPeriod(
+    List<CycleLog> cycleLogs, [
+    List<SymptomLog>? symptomLogs,
+    double threshold = 0.2,
+  ]) {
+    if (cycleLogs.isEmpty) {
       return DateTime.now().add(const Duration(days: defaultCycleLength));
     }
 
     // Sort newest first
-    final sortedLogs = List<CycleLog>.from(logs)
+    final sortedCycleLogs = List<CycleLog>.from(cycleLogs)
       ..sort((a, b) => b.startDate.compareTo(a.startDate));
 
-    if (sortedLogs.length < 2) {
-      return sortedLogs.first.startDate.add(const Duration(days: defaultCycleLength));
+    // 1. Try to confirm ovulation for the current cycle if symptom logs are available
+    if (symptomLogs != null && symptomLogs.isNotEmpty) {
+      final latestCycleStart = sortedCycleLogs.first.startDate;
+      final currentCycleLogs = symptomLogs
+          .where((log) => !log.date.isBefore(latestCycleStart))
+          .toList();
+
+      final confirmedOvulation = confirmOvulation(currentCycleLogs, threshold: threshold);
+      if (confirmedOvulation != null) {
+        // STM standard: Luteal phase is consistently ~14 days
+        return confirmedOvulation.add(const Duration(days: 14));
+      }
     }
 
-    // 1. Extract cycle lengths (days between starts)
+    if (sortedCycleLogs.length < 2) {
+      return sortedCycleLogs.first.startDate.add(const Duration(days: defaultCycleLength));
+    }
+
+    // 2. Fallback to historical weighted average
     final lengths = <int>[];
-    for (int i = 0; i < sortedLogs.length - 1; i++) {
+    for (int i = 0; i < sortedCycleLogs.length - 1; i++) {
       lengths.add(
-        sortedLogs[i].startDate.difference(sortedLogs[i + 1].startDate).inDays,
+        sortedCycleLogs[i].startDate.difference(sortedCycleLogs[i + 1].startDate).inDays,
       );
     }
 
-    // 2. Filter outliers using IQR (require at least 4 intervals for statistical significance)
     final filteredLengths = _filterOutliers(lengths);
-
-    // 3. Calculate weighted average of valid cycles (favoring recent ones)
     final averageLength = _calculateWeightedAverage(filteredLengths);
 
-    return sortedLogs.first.startDate.add(Duration(days: averageLength));
+    return sortedCycleLogs.first.startDate.add(Duration(days: averageLength));
+  }
+
+  /// Implements the Sympto-Thermal Method "3-over-6 rule" to confirm ovulation.
+  /// Scans chronologically for 3 consecutive days where BBT is [threshold] higher
+  /// than the maximum of the preceding 6 consecutive days.
+  /// Returns the day BEFORE the temperature shift (the confirmed ovulation date).
+  static DateTime? confirmOvulation(List<SymptomLog> logs, {double threshold = 0.2}) {
+    if (logs.length < 9) return null;
+
+    final sorted = List<SymptomLog>.from(logs)
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    DateTime? latestConfirmed;
+
+    // Slide across the logs: i is the first day of the 3-day high-temp shift
+    // We need 6 days before i, so starting index is 6.
+    for (int i = 6; i <= sorted.length - 3; i++) {
+      // 1. Get preceding 6 days
+      final preceding6 = sorted.sublist(i - 6, i);
+      if (preceding6.any((log) => log.basalBodyTemperature == null)) continue;
+
+      // 2. Get 3 potential shift days
+      final shiftDays = sorted.sublist(i, i + 3);
+      if (shiftDays.any((log) => log.basalBodyTemperature == null)) continue;
+
+      // Check for continuity in dates (must be consecutive logs)
+      bool isConsecutive = true;
+      for (int j = i - 6; j < i + 2; j++) {
+        if (sorted[j + 1].date.difference(sorted[j].date).inDays != 1) {
+          isConsecutive = false;
+          break;
+        }
+      }
+      if (!isConsecutive) continue;
+
+      final maxPreceding = preceding6
+          .map((l) => l.basalBodyTemperature!)
+          .reduce((a, b) => a > b ? a : b);
+
+      final isShiftValidated = shiftDays.every(
+        (log) => log.basalBodyTemperature! >= (maxPreceding + threshold),
+      );
+
+      if (isShiftValidated) {
+        // Ovulation is marked as the day before the first high temp
+        latestConfirmed = sorted[i - 1].date;
+      }
+    }
+
+    return latestConfirmed;
   }
 
   /// Excludes anomalous cycle lengths using the Interquartile Range (IQR) method.

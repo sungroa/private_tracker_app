@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:table_calendar/table_calendar.dart';
+import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
+import '../widgets/custom_calendar/calendar_grid.dart';
 import '../sheets/symptom_logging_sheet.dart';
 import '../sheets/cycle_logging_sheet.dart';
 import '../../data/storage/encrypted_storage_service.dart';
@@ -41,7 +42,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
   void _showSymptomSheet(DateTime day) async {
     if (_isSheetOpen) return;
     final existing = _symptomLogs.firstWhere(
-      (log) => isSameDay(log.date, day),
+      (log) => DateUtils.isSameDay(log.date, day),
       orElse: () => SymptomLog(date: day, symptoms: [], moodRating: 3),
     );
 
@@ -82,22 +83,18 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
     }
   }
 
-  bool _isPeriodDay(DateTime day) {
-    final dateOnly = DateTime(day.year, day.month, day.day);
-    for (var log in _cycleLogs) {
-      final start = DateTime(log.startDate.year, log.startDate.month, log.startDate.day);
-      DateTime end;
-      if (log.endDate != null) {
-        end = DateTime(log.endDate!.year, log.endDate!.month, log.endDate!.day);
-      } else {
-        // Assume 5 days if no end date yet for visual purposes
-        end = start.add(const Duration(days: 4));
-      }
-      if (dateOnly.compareTo(start) >= 0 && dateOnly.compareTo(end) <= 0) {
-        return true;
-      }
-    }
-    return false;
+  void _onNextMonth() {
+    setState(() {
+      _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);
+      _loadLogs();
+    });
+  }
+
+  void _onPrevMonth() {
+    setState(() {
+      _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
+      _loadLogs();
+    });
   }
 
   @override
@@ -109,106 +106,46 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
           padding: const EdgeInsets.all(12.0),
           child: Container(
             decoration: AppTheme.glassDecoration(),
-            child: TableCalendar(
-              firstDay: DateTime.utc(2020, 1, 1),
-              lastDay: DateTime.utc(2030, 12, 31),
-              focusedDay: _focusedDay,
-              calendarFormat: CalendarFormat.month,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-              onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
-                });
-                _showSymptomSheet(selectedDay);
-              },
-              onPageChanged: (focusedDay) {
-                setState(() {
-                  _focusedDay = focusedDay;
-                });
-                _loadLogs();
-              },
-              calendarBuilders: CalendarBuilders(
-                markerBuilder: (context, date, events) {
-                  final checkDate = DateTime(date.year, date.month, date.day);
-                  final log = _symptomMap[checkDate];
-                  final isPeriod = _isPeriodDay(checkDate);
-
-                  return Stack(
-                    children: [
-                      if (isPeriod)
-                        Positioned(
-                          bottom: 1,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            height: 4,
-                            margin: const EdgeInsets.symmetric(horizontal: 10),
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                      if (log != null && (log.symptoms.isNotEmpty || log.moodRating != 3))
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: Container(
-                            width: 6,
-                            height: 6,
-                            decoration: const BoxDecoration(
-                              color: AppTheme.primaryColor,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      if (log != null && log.lhTestPositive == true)
-                        Positioned(
-                          top: 4,
-                          left: 4,
-                          child: Icon(
-                            Icons.star_rounded,
-                            size: 10,
-                            color: Colors.pinkAccent[400],
-                          ),
-                        ),
-                      if (log != null && log.basalBodyTemperature != null)
-                        Positioned(
-                          bottom: 6,
-                          right: 4,
-                          child: Icon(
-                            Icons.device_thermostat_rounded,
-                            size: 10,
-                            color: Colors.orangeAccent[700],
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
-              headerStyle: const HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
-                titleTextStyle: TextStyle(
-                  color: AppTheme.primaryColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Custom Month Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left),
+                      onPressed: _onPrevMonth,
+                    ),
+                    Text(
+                      DateFormat('MMMM yyyy').format(_focusedDay),
+                      style: const TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right),
+                      onPressed: _onNextMonth,
+                    ),
+                  ],
                 ),
-              ),
-              calendarStyle: CalendarStyle(
-                todayDecoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppTheme.primaryColor, width: 1),
+                const SizedBox(height: 16),
+                CustomCalendarGrid(
+                  focusedDay: _focusedDay,
+                  selectedDay: _selectedDay,
+                  cycleLogs: _cycleLogs,
+                  symptomMap: _symptomMap,
+                  onDaySelected: (selectedDay) {
+                    setState(() {
+                      _selectedDay = selectedDay;
+                      _focusedDay = selectedDay; // Optional: change focus
+                    });
+                    _showSymptomSheet(selectedDay);
+                  },
                 ),
-                selectedDecoration: const BoxDecoration(
-                  color: AppTheme.primaryColor,
-                  shape: BoxShape.circle,
-                ),
-                defaultTextStyle: const TextStyle(color: Colors.black87),
-                weekendTextStyle: const TextStyle(color: Colors.redAccent),
-              ),
+              ],
             ),
           ),
         ),

@@ -2,9 +2,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:meta/meta.dart';
+import 'package:flutter/material.dart'; // Required for TimeOfDay
 
 class AuthService {
   static const String _biometricEnabledKey = 'is_biometric_enabled';
+  static const String _notificationsEnabledKey = 'is_notifications_enabled';
+  static const String _notificationTimeKey = 'notification_time';
   
   final LocalAuthentication _auth;
   final FlutterSecureStorage _secureStorage;
@@ -43,6 +46,43 @@ class AuthService {
     await _secureStorage.write(
       key: _biometricEnabledKey,
       value: enabled.toString(),
+    );
+  }
+
+  /// Checks if notifications are enabled.
+  Future<bool> isNotificationsEnabled() async {
+    final String? enabled = await _secureStorage.read(key: _notificationsEnabledKey);
+    return enabled == 'true';
+  }
+
+  /// Sets notification preference.
+  Future<void> setNotificationsEnabled(bool enabled) async {
+    await _secureStorage.write(
+      key: _notificationsEnabledKey,
+      value: enabled.toString(),
+    );
+  }
+
+  /// Gets the scheduled notification time. Default is 20:00.
+  Future<TimeOfDay> getNotificationTime() async {
+    final String? timeString = await _secureStorage.read(key: _notificationTimeKey);
+    if (timeString == null) return const TimeOfDay(hour: 20, minute: 0);
+    
+    final parts = timeString.split(':');
+    if (parts.length != 2) return const TimeOfDay(hour: 20, minute: 0);
+    
+    return TimeOfDay(
+      hour: int.tryParse(parts[0]) ?? 20,
+      minute: int.tryParse(parts[1]) ?? 0,
+    );
+  }
+
+  /// Sets the scheduled notification time. Format: "HH:mm".
+  Future<void> setNotificationTime(TimeOfDay time) async {
+    final String timeString = "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}";
+    await _secureStorage.write(
+      key: _notificationTimeKey,
+      value: timeString,
     );
   }
 

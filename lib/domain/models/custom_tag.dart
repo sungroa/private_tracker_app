@@ -14,4 +14,18 @@ class CustomTag extends HiveObject {
     required this.name,
     this.isDefault = false,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'isDefault': isDefault,
+    };
+  }
+
+  factory CustomTag.fromMap(Map<String, dynamic> map) {
+    return CustomTag(
+      name: map['name'],
+      isDefault: map['isDefault'] ?? false,
+    );
+  }
 }
