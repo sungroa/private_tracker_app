@@ -1,28 +1,45 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:private_tracker_app/main.dart';
 import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
+import 'package:private_tracker_app/domain/models/custom_tag.dart';
+import 'package:private_tracker_app/core/services/auth_service.dart';
+
+class MockAuthService extends Mock implements AuthService {}
+class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 void main() {
   group('App smoke tests', () {
     late Directory tempDir;
+    late MockAuthService mockAuthService;
+    late MockFlutterSecureStorage mockStorage;
 
     setUp(() async {
+      mockAuthService = MockAuthService();
+      AuthService.instance = mockAuthService;
+      
+      mockStorage = MockFlutterSecureStorage();
+      EncryptedStorageService.instance = EncryptedStorageService.test(mockStorage);
+      
+      final key = Hive.generateSecureKey();
+      when(() => mockStorage.containsKey(key: any(named: 'key'))).thenAnswer((_) async => true);
+      when(() => mockStorage.read(key: any(named: 'key'))).thenAnswer((_) async => base64UrlEncode(key));
+
+      // Default behavior for smoke test: no biometric lock
+      when(() => mockAuthService.isBiometricEnabled()).thenAnswer((_) async => false);
+      when(() => mockAuthService.isHardwareSupported()).thenAnswer((_) async => false);
+
       tempDir = await Directory.systemTemp.createTemp('hive_smoke_test');
       Hive.init(tempDir.path);
-      if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(CycleLogAdapter());
-      if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SymptomLogAdapter());
-      await Hive.openBox<CycleLog>(EncryptedStorageService.cycleLogBox);
-      await Hive.openBox<SymptomLog>(EncryptedStorageService.symptomLogBox);
+      
+      await EncryptedStorageService.instance.initialize(basePath: tempDir.path);
+      
+      // We don't call EncryptedStorageService.instance.initialize() here because the app will call it
     });
 
     tearDown(() async {

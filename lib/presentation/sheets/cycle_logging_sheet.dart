@@ -77,7 +77,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
         endDate: _endDate,
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       );
-      await EncryptedStorageService.saveCycleLog(log);
+      await EncryptedStorageService.instance.saveCycleLog(log);
       if (mounted) Navigator.pop(context, true);
     } finally {
       if (mounted) setState(() => _isSaving = false);

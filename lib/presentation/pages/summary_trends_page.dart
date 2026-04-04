@@ -25,8 +25,8 @@ class _SummaryTrendsPageState extends State<SummaryTrendsPage> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     
-    final cycleLogs = EncryptedStorageService.getCycleLogs();
-    final symptomLogs = EncryptedStorageService.getSymptomLogs();
+    final cycleLogs = EncryptedStorageService.instance.getCycleLogs();
+    final symptomLogs = EncryptedStorageService.instance.getSymptomLogs();
     
     final trends = TrendsCalculator.calculateTrends(cycleLogs, symptomLogs);
     
