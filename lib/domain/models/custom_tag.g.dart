@@ -17,6 +17,7 @@ class CustomTagAdapter extends TypeAdapter<CustomTag> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return CustomTag(
+      id: fields[2] == null ? '' : fields[2] as String?,
       name: fields[0] as String,
       isDefault: fields[1] as bool,
     );
@@ -25,7 +26,9 @@ class CustomTagAdapter extends TypeAdapter<CustomTag> {
   @override
   void write(BinaryWriter writer, CustomTag obj) {
     writer
+      ..writeByte(3)
       ..writeByte(2)
+      ..write(obj.id)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)

@@ -1,0 +1,73 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:private_tracker_app/domain/models/cycle_log.dart';
+import 'package:private_tracker_app/domain/repositories/symptom_log_repository.dart';
+import 'package:private_tracker_app/presentation/providers/symptom_provider.dart';
+
+class MockSymptomLogRepository extends Mock implements SymptomLogRepository {}
+class FakeSymptomLog extends Fake implements SymptomLog {}
+
+void main() {
+  late MockSymptomLogRepository mockRepo;
+  late SymptomProvider provider;
+
+  setUpAll(() {
+    registerFallbackValue(FakeSymptomLog());
+  });
+
+  setUp(() {
+    mockRepo = MockSymptomLogRepository();
+    when(() => mockRepo.getSymptomLogs()).thenReturn([]);
+    provider = SymptomProvider(mockRepo);
+  });
+
+  test('initial state loads logs', () {
+    verify(() => mockRepo.getSymptomLogs()).called(1);
+    expect(provider.symptomLogs, isEmpty);
+  });
+
+  test('addLog calls repository and reloads logs', () async {
+    final log = SymptomLog(date: DateTime(2023, 1, 1), symptoms: [], moodRating: 3);
+    when(() => mockRepo.addSymptomLog(any())).thenAnswer((_) async {});
+    when(() => mockRepo.getSymptomLogs()).thenReturn([log]);
+
+    int listenerCallCount = 0;
+    provider.addListener(() => listenerCallCount++);
+
+    await provider.addLog(log);
+
+    verify(() => mockRepo.addSymptomLog(log)).called(1);
+    verify(() => mockRepo.getSymptomLogs()).called(2);
+    expect(provider.symptomLogs, [log]);
+    expect(listenerCallCount, 1);
+  });
+
+  test('updateLog calls repository and reloads logs', () async {
+    final log = SymptomLog(date: DateTime(2023, 1, 1), symptoms: [], moodRating: 3);
+    when(() => mockRepo.updateSymptomEvent(any())).thenAnswer((_) async {});
+    when(() => mockRepo.getSymptomLogs()).thenReturn([log]);
+
+    int listenerCallCount = 0;
+    provider.addListener(() => listenerCallCount++);
+
+    await provider.updateLog(log);
+
+    verify(() => mockRepo.updateSymptomEvent(log)).called(1);
+    verify(() => mockRepo.getSymptomLogs()).called(2);
+    expect(provider.symptomLogs, [log]);
+    expect(listenerCallCount, 1);
+  });
+
+  test('deleteLog calls repository and reloads logs', () async {
+    when(() => mockRepo.deleteSymptomEvent(any())).thenAnswer((_) async {});
+    
+    int listenerCallCount = 0;
+    provider.addListener(() => listenerCallCount++);
+
+    await provider.deleteLog('test-id');
+
+    verify(() => mockRepo.deleteSymptomEvent('test-id')).called(1);
+    verify(() => mockRepo.getSymptomLogs()).called(2);
+    expect(listenerCallCount, 1);
+  });
+}

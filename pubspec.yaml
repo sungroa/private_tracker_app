@@ -55,6 +55,7 @@ dependencies:
   encrypt: ^5.0.3
   file_picker: ^8.1.7
   pointycastle: ^3.7.4
+  uuid: ^4.5.3
 
 dev_dependencies:
   flutter_test:

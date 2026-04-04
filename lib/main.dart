@@ -5,7 +5,14 @@ import 'data/storage/encrypted_storage_service.dart';
 import 'presentation/pages/home_page.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/widgets/authentication_overlay.dart';
-
+import 'package:provider/provider.dart';
+import 'data/repositories/cycle_log_repository_impl.dart';
+import 'data/repositories/symptom_log_repository_impl.dart';
+import 'domain/repositories/cycle_log_repository.dart';
+import 'domain/repositories/symptom_log_repository.dart';
+import 'presentation/providers/cycle_provider.dart';
+import 'presentation/providers/symptom_provider.dart';
+import 'presentation/providers/trends_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService.instance.initialize();
@@ -153,6 +160,24 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
       );
     }
 
-    return widget.child;
+    // We wrap the child in providers so that they are only instantiated
+    // once the storage is fully loaded.
+    return MultiProvider(
+      providers: [
+        Provider<CycleLogRepository>(create: (_) => CycleLogRepositoryImpl(EncryptedStorageService.instance)),
+        Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
+        ChangeNotifierProvider(
+          create: (context) => CycleProvider(context.read<CycleLogRepository>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => SymptomProvider(context.read<SymptomLogRepository>()),
+        ),
+        ChangeNotifierProxyProvider2<CycleProvider, SymptomProvider, TrendsProvider>(
+          create: (_) => TrendsProvider(),
+          update: (_, cycle, symptom, trends) => trends!..update(cycle, symptom),
+        ),
+      ],
+      child: widget.child,
+    );
   }
 }

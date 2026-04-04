@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../providers/cycle_provider.dart';
 import '../../domain/models/cycle_log.dart';
-import '../../data/storage/encrypted_storage_service.dart';
 import '../theme/app_theme.dart';
 
 class CycleLoggingSheet extends StatefulWidget {
@@ -73,11 +74,27 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     setState(() => _isSaving = true);
     try {
       final log = CycleLog(
+        id: widget.existingLog?.id,
         startDate: _startDate,
         endDate: _endDate,
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       );
-      await EncryptedStorageService.instance.saveCycleLog(log);
+      if (widget.existingLog != null) {
+        await context.read<CycleProvider>().updateLog(log);
+      } else {
+        await context.read<CycleProvider>().addLog(log);
+      }
+      if (mounted) Navigator.pop(context, true);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _onDelete() async {
+    if (widget.existingLog == null) return;
+    setState(() => _isSaving = true);
+    try {
+      await context.read<CycleProvider>().deleteLog(widget.existingLog!.id);
       if (mounted) Navigator.pop(context, true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -205,6 +222,15 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                 child: TextButton(
                   onPressed: () => setState(() => _endDate = null),
                   child: const Text("Still in progress? Clear end date", style: TextStyle(color: Colors.redAccent)),
+                ),
+              ),
+            ],
+            if (widget.existingLog != null) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  onPressed: _onDelete,
+                  child: const Text("Delete Cycle Log", style: TextStyle(color: Colors.redAccent)),
                 ),
               ),
             ],

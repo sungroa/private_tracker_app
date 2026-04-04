@@ -9,6 +9,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:meta/meta.dart';
 import 'package:pointycastle/export.dart' as pc;
+import 'package:uuid/uuid.dart';
 import '../../domain/models/cycle_log.dart';
 import '../../domain/models/custom_tag.dart';
 
@@ -79,6 +80,9 @@ class EncryptedStorageService {
 
     // Pre-populate defaults if empty
     await _initializeDefaultTags();
+
+    // Migrate existing records to UUIDs
+    await _migrateToUUIDs();
     
     _isInitialized = true;
   }
@@ -95,7 +99,76 @@ class EncryptedStorageService {
         'Fatigue',
       ];
       for (var name in defaults) {
-        await box.add(CustomTag(name: name, isDefault: true));
+        final tag = CustomTag(name: name, isDefault: true);
+        await box.put(tag.id, tag);
+      }
+    }
+  }
+
+  Future<void> _migrateToUUIDs() async {
+    // Migrate Cycle Logs
+    final cycleBox = Hive.box<CycleLog>(cycleLogBox);
+    for (var key in cycleBox.keys.toList()) {
+      final log = cycleBox.get(key);
+      if (log != null && log.id.isEmpty) {
+        final newLog = CycleLog(
+          id: const Uuid().v4(),
+          startDate: log.startDate,
+          endDate: log.endDate,
+          notes: log.notes,
+        );
+        await cycleBox.put(newLog.id, newLog);
+        if (key != newLog.id) {
+          await cycleBox.delete(key);
+        }
+      } else if (log != null && key != log.id) {
+        await cycleBox.put(log.id, log);
+        await cycleBox.delete(key);
+      }
+    }
+
+    // Migrate Symptom Logs
+    final symptomBox = Hive.box<SymptomLog>(symptomLogBox);
+    for (var key in symptomBox.keys.toList()) {
+      final log = symptomBox.get(key);
+      if (log != null && log.id.isEmpty) {
+        final newLog = SymptomLog(
+          id: const Uuid().v4(),
+          date: log.date,
+          symptoms: log.symptoms,
+          moodRating: log.moodRating,
+          notes: log.notes,
+          basalBodyTemperature: log.basalBodyTemperature,
+          cervicalFluidType: log.cervicalFluidType,
+          lhTestPositive: log.lhTestPositive,
+        );
+        await symptomBox.put(newLog.id, newLog);
+        if (key != newLog.id) {
+          await symptomBox.delete(key);
+        }
+      } else if (log != null && key != log.id) {
+        await symptomBox.put(log.id, log);
+        await symptomBox.delete(key);
+      }
+    }
+
+    // Migrate Custom Tags
+    final tagBox = Hive.box<CustomTag>(customTagBox);
+    for (var key in tagBox.keys.toList()) {
+      final tag = tagBox.get(key);
+      if (tag != null && tag.id.isEmpty) {
+        final newTag = CustomTag(
+          id: const Uuid().v4(),
+          name: tag.name,
+          isDefault: tag.isDefault,
+        );
+        await tagBox.put(newTag.id, newTag);
+        if (key != newTag.id) {
+          await tagBox.delete(key);
+        }
+      } else if (tag != null && key != tag.id) {
+        await tagBox.put(tag.id, tag);
+        await tagBox.delete(key);
       }
     }
   }
@@ -120,18 +193,25 @@ class EncryptedStorageService {
   /// Saves or updates a symptom log.
   Future<void> saveSymptomLog(SymptomLog log) async {
     final box = getBox<SymptomLog>(symptomLogBox);
-    final key = "${log.date.year}-${log.date.month.toString().padLeft(2, '0')}-${log.date.day.toString().padLeft(2, '0')}";
-    await box.put(key, log);
+    await box.put(log.id, log);
+  }
+
+  /// Deletes a symptom log by id.
+  Future<void> deleteSymptomLog(String id) async {
+    final box = getBox<SymptomLog>(symptomLogBox);
+    await box.delete(id);
   }
 
   /// Saves or updates a cycle log.
   Future<void> saveCycleLog(CycleLog log) async {
     final box = getBox<CycleLog>(cycleLogBox);
-    if (log.isInBox) {
-      await log.save();
-    } else {
-      await box.add(log);
-    }
+    await box.put(log.id, log);
+  }
+
+  /// Deletes a cycle log by id.
+  Future<void> deleteCycleLog(String id) async {
+    final box = getBox<CycleLog>(cycleLogBox);
+    await box.delete(id);
   }
 
   /// Retrieves all symptom logs for a specific month.
@@ -165,7 +245,8 @@ class EncryptedStorageService {
     if (box.values.any((tag) => tag.name.toLowerCase() == name.toLowerCase())) {
       return;
     }
-    await box.add(CustomTag(name: name));
+    final newTag = CustomTag(name: name);
+    await box.put(newTag.id, newTag);
   }
 
   /// Deletes a custom tag.
@@ -332,8 +413,7 @@ class EncryptedStorageService {
     final List<dynamic> symptomLogsJson = data['symptomLogs'] ?? [];
     for (var logMap in symptomLogsJson) {
       final log = SymptomLog.fromMap(Map<String, dynamic>.from(logMap));
-      final key = "${log.date.year}-${log.date.month.toString().padLeft(2, '0')}-${log.date.day.toString().padLeft(2, '0')}";
-      await symptomLogBoxLocal.put(key, log);
+      await symptomLogBoxLocal.put(log.id, log);
     }
   }
 }

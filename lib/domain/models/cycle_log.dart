@@ -1,9 +1,13 @@
 import 'package:hive/hive.dart';
+import 'package:uuid/uuid.dart';
 
 part 'cycle_log.g.dart';
 
 @HiveType(typeId: 0)
 class CycleLog extends HiveObject {
+  @HiveField(3, defaultValue: '')
+  final String id;
+
   @HiveField(0)
   final DateTime startDate;
 
@@ -14,13 +18,15 @@ class CycleLog extends HiveObject {
   final String? notes;
 
   CycleLog({
+    String? id,
     required this.startDate,
     this.endDate,
     this.notes,
-  });
+  }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'startDate': startDate.toIso8601String(),
       'endDate': endDate?.toIso8601String(),
       'notes': notes,
@@ -29,6 +35,7 @@ class CycleLog extends HiveObject {
 
   factory CycleLog.fromMap(Map<String, dynamic> map) {
     return CycleLog(
+      id: map['id'],
       startDate: DateTime.parse(map['startDate']),
       endDate: map['endDate'] != null ? DateTime.parse(map['endDate']) : null,
       notes: map['notes'],
@@ -38,6 +45,9 @@ class CycleLog extends HiveObject {
 
 @HiveType(typeId: 1)
 class SymptomLog extends HiveObject {
+  @HiveField(7, defaultValue: '')
+  final String id;
+
   @HiveField(0)
   final DateTime date;
 
@@ -60,6 +70,7 @@ class SymptomLog extends HiveObject {
   final bool? lhTestPositive;
 
   SymptomLog({
+    String? id,
     required this.date,
     required this.symptoms,
     required this.moodRating,
@@ -67,10 +78,11 @@ class SymptomLog extends HiveObject {
     this.basalBodyTemperature,
     this.cervicalFluidType,
     this.lhTestPositive,
-  });
+  }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'date': date.toIso8601String(),
       'symptoms': symptoms,
       'moodRating': moodRating,
@@ -83,6 +95,7 @@ class SymptomLog extends HiveObject {
 
   factory SymptomLog.fromMap(Map<String, dynamic> map) {
     return SymptomLog(
+      id: map['id'],
       date: DateTime.parse(map['date']),
       symptoms: List<String>.from(map['symptoms']),
       moodRating: map['moodRating'],
