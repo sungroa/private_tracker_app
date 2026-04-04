@@ -17,6 +17,7 @@ class CycleLogAdapter extends TypeAdapter<CycleLog> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return CycleLog(
+      id: fields[3] == null ? '' : fields[3] as String?,
       startDate: fields[0] as DateTime,
       endDate: fields[1] as DateTime?,
       notes: fields[2] as String?,
@@ -26,7 +27,9 @@ class CycleLogAdapter extends TypeAdapter<CycleLog> {
   @override
   void write(BinaryWriter writer, CycleLog obj) {
     writer
+      ..writeByte(4)
       ..writeByte(3)
+      ..write(obj.id)
       ..writeByte(0)
       ..write(obj.startDate)
       ..writeByte(1)
@@ -57,6 +60,7 @@ class SymptomLogAdapter extends TypeAdapter<SymptomLog> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return SymptomLog(
+      id: fields[7] == null ? '' : fields[7] as String?,
       date: fields[0] as DateTime,
       symptoms: (fields[1] as List).cast<String>(),
       moodRating: fields[2] as int,
@@ -70,7 +74,9 @@ class SymptomLogAdapter extends TypeAdapter<SymptomLog> {
   @override
   void write(BinaryWriter writer, SymptomLog obj) {
     writer
+      ..writeByte(8)
       ..writeByte(7)
+      ..write(obj.id)
       ..writeByte(0)
       ..write(obj.date)
       ..writeByte(1)

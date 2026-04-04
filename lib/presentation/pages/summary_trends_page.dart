@@ -1,46 +1,16 @@
 import 'package:flutter/material.dart';
-import '../../data/storage/encrypted_storage_service.dart';
-import '../../domain/trends_calculator.dart';
+import 'package:provider/provider.dart';
+import '../providers/trends_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/summary_trend_card.dart';
 import '../widgets/summary_line_chart.dart';
 
-class SummaryTrendsPage extends StatefulWidget {
+class SummaryTrendsPage extends StatelessWidget {
   const SummaryTrendsPage({super.key});
 
   @override
-  State<SummaryTrendsPage> createState() => _SummaryTrendsPageState();
-}
-
-class _SummaryTrendsPageState extends State<SummaryTrendsPage> {
-  bool _isLoading = true;
-  TrendData? _trendData;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    
-    final cycleLogs = EncryptedStorageService.instance.getCycleLogs();
-    final symptomLogs = EncryptedStorageService.instance.getSymptomLogs();
-    
-    final trends = TrendsCalculator.calculateTrends(cycleLogs, symptomLogs);
-    
-    setState(() {
-      _trendData = trends;
-      _isLoading = false;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    final _trendData = context.watch<TrendsProvider>().trendData;
 
     if (_trendData == null) {
       return const Center(child: Text("No data available yet."));

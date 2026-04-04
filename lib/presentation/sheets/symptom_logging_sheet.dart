@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
+import '../providers/symptom_provider.dart';
 import '../../domain/models/cycle_log.dart';
 import '../../domain/models/custom_tag.dart';
 import '../../data/storage/encrypted_storage_service.dart';
@@ -70,6 +72,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     try {
       final bbt = double.tryParse(_tempController.text);
       final log = SymptomLog(
+        id: widget.existingLog?.id,
         date: widget.selectedDay,
         symptoms: _selectedSymptoms,
         moodRating: _moodRating,
@@ -78,7 +81,22 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
         cervicalFluidType: _selectedFluid,
         lhTestPositive: _lhPositive,
       );
-      await EncryptedStorageService.instance.saveSymptomLog(log);
+      if (widget.existingLog != null) {
+        await context.read<SymptomProvider>().updateLog(log);
+      } else {
+        await context.read<SymptomProvider>().addLog(log);
+      }
+      if (mounted) Navigator.pop(context, true);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _onDelete() async {
+    if (widget.existingLog == null) return;
+    setState(() => _isSaving = true);
+    try {
+      await context.read<SymptomProvider>().deleteLog(widget.existingLog!.id);
       if (mounted) Navigator.pop(context, true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -459,6 +477,15 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                       ),
               ),
             ),
+            if (widget.existingLog != null) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  onPressed: _onDelete,
+                  child: const Text("Delete Daily Log", style: TextStyle(color: Colors.redAccent)),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
           ],
         ),

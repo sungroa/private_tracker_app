@@ -1,8 +1,8 @@
 # Project Manifest: Private Tracker App
 
-- **Session ID:** d1862318-0ed2-4784-bc95-eb24ec887652
-- **Last Updated:** 2026-04-04T09:49:15Z
-- **Session Health:** HEALTHY
+- **Session ID:** 0687f167-7b5a-4cc9-9bb6-ec00983f524f
+- **Last Updated:** 2026-04-04T14:18:00Z
+- **Session Health:** HANDOFF_PENDING
 - **Project Root:** /home/sungroa/git/private_tracker_app
 - **STRICT_CONSTRAINTS:**
     - Privacy-First: No data sent to any server. Local only.
@@ -10,29 +10,64 @@
     - Premium Aesthetics: High-fidelity (Glassmorphic) UI required.
     - Native Approach: Flutter implementation.
     - Testing: No feature is complete without passing tests.
-- **Verification Token:** Principal Engineer skill confirmed accessible.
-- **Context Budget:** ~5% (Turn 1)
+- **Verification Token:** Pass: 9 Provider Unit Tests.
+- **Context Budget:** ~80% (CRITICAL)
 
 ## Progress Tracking
 
 ### [x] Recent Milestones
-- [x] Feature: **Encrypted Backup & Restore**. Implemented AES-256 backup logic with PBKDF2, GZip compression, and versioning.
-- [x] UI: Added Backup & Restore flows to SettingsPage.
-- [x] Quality: Added unit tests for backup/restore round-trip.
+- [x] Integrated MultiProvider in `main.dart`.
+- [x] Implemented `CycleProvider`, `SymptomProvider`, and `TrendsProvider`.
+- [x] Refactored `TrackingCalendarPage` and `SummaryTrendsPage` to use Providers.
+- [x] Updated logging sheets with 'Delete' support and Provider dispatch.
+- [x] Verified State Management with 9 unit tests.
 
 ### [/] Active Work
-- [/] Quality: **Test Suite Stabilization**. Resolving remaining `pumpAndSettle` timeouts in `sheets_test.dart`.
+- [/] Quality: Fixing `sheets_test.dart` regressions. Widget tests are hanging on `flutter_tester` during dismiss animations. Fixed constructor mismatches, but environmental hangs persist.
 
 ### Next Steps
-1. **UI Polishing**: Final visual tweaks to `TrackingCalendarPage` and micro-animations.
-2. **Distribution**: Setup local build scripts and CI/CD foundations.
+1. **Stabilize Widget Tests**: Resolve the remaining hangs in `test/presentation/sheets_test.dart`.
+2. **UI Polishing**: Final visual tweaks and micro-animations for the calendar.
 
+## Handoff Payload
+
+### Completed This Session
+- Full migration from direct storage calls to a tiered Provider architecture.
+- Separation of concerns: `CycleProvider` (log management), `SymptomProvider` (daily logs), and `TrendsProvider` (recalculations).
+- Added `Delete` functionality for both symptoms and cycle events.
+- Repository DI implementation in `main.dart`.
+
+### In-Flight Work
+- `test/presentation/sheets_test.dart`: Currently modified to use providers, but tests are hanging. Repository dependencies have been updated to include `EncryptedStorageService.instance`.
+
+### Blockers / Dead Ends
+- `flutter_tester` environment hangs on certain animations (`BottomSheet` dismissal). Use `tester.pump(Duration(seconds: 1))` to bypass, but even that is currently unstable in this environment.
+
+### Critical Files
+- `lib/presentation/providers/` (Whole directory)
+- `lib/main.dart` (DI setup)
+- `test/presentation/sheets_test.dart` (Failing/Hanging)
 
 ## Dead Ends & Lessons
+- **Architecture**: Separating providers (`Cycle` vs `Symptom`) avoids unnecessary rebuilds for unrelated state changes.
+- **Testing**: Passing `EncryptedStorageService.instance` explicitly to log repositories ensures the tests (which use a mocked instance) stay in sync with the state management layer.
 
-- **Architecture**: Static-only services are difficult to mock. **Lesson**: Use Singletons with static setters for mocks.
-- **Testing**: `DateTime` local comparisons fail when crossing DST boundaries. **Lesson**: Use `DateTime.utc` in tests.
-- **Environment**: Multiple `flutter test` processes can hang. **Lesson**: Prune zombie `flutter_tester` tasks.
-- **Environment**: `command_status` may report `RUNNING` even after a command (like `flutter pub add`) has effectively finished its file-system mutations. **Lesson**: Verify state via `view_file` or `list_dir` before over-waiting on long-running background tasks.
-- **Artifacts**: New artifacts must be stored in the conversation-specific directory.
+## 🔄 Handoff Prompt — Copy & Paste Into New Thread
 
+> I'm continuing work from a previous session. Please read the project manifest
+> at `.agent/project_manifest.md` in workspace `/home/sungroa/git/private_tracker_app` and resume
+> from the `Handoff Payload` section.
+>
+> **Previous Session ID:** 0687f167-7b5a-4cc9-9bb6-ec00983f524f
+> **Primary Objective:** Wire repositories into Provider state management.
+> **Current State:** Providers are implemented and UI is refactored. Unit tests pass (+9), but widget tests in `sheets_test.dart` are hanging.
+> **Immediate Next Step:** Stabilize and fix `test/presentation/sheets_test.dart`.
+>
+> Start by reading the manifest and validating the project state.
+
+
+I'm continuing work from a previous session. Please read the project manifest at .agent/project_manifest.md in workspace /home/sungroa/git/private_tracker_app and resume from the Handoff Payload section.
+
+Previous Session ID: 0687f167-7b5a-4cc9-9bb6-ec00983f524f Primary Objective: Wire repositories into Provider state management. Current State: Providers are implemented and UI is refactored. Unit tests pass (+9), but widget tests in sheets_test.dart are hanging. Immediate Next Step: Stabilize and fix test/presentation/sheets_test.dart.
+
+Start by reading the manifest and validating the project state.

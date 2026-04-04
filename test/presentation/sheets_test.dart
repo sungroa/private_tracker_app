@@ -10,6 +10,11 @@ import 'package:private_tracker_app/presentation/sheets/symptom_logging_sheet.da
 import 'package:private_tracker_app/presentation/sheets/cycle_logging_sheet.dart';
 import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
 import 'package:private_tracker_app/presentation/theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import 'package:private_tracker_app/presentation/providers/symptom_provider.dart';
+import 'package:private_tracker_app/presentation/providers/cycle_provider.dart';
+import 'package:private_tracker_app/data/repositories/symptom_log_repository_impl.dart';
+import 'package:private_tracker_app/data/repositories/cycle_log_repository_impl.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
@@ -51,8 +56,13 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
-          home: Scaffold(
-            body: SymptomLoggingSheet(selectedDay: DateTime.now()),
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(EncryptedStorageService.instance))),
+            ],
+            child: Scaffold(
+              body: SymptomLoggingSheet(selectedDay: DateTime.now()),
+            ),
           ),
         ),
       );
@@ -79,8 +89,13 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
-          home: Scaffold(
-            body: SymptomLoggingSheet(selectedDay: date),
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(EncryptedStorageService.instance))),
+            ],
+            child: Scaffold(
+              body: SymptomLoggingSheet(selectedDay: date),
+            ),
           ),
         ),
       );
@@ -136,8 +151,13 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
-          home: Scaffold(
-            body: CycleLoggingSheet(selectedDay: DateTime(2026, 3, 28)),
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => CycleProvider(CycleLogRepositoryImpl(EncryptedStorageService.instance))),
+            ],
+            child: Scaffold(
+              body: CycleLoggingSheet(selectedDay: DateTime(2026, 3, 28)),
+            ),
           ),
         ),
       );
@@ -154,8 +174,13 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
-          home: Scaffold(
-            body: CycleLoggingSheet(selectedDay: date),
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => CycleProvider(CycleLogRepositoryImpl(EncryptedStorageService.instance))),
+            ],
+            child: Scaffold(
+              body: CycleLoggingSheet(selectedDay: date),
+            ),
           ),
         ),
       );

@@ -4,9 +4,10 @@ import '../theme/app_theme.dart';
 import '../widgets/custom_calendar/calendar_grid.dart';
 import '../sheets/symptom_logging_sheet.dart';
 import '../sheets/cycle_logging_sheet.dart';
-import '../../data/storage/encrypted_storage_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/cycle_provider.dart';
+import '../providers/symptom_provider.dart';
 import '../../domain/models/cycle_log.dart';
-
 class TrackingCalendarPage extends StatefulWidget {
   const TrackingCalendarPage({super.key});
 
@@ -17,38 +18,19 @@ class TrackingCalendarPage extends StatefulWidget {
 class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  List<SymptomLog> _symptomLogs = [];
-  List<CycleLog> _cycleLogs = [];
-  Map<DateTime, SymptomLog> _symptomMap = {};
   bool _isSheetOpen = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadLogs();
-  }
-
-  void _loadLogs() {
-    setState(() {
-      _symptomLogs = EncryptedStorageService.instance.getSymptomLogs();
-      _cycleLogs = EncryptedStorageService.instance.getCycleLogs();
-      _symptomMap = {
-        for (var log in _symptomLogs)
-          DateTime(log.date.year, log.date.month, log.date.day): log
-      };
-    });
-  }
 
   void _showSymptomSheet(DateTime day) async {
     if (_isSheetOpen) return;
-    final existing = _symptomLogs.firstWhere(
+    final symptomLogs = context.read<SymptomProvider>().symptomLogs;
+    final existing = symptomLogs.firstWhere(
       (log) => DateUtils.isSameDay(log.date, day),
       orElse: () => SymptomLog(date: day, symptoms: [], moodRating: 3),
     );
 
     _isSheetOpen = true;
     try {
-      final result = await showModalBottomSheet<bool>(
+      await showModalBottomSheet<bool>(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -57,8 +39,6 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
           existingLog: existing.symptoms.isEmpty ? null : existing,
         ),
       );
-
-      if (result == true) _loadLogs();
     } finally {
       _isSheetOpen = false;
     }
@@ -68,7 +48,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
     if (_isSheetOpen) return;
     _isSheetOpen = true;
     try {
-      final result = await showModalBottomSheet<bool>(
+      await showModalBottomSheet<bool>(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -76,8 +56,6 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
           selectedDay: _selectedDay ?? DateTime.now(),
         ),
       );
-
-      if (result == true) _loadLogs();
     } finally {
       _isSheetOpen = false;
     }
@@ -86,19 +64,24 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
   void _onNextMonth() {
     setState(() {
       _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);
-      _loadLogs();
     });
   }
 
   void _onPrevMonth() {
     setState(() {
       _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
-      _loadLogs();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final cycleLogs = context.watch<CycleProvider>().cycleLogs;
+    final symptomLogs = context.watch<SymptomProvider>().symptomLogs;
+    final symptomMap = {
+      for (var log in symptomLogs)
+        DateTime(log.date.year, log.date.month, log.date.day): log
+    };
+
     return ListView(
       padding: EdgeInsets.zero,
       children: [
@@ -135,8 +118,8 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                 CustomCalendarGrid(
                   focusedDay: _focusedDay,
                   selectedDay: _selectedDay,
-                  cycleLogs: _cycleLogs,
-                  symptomMap: _symptomMap,
+                  cycleLogs: cycleLogs,
+                  symptomMap: symptomMap,
                   onDaySelected: (selectedDay) {
                     setState(() {
                       _selectedDay = selectedDay;
