@@ -12,7 +12,9 @@ import 'domain/repositories/cycle_log_repository.dart';
 import 'domain/repositories/symptom_log_repository.dart';
 import 'presentation/providers/cycle_provider.dart';
 import 'presentation/providers/symptom_provider.dart';
-import 'presentation/providers/trends_provider.dart';
+import 'data/repositories/tag_repository_impl.dart';
+import 'domain/repositories/tag_repository.dart';
+import 'presentation/providers/tag_provider.dart';
 import 'package:app_links/app_links.dart';
 import 'domain/services/partner_sharing_service.dart';
 import 'presentation/pages/partner_mode_page.dart';
@@ -42,7 +44,7 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
   void _initDeepLinks() {
     _appLinks = AppLinks();
     _appLinks.uriLinkStream.listen((uri) {
-      debugPrint('Deep link received: $uri');
+      if (!mounted) return;
       _handleDeepLink(uri);
     });
   }
@@ -69,6 +71,8 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
             create: (_) => CycleLogRepositoryImpl(EncryptedStorageService.instance)),
         Provider<SymptomLogRepository>(
             create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
+        Provider<TagRepository>(
+            create: (_) => TagRepositoryImpl(EncryptedStorageService.instance)),
         ChangeNotifierProvider(
           create: (context) => CycleProvider(
             context.read<CycleLogRepository>(),
@@ -78,9 +82,8 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
         ChangeNotifierProvider(
           create: (context) => SymptomProvider(context.read<SymptomLogRepository>()),
         ),
-        ChangeNotifierProxyProvider2<CycleProvider, SymptomProvider, TrendsProvider>(
-          create: (_) => TrendsProvider(),
-          update: (_, cycle, symptom, trends) => trends!..update(cycle, symptom),
+        ChangeNotifierProvider(
+          create: (context) => TagProvider(context.read<TagRepository>()),
         ),
       ],
       child: MaterialApp(
@@ -217,11 +220,10 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
       return AuthenticationOverlay(
         onUnlockSuccess: () async {
           await _initializeStorage();
-          if (mounted) {
-            context.read<CycleProvider>().refresh();
-            context.read<SymptomProvider>().refresh();
-            setState(() => _isAuthenticated = true);
-          }
+          if (!context.mounted) return;
+          context.read<CycleProvider>().refresh();
+          context.read<SymptomProvider>().refresh();
+          setState(() => _isAuthenticated = true);
         },
       );
     }

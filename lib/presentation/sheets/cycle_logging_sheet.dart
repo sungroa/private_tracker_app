@@ -26,7 +26,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
   late DateTime _startDate;
   DateTime? _endDate;
   late int _flowIntensity;
-  final TextEditingController _notesController = TextEditingController();
+  late final TextEditingController _notesController;
   bool _isSaving = false;
 
   @override
@@ -35,7 +35,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     _startDate = widget.existingEvent?.startDate ?? widget.selectedDay;
     _endDate = widget.existingEvent?.endDate;
     _flowIntensity = widget.existingEvent?.flowIntensity ?? 3;
-    _notesController.text = widget.existingEvent?.notes ?? "";
+    _notesController = TextEditingController(text: widget.existingEvent?.notes ?? "");
   }
 
   @override

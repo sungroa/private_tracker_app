@@ -28,11 +28,10 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
 
     // Find SymptomLog
     SymptomLog? existingSymptom;
-    try {
-      existingSymptom = symptomLogs.firstWhere(
-        (log) => DateUtils.isSameDay(log.date, day),
-      );
-    } catch (_) {}
+    existingSymptom = symptomLogs.cast<SymptomLog?>().firstWhere(
+      (log) => DateUtils.isSameDay(log!.date, day),
+      orElse: () => null,
+    );
 
     // Find CycleEvent
     CycleEvent? existingCycle;

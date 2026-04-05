@@ -23,8 +23,8 @@ class SymptomLogRepositoryImpl implements SymptomLogRepository {
   }
 
   @override
-  Future<void> updateSymptomLog(SymptomLog event) async {
-    await _storageService.saveSymptomLog(event);
+  Future<void> updateSymptomLog(SymptomLog log) async {
+    await _storageService.saveSymptomLog(log);
   }
 
   @override

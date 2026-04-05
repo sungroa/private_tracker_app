@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import '../providers/symptom_provider.dart';
+import '../providers/tag_provider.dart';
 import '../../domain/models/cycle_log.dart';
 import '../../domain/models/custom_tag.dart';
-import '../../data/storage/encrypted_storage_service.dart';
 import '../theme/app_theme.dart';
 
 class SymptomLoggingSheet extends StatefulWidget {
@@ -32,6 +31,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
   String? _selectedFluid;
   bool? _lhPositive;
   bool _isSaving = false;
+  bool _isDeleting = false;
 
   final List<IconData> _moodIcons = [
     Icons.sentiment_very_dissatisfied,
@@ -54,12 +54,19 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     super.initState();
     _moodRating = widget.existingLog?.moodRating ?? 3;
     _selectedSymptoms = List.from(widget.existingLog?.symptoms ?? []);
-    _notesController = TextEditingController(text: widget.existingLog?.notes);
+    _notesController = TextEditingController(text: widget.existingLog?.notes ?? '');
     _tempController = TextEditingController(
       text: widget.existingLog?.basalBodyTemperature?.toString() ?? "",
     );
     _selectedFluid = widget.existingLog?.cervicalFluidType;
     _lhPositive = widget.existingLog?.lhTestPositive;
+    
+    // Refresh tags
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<TagProvider>().refresh();
+      }
+    });
   }
 
   @override
@@ -97,33 +104,38 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
 
   void _onDelete() async {
     if (widget.existingLog == null) return;
+    final symptomProvider = context.read<SymptomProvider>();
     
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Delete entry?"),
-        content: const Text("This action cannot be undone."),
+        title: const Text("Delete Entry"),
+        content: const Text("Are you sure you want to delete this log? This action cannot be undone."),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text("Cancel"),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.redAccent)),
+            onPressed: _isDeleting ? null : () => Navigator.pop(context, true),
+            child: Text(
+              _isDeleting ? "Deleting..." : "Delete",
+              style: const TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
     );
 
+    if (!context.mounted) return;
     if (confirmed != true) return;
 
-    setState(() => _isSaving = true);
+    setState(() => _isDeleting = true);
     try {
-      await context.read<SymptomProvider>().deleteSymptomLog(widget.existingLog!.id);
+      await symptomProvider.deleteSymptomLog(widget.existingLog!.id);
       if (mounted) Navigator.pop(context, true);
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) setState(() => _isDeleting = false);
     }
   }
 
@@ -147,9 +159,9 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
           TextButton(
             onPressed: () async {
               if (controller.text.trim().isNotEmpty) {
-                await EncryptedStorageService.instance.addCustomTag(controller.text.trim());
-                if (context.mounted) Navigator.pop(context);
+                await context.read<TagProvider>().addTag(controller.text.trim());
               }
+              if (context.mounted) Navigator.pop(context);
             },
             child: const Text('Add'),
           ),
@@ -178,8 +190,8 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
           ),
           TextButton(
             onPressed: () async {
-              await EncryptedStorageService.instance.deleteCustomTag(tag);
-              if (context.mounted) Navigator.pop(context);
+              Navigator.pop(context);
+              await context.read<TagProvider>().deleteTag(tag);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -285,7 +297,6 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
               }),
             ),
             const SizedBox(height: 32),
-            const SizedBox(height: 32),
             // FAM Metrics
             Row(
               children: [
@@ -382,10 +393,9 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                   ),
             ),
             const SizedBox(height: 12),
-            ValueListenableBuilder(
-              valueListenable: EncryptedStorageService.instance.getCustomTagsBox().listenable(),
-              builder: (context, Box<CustomTag> box, _) {
-                final tags = box.values.toList();
+            Consumer<TagProvider>(
+              builder: (context, tagProvider, _) {
+                final tags = tagProvider.tags;
                 return Wrap(
                   spacing: 8,
                   runSpacing: 8,

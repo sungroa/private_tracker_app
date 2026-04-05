@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/trends_provider.dart';
+import '../providers/cycle_provider.dart';
 import '../theme/app_theme.dart';
 import 'widgets/bbt_chart.dart';
 
@@ -13,9 +13,9 @@ class AnalyticsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Trends & Insights'),
       ),
-      body: Consumer<TrendsProvider>(
-        builder: (context, trendsProvider, child) {
-          final trendData = trendsProvider.trendData;
+      body: Consumer<CycleProvider>(
+        builder: (context, cycleProvider, child) {
+          final trendData = cycleProvider.trends;
           if (trendData == null) {
             return const Center(child: CircularProgressIndicator());
           }

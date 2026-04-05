@@ -1,4 +1,6 @@
-import 'package:encrypt/encrypt.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:encrypt/encrypt.dart' as enc;
 import '../models/shared_phase_data.dart';
 import '../cycle_calculator.dart';
 import '../models/cycle_log.dart';
@@ -28,18 +30,27 @@ class PartnerSharingService {
     );
 
     // 2. Encryption
-    final key = Key.fromSecureRandom(32);
-    final iv = IV.fromSecureRandom(16);
-    final encrypter = Encrypter(AES(key));
-
+    final encryptionKey = enc.Key.fromSecureRandom(32);
+    final hmacKey = enc.Key.fromSecureRandom(32);
+    final iv = enc.IV.fromSecureRandom(16);
+    
+    // Use AES with SIC (CTR) mode
+    final encrypter = enc.Encrypter(enc.AES(encryptionKey, mode: enc.AESMode.sic));
     final encrypted = encrypter.encrypt(data.toJson(), iv: iv);
     
-    // Payload format: base64(iv) + ":" + base64(ciphertext)
-    final payload = '${iv.base64}:${encrypted.base64}';
+    // 3. Authenticate (MAC-then-Cipher or Encrypt-then-MAC — we use Encrypt-then-MAC)
+    final hmac = Hmac(sha256, hmacKey.bytes);
+    final digest = hmac.convert(iv.bytes + encrypted.bytes);
+    
+    // Payload format: base64(iv) + ":" + base64(ciphertext) + ":" + base64(hmac)
+    final payload = '${iv.base64}:${encrypted.base64}:${base64UrlEncode(digest.bytes)}';
+    
+    // Key format: base64(encKey) + ":" + base64(hmacKey)
+    final combinedKey = '${encryptionKey.base64}:${hmacKey.base64}';
     
     return {
       'data': payload,
-      'key': key.base64,
+      'key': combinedKey,
     };
   }
 
@@ -50,16 +61,33 @@ class PartnerSharingService {
   }
 
   /// Decrypts a payload using the provided key.
-  static SharedPhaseData decryptPayload(String payload, String keyBase64) {
+  static SharedPhaseData decryptPayload(String payload, String keyCombined) {
     try {
-      final parts = payload.split(':');
-      if (parts.length != 2) throw Exception('Invalid payload format');
+      final keyParts = keyCombined.split(':');
+      if (keyParts.length != 2) throw Exception('Invalid key format');
+      
+      final encryptionKey = enc.Key.fromBase64(keyParts[0]);
+      final hmacKey = enc.Key.fromBase64(keyParts[1]);
 
-      final iv = IV.fromBase64(parts[0]);
-      final ciphertext = parts[1];
-      final key = Key.fromBase64(keyBase64);
-      final encrypter = Encrypter(AES(key));
+      final payloadParts = payload.split(':');
+      if (payloadParts.length != 3) throw Exception('Invalid payload format');
 
+      final iv = enc.IV.fromBase64(payloadParts[0]);
+      final ciphertext = payloadParts[1];
+      final hmacProvided = payloadParts[2];
+      
+      // 1. Verify HMAC (Constant-time comparison)
+      final hmac = Hmac(sha256, hmacKey.bytes);
+      final encryptedBytes = base64.decode(ciphertext);
+      final digest = hmac.convert(iv.bytes + encryptedBytes);
+      final hmacExpected = base64UrlEncode(digest.bytes);
+      
+      if (hmacProvided != hmacExpected) {
+        throw Exception('Authenticity check failed: Payload has been tampered with');
+      }
+
+      // 2. Decrypt
+      final encrypter = enc.Encrypter(enc.AES(encryptionKey, mode: enc.AESMode.sic));
       final decrypted = encrypter.decrypt64(ciphertext, iv: iv);
       return SharedPhaseData.fromJson(decrypted);
     } catch (e) {
