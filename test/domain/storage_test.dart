@@ -77,23 +77,23 @@ void main() {
       expect(marchLogs.first.symptoms, contains('Cramps'));
     });
 
-    test('saveCycleLog and getCycleLogs should work', () async {
-      final log1 = CycleLog(startDate: DateTime(2026, 2, 1));
-      final log2 = CycleLog(startDate: DateTime(2026, 3, 1));
+    test('saveCycleEvent and getCycleEvents should work', () async {
+      final log1 = CycleEvent(startDate: DateTime(2026, 2, 1));
+      final log2 = CycleEvent(startDate: DateTime(2026, 3, 1));
 
-      await EncryptedStorageService.instance.saveCycleLog(log1);
-      await EncryptedStorageService.instance.saveCycleLog(log2);
+      await EncryptedStorageService.instance.saveCycleEvent(log1);
+      await EncryptedStorageService.instance.saveCycleEvent(log2);
 
-      final allLogs = EncryptedStorageService.instance.getCycleLogs();
+      final allLogs = EncryptedStorageService.instance.getCycleEvents();
       expect(allLogs.length, 2);
       expect(allLogs.first.startDate, DateTime(2026, 3, 1)); // Sorted newest first
     });
 
     test('exportDataToCsv should format CSV string correctly', () async {
-      await Hive.box<CycleLog>(EncryptedStorageService.cycleLogBox).clear();
+      await Hive.box<CycleEvent>(EncryptedStorageService.cycleLogBox).clear();
       await Hive.box<SymptomLog>(EncryptedStorageService.symptomLogBox).clear();
 
-      await EncryptedStorageService.instance.saveCycleLog(CycleLog(startDate: DateTime(2026, 3, 1), notes: 'Cycle note'));
+      await EncryptedStorageService.instance.saveCycleEvent(CycleEvent(startDate: DateTime(2026, 3, 1), notes: 'Cycle note'));
       await EncryptedStorageService.instance.saveSymptomLog(SymptomLog(
         date: DateTime(2026, 3, 5),
         symptoms: ['Cramps', 'Fatigue'],
@@ -126,11 +126,11 @@ void main() {
 
     test('Encrypted backup and restore should preserve all data', () async {
       // 1. Prepare data
-      await Hive.box<CycleLog>(EncryptedStorageService.cycleLogBox).clear();
+      await Hive.box<CycleEvent>(EncryptedStorageService.cycleLogBox).clear();
       await Hive.box<SymptomLog>(EncryptedStorageService.symptomLogBox).clear();
       await Hive.box<CustomTag>(EncryptedStorageService.customTagBox).clear();
 
-      await EncryptedStorageService.instance.saveCycleLog(CycleLog(startDate: DateTime(2026, 3, 1), notes: 'Backup test'));
+      await EncryptedStorageService.instance.saveCycleEvent(CycleEvent(startDate: DateTime(2026, 3, 1), notes: 'Backup test'));
       await EncryptedStorageService.instance.saveSymptomLog(SymptomLog(
         date: DateTime(2026, 3, 5),
         symptoms: ['Cramps'],
@@ -144,16 +144,16 @@ void main() {
       expect(await backupFile.exists(), isTrue);
 
       // 3. Clear local state
-      await Hive.box<CycleLog>(EncryptedStorageService.cycleLogBox).clear();
+      await Hive.box<CycleEvent>(EncryptedStorageService.cycleLogBox).clear();
       await Hive.box<SymptomLog>(EncryptedStorageService.symptomLogBox).clear();
       await Hive.box<CustomTag>(EncryptedStorageService.customTagBox).clear();
-      expect(EncryptedStorageService.instance.getCycleLogs(), isEmpty);
+      expect(EncryptedStorageService.instance.getCycleEvents(), isEmpty);
 
       // 4. Restore
       await EncryptedStorageService.instance.importEncryptedBackup(backupFile, password);
 
       // 5. Verify
-      final cycles = EncryptedStorageService.instance.getCycleLogs();
+      final cycles = EncryptedStorageService.instance.getCycleEvents();
       final symptoms = EncryptedStorageService.instance.getSymptomLogs();
       final tags = EncryptedStorageService.instance.getCustomTagsBox().values.toList();
 

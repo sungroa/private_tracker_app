@@ -4,6 +4,6 @@ abstract class SymptomLogRepository {
   List<SymptomLog> getSymptomLogs();
   List<SymptomLog> getSymptomLogsForMonth(DateTime month);
   Future<void> addSymptomLog(SymptomLog log);
-  Future<void> updateSymptomEvent(SymptomLog event);
-  Future<void> deleteSymptomEvent(String id);
+  Future<void> updateSymptomLog(SymptomLog event);
+  Future<void> deleteSymptomLog(String id);
 }

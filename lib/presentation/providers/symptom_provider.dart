@@ -10,25 +10,33 @@ class SymptomProvider extends ChangeNotifier {
     _loadLogs();
   }
 
+  void refresh() => _loadLogs();
+
   List<SymptomLog> get symptomLogs => _symptomLogs;
 
   void _loadLogs() {
-    _symptomLogs = _repository.getSymptomLogs();
-    notifyListeners();
+    try {
+      _symptomLogs = _repository.getSymptomLogs();
+      notifyListeners();
+    } catch (e) {
+      debugPrint("SymptomProvider: Failed to load logs (storage likely not ready): $e");
+      _symptomLogs = [];
+      notifyListeners();
+    }
   }
 
-  Future<void> addLog(SymptomLog log) async {
+  Future<void> addSymptomLog(SymptomLog log) async {
     await _repository.addSymptomLog(log);
     _loadLogs();
   }
 
-  Future<void> updateLog(SymptomLog log) async {
-    await _repository.updateSymptomEvent(log);
+  Future<void> updateSymptomLog(SymptomLog log) async {
+    await _repository.updateSymptomLog(log);
     _loadLogs();
   }
 
-  Future<void> deleteLog(String id) async {
-    await _repository.deleteSymptomEvent(id);
+  Future<void> deleteSymptomLog(String id) async {
+    await _repository.deleteSymptomLog(id);
     _loadLogs();
   }
 }

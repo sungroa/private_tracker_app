@@ -13,22 +13,83 @@ import 'domain/repositories/symptom_log_repository.dart';
 import 'presentation/providers/cycle_provider.dart';
 import 'presentation/providers/symptom_provider.dart';
 import 'presentation/providers/trends_provider.dart';
+import 'package:app_links/app_links.dart';
+import 'domain/services/partner_sharing_service.dart';
+import 'presentation/pages/partner_mode_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService.instance.initialize();
   runApp(const PrivacyTrackerApp());
 }
 
-class PrivacyTrackerApp extends StatelessWidget {
+class PrivacyTrackerApp extends StatefulWidget {
   const PrivacyTrackerApp({super.key});
 
   @override
+  State<PrivacyTrackerApp> createState() => _PrivacyTrackerAppState();
+}
+
+class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  late AppLinks _appLinks;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  void _initDeepLinks() {
+    _appLinks = AppLinks();
+    _appLinks.uriLinkStream.listen((uri) {
+      debugPrint('Deep link received: $uri');
+      _handleDeepLink(uri);
+    });
+  }
+
+  void _handleDeepLink(Uri uri) {
+    final params = PartnerSharingService.parseDeepLink(uri);
+    if (params != null) {
+      _navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (context) => PartnerModePage(
+            initialPayload: params['data'],
+            initialKey: params['key'],
+          ),
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Women\'s Health Tracker',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const AppLockWrapper(child: HomePage()),
+    return MultiProvider(
+      providers: [
+        Provider<CycleLogRepository>(
+            create: (_) => CycleLogRepositoryImpl(EncryptedStorageService.instance)),
+        Provider<SymptomLogRepository>(
+            create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
+        ChangeNotifierProvider(
+          create: (context) => CycleProvider(
+            context.read<CycleLogRepository>(),
+            context.read<SymptomLogRepository>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => SymptomProvider(context.read<SymptomLogRepository>()),
+        ),
+        ChangeNotifierProxyProvider2<CycleProvider, SymptomProvider, TrendsProvider>(
+          create: (_) => TrendsProvider(),
+          update: (_, cycle, symptom, trends) => trends!..update(cycle, symptom),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Women\'s Health Tracker',
+        navigatorKey: _navigatorKey,
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        home: const AppLockWrapper(child: HomePage()),
+      ),
     );
   }
 }
@@ -98,6 +159,9 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
     if (success) {
       await _initializeStorage();
       if (mounted) {
+        // Refresh providers now that storage is ready
+        context.read<CycleProvider>().refresh();
+        context.read<SymptomProvider>().refresh();
         setState(() => _isAuthenticated = true);
       }
     }
@@ -154,30 +218,14 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
         onUnlockSuccess: () async {
           await _initializeStorage();
           if (mounted) {
+            context.read<CycleProvider>().refresh();
+            context.read<SymptomProvider>().refresh();
             setState(() => _isAuthenticated = true);
           }
         },
       );
     }
 
-    // We wrap the child in providers so that they are only instantiated
-    // once the storage is fully loaded.
-    return MultiProvider(
-      providers: [
-        Provider<CycleLogRepository>(create: (_) => CycleLogRepositoryImpl(EncryptedStorageService.instance)),
-        Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
-        ChangeNotifierProvider(
-          create: (context) => CycleProvider(context.read<CycleLogRepository>()),
-        ),
-        ChangeNotifierProvider(
-          create: (context) => SymptomProvider(context.read<SymptomLogRepository>()),
-        ),
-        ChangeNotifierProxyProvider2<CycleProvider, SymptomProvider, TrendsProvider>(
-          create: (_) => TrendsProvider(),
-          update: (_, cycle, symptom, trends) => trends!..update(cycle, symptom),
-        ),
-      ],
-      child: widget.child,
-    );
+    return widget.child;
   }
 }

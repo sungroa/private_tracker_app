@@ -10,7 +10,7 @@ class TrendsProvider extends ChangeNotifier {
 
   void update(CycleProvider cycleProvider, SymptomProvider symptomProvider) {
     _trendData = TrendsCalculator.calculateTrends(
-      cycleProvider.cycleLogs,
+      cycleProvider.cycleEvents,
       symptomProvider.symptomLogs,
     );
     notifyListeners();

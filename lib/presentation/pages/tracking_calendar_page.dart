@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_calendar/calendar_grid.dart';
-import '../sheets/symptom_logging_sheet.dart';
-import '../sheets/cycle_logging_sheet.dart';
+import '../sheets/unified_logging_sheet.dart';
 import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
 import '../providers/symptom_provider.dart';
 import '../../domain/models/cycle_log.dart';
+
 class TrackingCalendarPage extends StatefulWidget {
   const TrackingCalendarPage({super.key});
 
@@ -20,40 +20,45 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
   DateTime? _selectedDay;
   bool _isSheetOpen = false;
 
-  void _showSymptomSheet(DateTime day) async {
+   void _showUnifiedSheet(DateTime day, {LoggingType type = LoggingType.daily}) async {
     if (_isSheetOpen) return;
+    
     final symptomLogs = context.read<SymptomProvider>().symptomLogs;
-    final existing = symptomLogs.firstWhere(
-      (log) => DateUtils.isSameDay(log.date, day),
-      orElse: () => SymptomLog(date: day, symptoms: [], moodRating: 3),
-    );
+    final cycleEvents = context.read<CycleProvider>().cycleEvents;
 
-    _isSheetOpen = true;
+    // Find SymptomLog
+    SymptomLog? existingSymptom;
     try {
-      await showModalBottomSheet<bool>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => SymptomLoggingSheet(
-          selectedDay: day,
-          existingLog: existing.symptoms.isEmpty ? null : existing,
-        ),
+      existingSymptom = symptomLogs.firstWhere(
+        (log) => DateUtils.isSameDay(log.date, day),
       );
-    } finally {
-      _isSheetOpen = false;
-    }
-  }
+    } catch (_) {}
 
-  void _showCycleSheet() async {
-    if (_isSheetOpen) return;
+    // Find CycleEvent
+    CycleEvent? existingCycle;
+    for (var log in cycleEvents) {
+      final start = DateUtils.dateOnly(log.startDate);
+      final end = log.endDate != null ? DateUtils.dateOnly(log.endDate!) : start.add(const Duration(days: 4));
+      final target = DateUtils.dateOnly(day);
+
+      if ((target.isAtSameMomentAs(start) || target.isAfter(start)) && 
+          (target.isAtSameMomentAs(end) || target.isBefore(end))) {
+        existingCycle = log;
+        break;
+      }
+    }
+
     _isSheetOpen = true;
     try {
       await showModalBottomSheet<bool>(
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (context) => CycleLoggingSheet(
-          selectedDay: _selectedDay ?? DateTime.now(),
+        builder: (context) => UnifiedLoggingSheet(
+          selectedDay: day,
+          existingSymptomLog: existingSymptom,
+          existingCycleLog: existingCycle,
+          initialType: type,
         ),
       );
     } finally {
@@ -75,7 +80,11 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cycleLogs = context.watch<CycleProvider>().cycleLogs;
+    final cycleProvider = context.watch<CycleProvider>();
+    final cycleEvents = cycleProvider.cycleEvents;
+    final predictedNextPeriod = cycleProvider.predictedNextPeriod;
+    final predictedFertilityDates = cycleProvider.predictedFertilityDates;
+    
     final symptomLogs = context.watch<SymptomProvider>().symptomLogs;
     final symptomMap = {
       for (var log in symptomLogs)
@@ -118,14 +127,16 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                 CustomCalendarGrid(
                   focusedDay: _focusedDay,
                   selectedDay: _selectedDay,
-                  cycleLogs: cycleLogs,
+                  cycleLogs: cycleEvents,
                   symptomMap: symptomMap,
+                  predictedNextPeriod: predictedNextPeriod,
+                  predictedFertilityDates: predictedFertilityDates,
                   onDaySelected: (selectedDay) {
                     setState(() {
                       _selectedDay = selectedDay;
                       _focusedDay = selectedDay; // Optional: change focus
                     });
-                    _showSymptomSheet(selectedDay);
+                    _showUnifiedSheet(selectedDay);
                   },
                 ),
               ],
@@ -140,7 +151,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _showCycleSheet,
+                  onPressed: () => _showUnifiedSheet(_selectedDay ?? DateTime.now(), type: LoggingType.cycle),
                   icon: const Icon(Icons.water_drop_outlined),
                   label: const Text("Log Cycle"),
                   style: ElevatedButton.styleFrom(
@@ -153,7 +164,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _showSymptomSheet(_selectedDay ?? DateTime.now()),
+                  onPressed: () => _showUnifiedSheet(_selectedDay ?? DateTime.now()),
                   icon: const Icon(Icons.add),
                   label: const Text("Daily Log"),
                 ),

@@ -7,12 +7,15 @@ import '../theme/app_theme.dart';
 
 class CycleLoggingSheet extends StatefulWidget {
   final DateTime selectedDay;
-  final CycleLog? existingLog;
+  final CycleEvent? existingEvent;
+
+  final bool isEmbedded;
 
   const CycleLoggingSheet({
     super.key,
     required this.selectedDay,
-    this.existingLog,
+    this.existingEvent,
+    this.isEmbedded = false,
   });
 
   @override
@@ -22,15 +25,17 @@ class CycleLoggingSheet extends StatefulWidget {
 class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
   late DateTime _startDate;
   DateTime? _endDate;
+  late int _flowIntensity;
   final TextEditingController _notesController = TextEditingController();
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _startDate = widget.existingLog?.startDate ?? widget.selectedDay;
-    _endDate = widget.existingLog?.endDate;
-    _notesController.text = widget.existingLog?.notes ?? "";
+    _startDate = widget.existingEvent?.startDate ?? widget.selectedDay;
+    _endDate = widget.existingEvent?.endDate;
+    _flowIntensity = widget.existingEvent?.flowIntensity ?? 3;
+    _notesController.text = widget.existingEvent?.notes ?? "";
   }
 
   @override
@@ -73,16 +78,17 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     if (_isSaving) return;
     setState(() => _isSaving = true);
     try {
-      final log = CycleLog(
-        id: widget.existingLog?.id,
+      final event = CycleEvent(
+        id: widget.existingEvent?.id,
         startDate: _startDate,
         endDate: _endDate,
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+        flowIntensity: _flowIntensity,
       );
-      if (widget.existingLog != null) {
-        await context.read<CycleProvider>().updateLog(log);
+      if (widget.existingEvent != null) {
+        await context.read<CycleProvider>().updateEvent(event);
       } else {
-        await context.read<CycleProvider>().addLog(log);
+        await context.read<CycleProvider>().addEvent(event);
       }
       if (mounted) Navigator.pop(context, true);
     } finally {
@@ -91,31 +97,57 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
   }
 
   void _onDelete() async {
-    if (widget.existingLog == null) return;
+    if (widget.existingEvent == null) return;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Cycle Log?"),
+        content: const Text("This action cannot be undone and will remove this cycle entry from your history."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            child: const Text("Delete", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     setState(() => _isSaving = true);
     try {
-      await context.read<CycleProvider>().deleteLog(widget.existingLog!.id);
+      await context.read<CycleProvider>().deleteEvent(widget.existingEvent!.id);
       if (mounted) Navigator.pop(context, true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
+  String _getFlowLabel(int value) {
+    switch (value) {
+      case 1: return "Spotting";
+      case 2: return "Light";
+      case 3: return "Moderate";
+      case 4: return "Heavy";
+      case 5: return "Very Heavy";
+      default: return "Moderate";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return AbsorbPointer(
-      absorbing: _isSaving,
-      child: Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        decoration: AppTheme.glassDecoration(color: Colors.white).copyWith(
-          borderRadius: BorderRadius.circular(32),
-        ),
-        child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+    final content = SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!widget.isEmbedded) ...[
             Center(
               child: Container(
                 width: 40,
@@ -127,8 +159,9 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
               ),
             ),
             const SizedBox(height: 24),
+          ],
             Text(
-              "Log Your Cycle",
+              widget.existingEvent != null ? "Edit Cycle Log" : "Log Your Cycle",
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: AppTheme.primaryColor,
                     fontWeight: FontWeight.bold,
@@ -155,6 +188,48 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 32),
+            // Flow Intensity Slider
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Flow Intensity",
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                Text(
+                  _getFlowLabel(_flowIntensity),
+                  style: TextStyle(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: AppTheme.primaryColor,
+                inactiveTrackColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                thumbColor: AppTheme.primaryColor,
+                overlayColor: AppTheme.primaryColor.withValues(alpha: 0.2),
+                valueIndicatorColor: AppTheme.primaryColor,
+                valueIndicatorTextStyle: const TextStyle(color: Colors.white),
+              ),
+              child: Slider(
+                value: _flowIntensity.toDouble(),
+                min: 1,
+                max: 5,
+                divisions: 4,
+                label: _getFlowLabel(_flowIntensity),
+                onChanged: (value) {
+                  setState(() => _flowIntensity = value.toInt());
+                },
+              ),
             ),
             const SizedBox(height: 32),
             Text(
@@ -198,7 +273,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   elevation: 0,
-                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                 ),
                 child: _isSaving
@@ -210,9 +285,9 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        "Save Cycle Info",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    : Text(
+                        widget.existingEvent != null ? "Save Changes" : "Add Cycle Log",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
               ),
             ),
@@ -225,7 +300,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                 ),
               ),
             ],
-            if (widget.existingLog != null) ...[
+            if (widget.existingEvent != null) ...[
               const SizedBox(height: 8),
               Center(
                 child: TextButton(
@@ -234,10 +309,26 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                 ),
               ),
             ],
-            const SizedBox(height: 16),
-          ],
-        ),
+        ],
       ),
+    );
+
+    if (widget.isEmbedded) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: content,
+      );
+    }
+
+    return AbsorbPointer(
+      absorbing: _isSaving,
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        decoration: AppTheme.glassDecoration(color: Colors.white).copyWith(
+          borderRadius: BorderRadius.circular(32),
+        ),
+        child: content,
       ),
     );
   }

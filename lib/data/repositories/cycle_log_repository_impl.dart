@@ -8,22 +8,22 @@ class CycleLogRepositoryImpl implements CycleLogRepository {
   CycleLogRepositoryImpl(this._storageService);
 
   @override
-  List<CycleLog> getCycleLogs() {
-    return _storageService.getCycleLogs();
+  List<CycleEvent> getCycleEvents() {
+    return _storageService.getCycleEvents();
   }
 
   @override
-  Future<void> addCycleLog(CycleLog log) async {
-    await _storageService.saveCycleLog(log);
+  Future<void> addCycleEvent(CycleEvent event) async {
+    await _storageService.saveCycleEvent(event);
   }
 
   @override
-  Future<void> updateCycleEvent(CycleLog event) async {
-    await _storageService.saveCycleLog(event);
+  Future<void> updateCycleEvent(CycleEvent event) async {
+    await _storageService.saveCycleEvent(event);
   }
 
   @override
   Future<void> deleteCycleEvent(String id) async {
-    await _storageService.deleteCycleLog(id);
+    await _storageService.deleteCycleEvent(id);
   }
 }

@@ -5,6 +5,8 @@ import '../../../domain/models/cycle_log.dart';
 class CalendarDayCell extends StatelessWidget {
   final DateTime date;
   final bool isBleeding;
+  final bool isPredictedBleeding;
+  final bool isPredictedFertility;
   final bool isStartOfSpan;
   final bool isEndOfSpan;
   final bool isSelected;
@@ -17,6 +19,8 @@ class CalendarDayCell extends StatelessWidget {
     super.key,
     required this.date,
     this.isBleeding = false,
+    this.isPredictedBleeding = false,
+    this.isPredictedFertility = false,
     this.isStartOfSpan = false,
     this.isEndOfSpan = false,
     this.isSelected = false,
@@ -34,7 +38,7 @@ class CalendarDayCell extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Span Background
+          // Span Background (Actual Bleeding)
           if (isBleeding)
             Container(
               margin: EdgeInsets.only(
@@ -52,19 +56,43 @@ class CalendarDayCell extends StatelessWidget {
               ),
             ),
 
+          // Predicted Bleeding Background
+          if (isPredictedBleeding && !isBleeding)
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Colors.redAccent.withValues(alpha: 0.2),
+                  width: 1,
+                  style: BorderStyle.solid,
+                ),
+              ),
+            ),
+
           // Day Circle/Highlight
           Container(
             width: 36,
             height: 36,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isSelected
-                  ? AppTheme.primaryColor
-                  : isToday
+              color: isToday && !isSelected
                       ? AppTheme.primaryColor.withValues(alpha: 0.1)
                       : Colors.transparent,
-              border: isToday && !isSelected
-                  ? Border.all(color: AppTheme.primaryColor, width: 1)
+              border: isSelected
+                  ? Border.all(color: AppTheme.primaryColor, width: 2)
+                  : isToday
+                      ? Border.all(color: AppTheme.primaryColor, width: 1)
+                      : null,
+              boxShadow: isSelected 
+                  ? [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      )
+                    ]
                   : null,
             ),
             child: Center(
@@ -72,23 +100,27 @@ class CalendarDayCell extends StatelessWidget {
                 '${date.day}',
                 style: TextStyle(
                   color: isSelected
-                      ? Colors.white
+                      ? AppTheme.primaryColor
                       : isOutsideMonth
                           ? Colors.grey[400]
-                          : Colors.black87,
-                  fontWeight: isToday || isSelected ? FontWeight.bold : FontWeight.normal,
+                          : isBleeding 
+                              ? Colors.redAccent
+                              : Colors.black87,
+                  fontWeight: isToday || isSelected || isBleeding ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ),
           ),
 
-          // Symptom Markers (Simplified)
-          if (symptomLog != null)
-            Positioned(
-              bottom: 6,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+          // Prediction & Symptom Markers
+          Positioned(
+            bottom: 4,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isPredictedFertility)
+                  _buildMarker(Icons.circle, Colors.indigoAccent.withValues(alpha: 0.5), size: 6),
+                if (symptomLog != null) ...[
                   if (symptomLog!.symptoms.isNotEmpty || symptomLog!.moodRating != 3)
                     _buildMarker(Icons.brightness_1, Colors.purpleAccent, size: 4),
                   if (symptomLog!.lhTestPositive == true)
@@ -96,8 +128,9 @@ class CalendarDayCell extends StatelessWidget {
                   if (symptomLog!.basalBodyTemperature != null)
                     _buildMarker(Icons.thermostat_rounded, Colors.orangeAccent, size: 8),
                 ],
-              ),
+              ],
             ),
+          ),
         ],
       ),
     );
