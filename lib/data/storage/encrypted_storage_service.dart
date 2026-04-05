@@ -83,7 +83,10 @@ class EncryptedStorageService {
     // Pre-populate defaults if empty
     await _initializeDefaultTags();
 
-    // Migrate existing records to UUIDs
+    // Open meta box for migration tracking (unencrypted, stores only flags)
+    await Hive.openBox<String>('meta');
+
+    // Migrate existing records to UUIDs (skipped if already done)
     await _migrateToUUIDs();
     
     _isInitialized = true;
@@ -108,6 +111,9 @@ class EncryptedStorageService {
   }
 
   Future<void> _migrateToUUIDs() async {
+    final metaBox = Hive.box<String>('meta');
+    if (metaBox.get('migration_v1') == 'done') return;
+
     // Migrate Cycle Events
     final cycleBox = Hive.box<CycleEvent>(cycleLogBox);
     for (var key in cycleBox.keys.toList()) {
@@ -169,25 +175,35 @@ class EncryptedStorageService {
         if (key != newTag.id) {
           await tagBox.delete(key);
         }
-      } else if (tag != null && key != tag.id) {
-        await tagBox.put(tag.id, tag);
-        await tagBox.delete(key);
       }
     }
+    // Mark migration as complete to avoid redundant scans
+    await metaBox.put('migration_v1', 'done');
   }
 
   /// Securely retrieves the existing encryption key or generates a new one.
+  /// Eliminates TOCTOU race by reading first, then generating if absent.
   Future<List<int>> _getOrCreateEncryptionKey() async {
-    final containsKey = await _secureStorage.containsKey(key: _encryptionKeyName);
-    if (!containsKey) {
+    // Attempt to read existing key first
+    String? keyString = await _secureStorage.read(key: _encryptionKeyName);
+    
+    if (keyString == null) {
+      // No key exists — generate and persist a new one
       final key = Hive.generateSecureKey();
-      await _secureStorage.write(
-        key: _encryptionKeyName,
-        value: base64UrlEncode(key),
-      );
+      final encoded = base64UrlEncode(key);
+      await _secureStorage.write(key: _encryptionKeyName, value: encoded);
+      
+      // Re-read to confirm the write succeeded
+      keyString = await _secureStorage.read(key: _encryptionKeyName);
+      if (keyString == null) {
+        throw StateError(
+          'Failed to persist encryption key to secure storage. '
+          'The device keystore may be unavailable.',
+        );
+      }
     }
-    final keyString = await _secureStorage.read(key: _encryptionKeyName);
-    return base64Url.decode(keyString!);
+    
+    return base64Url.decode(keyString);
   }
 
   // Generic methods for CRUD
@@ -260,7 +276,8 @@ class EncryptedStorageService {
 
   /// Deletes a custom tag.
   Future<void> deleteCustomTag(CustomTag tag) async {
-    await tag.delete();
+    final box = Hive.box<CustomTag>(customTagBox);
+    await box.delete(tag.id);
   }
 
   /// Exports all data to a CSV string.
@@ -298,7 +315,7 @@ class EncryptedStorageService {
       ]);
     }
     
-    return csv.encode(rows);
+    return Csv().encode(rows);
   }
 
   // --- Encrypted Backup & Restore Implementation ---
@@ -407,14 +424,16 @@ class EncryptedStorageService {
     final customTagsBox = Hive.box<CustomTag>(customTagBox);
     final List<dynamic> tagsJson = data['customTags'] ?? [];
     for (var tagMap in tagsJson) {
-      await customTagsBox.add(CustomTag.fromMap(Map<String, dynamic>.from(tagMap)));
+      final tag = CustomTag.fromMap(Map<String, dynamic>.from(tagMap));
+      await customTagsBox.put(tag.id, tag);
     }
 
     // Import Cycle Events
     final cycleLogBoxLocal = Hive.box<CycleEvent>(cycleLogBox);
     final List<dynamic> cycleLogsJson = data['cycleLogs'] ?? [];
     for (var logMap in cycleLogsJson) {
-      await cycleLogBoxLocal.add(CycleEvent.fromMap(Map<String, dynamic>.from(logMap)));
+      final event = CycleEvent.fromMap(Map<String, dynamic>.from(logMap));
+      await cycleLogBoxLocal.put(event.id, event);
     }
 
     // Import Symptom Logs

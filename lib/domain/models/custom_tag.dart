@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 part 'custom_tag.g.dart';
 
 @HiveType(typeId: 2)
-class CustomTag extends HiveObject {
+class CustomTag {
   @HiveField(2, defaultValue: '')
   final String id;
 

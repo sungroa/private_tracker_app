@@ -7,16 +7,20 @@ import 'package:mocktail/mocktail.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:private_tracker_app/domain/models/custom_tag.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
+import 'package:private_tracker_app/domain/repositories/symptom_log_repository.dart';
+import 'package:private_tracker_app/domain/repositories/tag_repository.dart';
+import 'package:private_tracker_app/data/repositories/symptom_log_repository_impl.dart';
+import 'package:private_tracker_app/data/repositories/cycle_log_repository_impl.dart';
+import 'package:private_tracker_app/data/repositories/tag_repository_impl.dart';
 import 'package:private_tracker_app/presentation/sheets/symptom_logging_sheet.dart';
 import 'package:private_tracker_app/presentation/sheets/cycle_logging_sheet.dart';
 import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
 import 'package:private_tracker_app/presentation/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:private_tracker_app/presentation/providers/tag_provider.dart';
 import 'package:private_tracker_app/presentation/providers/symptom_provider.dart';
 import 'package:private_tracker_app/presentation/providers/cycle_provider.dart';
-import 'package:private_tracker_app/data/repositories/symptom_log_repository_impl.dart';
-import 'package:private_tracker_app/data/repositories/cycle_log_repository_impl.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
@@ -84,7 +88,10 @@ void main() {
         buildTestableWidget(
           child: SymptomLoggingSheet(selectedDay: DateTime.now()),
           providers: [
+            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
+            Provider<TagRepository>(create: (_) => TagRepositoryImpl(EncryptedStorageService.instance)),
             ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(EncryptedStorageService.instance))),
+            ChangeNotifierProvider(create: (context) => TagProvider(context.read<TagRepository>())),
           ],
         ),
       );
@@ -108,7 +115,10 @@ void main() {
         buildTestableWidget(
           child: SymptomLoggingSheet(selectedDay: existing.date, existingLog: existing),
           providers: [
+            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
+            Provider<TagRepository>(create: (_) => TagRepositoryImpl(EncryptedStorageService.instance)),
             ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(EncryptedStorageService.instance))),
+            ChangeNotifierProvider(create: (context) => TagProvider(context.read<TagRepository>())),
           ],
         ),
       );
@@ -132,7 +142,10 @@ void main() {
         buildTestableWidget(
           child: SymptomLoggingSheet(selectedDay: existing.date, existingLog: existing),
           providers: [
+            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
+            Provider<TagRepository>(create: (_) => TagRepositoryImpl(EncryptedStorageService.instance)),
             ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(EncryptedStorageService.instance))),
+            ChangeNotifierProvider(create: (context) => TagProvider(context.read<TagRepository>())),
           ],
         ),
       );
@@ -140,7 +153,9 @@ void main() {
 
       await tester.tap(find.text('Delete Daily Log'));
       await tester.pump(); // Start dialog animation
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Process post-frame callback for refresh()
+      await tester.pump(); // Process microtasks from refresh()
+      await tester.pump(const Duration(milliseconds: 100)); // Finish animations
 
       expect(find.text('Delete entry?'), findsOneWidget);
       expect(find.text('This action cannot be undone.'), findsOneWidget);
@@ -156,12 +171,17 @@ void main() {
         buildTestableWidget(
           child: SymptomLoggingSheet(selectedDay: date),
           providers: [
+            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
+            Provider<TagRepository>(create: (_) => TagRepositoryImpl(EncryptedStorageService.instance)),
             ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(EncryptedStorageService.instance))),
+            ChangeNotifierProvider(create: (context) => TagProvider(context.read<TagRepository>())),
           ],
         ),
       );
 
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Process post-frame callback for refresh()
+      await tester.pump(); // Process microtasks from refresh()
+      await tester.pump(const Duration(milliseconds: 100)); // Finish animations
 
       final crampsChip = find.text('Cramps');
       await tester.tap(crampsChip);
@@ -211,7 +231,9 @@ void main() {
         ),
       );
 
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Process post-frame callback for refresh()
+      await tester.pump(); // Process microtasks from refresh()
+      await tester.pump(const Duration(milliseconds: 100)); // Finish animations
 
       final bbtField = find.byKey(const Key('bbt_field'));
       await tester.enterText(bbtField, '97.85');
@@ -332,7 +354,9 @@ void main() {
 
       await tester.tap(find.text('Delete Cycle Log'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Process post-frame callback for refresh()
+      await tester.pump(); // Process microtasks from refresh()
+      await tester.pump(const Duration(milliseconds: 100)); // Finish animations
 
       expect(find.text('Delete Cycle Log?'), findsOneWidget);
     });
@@ -354,7 +378,9 @@ void main() {
         ),
       );
 
-      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(); // Process post-frame callback for refresh()
+      await tester.pump(); // Process microtasks from refresh()
+      await tester.pump(const Duration(milliseconds: 100)); // Finish animations
 
       final saveButton = find.text('Add Cycle Log');
       

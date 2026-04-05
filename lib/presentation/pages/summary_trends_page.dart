@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/trends_provider.dart';
+import '../providers/cycle_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/summary_trend_card.dart';
 import '../widgets/summary_line_chart.dart';
@@ -11,8 +11,8 @@ class SummaryTrendsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final trendsProvider = context.watch<TrendsProvider>();
-    final trendData = trendsProvider.trendData;
+    final cycleProvider = context.watch<CycleProvider>();
+    final trendData = cycleProvider.trends;
 
     if (trendData == null) {
       return const Center(child: Text("No data available yet."));
