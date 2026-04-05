@@ -12,14 +12,13 @@ void main() {
 
   setUp(() {
     mockStorageService = MockEncryptedStorageService();
-    EncryptedStorageService.instance = mockStorageService;
     repository = CycleLogRepositoryImpl(mockStorageService);
     
     registerFallbackValue(CycleEvent(startDate: DateTime.now()));
   });
 
   tearDown(() {
-    EncryptedStorageService.resetForTesting();
+    // No global state to reset
   });
 
   group('CycleLogRepositoryImpl', () {

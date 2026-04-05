@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../domain/services/partner_sharing_service.dart';
 import '../../domain/models/shared_phase_data.dart';
 import '../../data/storage/partner_storage_service.dart';
 import '../theme/app_theme.dart';
+import 'package:provider/provider.dart';
 
 class PartnerModePage extends StatefulWidget {
   final String? initialPayload;
@@ -32,14 +34,13 @@ class _PartnerModePageState extends State<PartnerModePage> {
   }
 
   Future<void> _initializeApp() async {
-    await PartnerStorageService.initialize();
+    // Initialization is now handled by LocalDatabaseManager via MultiProvider
+    final storage = context.read<PartnerStorageService>();
     
-    // 1. Process initial payload if provided (from deep link)
     if (widget.initialPayload != null && widget.initialKey != null) {
       _processPayload(widget.initialPayload!, widget.initialKey!);
     } else {
-      // 2. Load from storage
-      final storedData = PartnerStorageService.getPartnerData();
+      final storedData = storage.getPartnerData();
       if (storedData != null) {
         setState(() {
           _data = storedData;
@@ -55,207 +56,281 @@ class _PartnerModePageState extends State<PartnerModePage> {
   void _processPayload(String payload, String key) {
     try {
       final decrypted = PartnerSharingService.decryptPayload(payload, key);
-      PartnerStorageService.savePartnerData(decrypted, key);
+      context.read<PartnerStorageService>().savePartnerData(decrypted, key);
       setState(() {
         _data = decrypted;
         _isScanning = false;
       });
+      HapticFeedback.heavyImpact();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to process data: $e'),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 
-  void _resetApp() {
-    showDialog(
+  void _resetApp() async {
+    HapticFeedback.mediumImpact();
+    
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset Partner Mode?'),
-        content: const Text('This will clear the current shared partner data.'),
+        title: const Text('Reset Partner Mode?', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+        content: const Text('This will clear the current shared partner data. You will need a new link or QR to see it again.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () async {
-              await PartnerStorageService.clearPartnerData();
-              setState(() {
-                _data = null;
-              });
-              Navigator.pop(context);
-            },
-            child: const Text('Clear Data', style: TextStyle(color: Colors.red)),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Clear Data', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+
+    if (confirm == true) {
+      await context.read<PartnerStorageService>().clearPartnerData();
+      if (mounted) {
+        setState(() {
+          _data = null;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
     if (!_isInitialized) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(child: CircularProgressIndicator(color: primary)),
       );
     }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          // Background Gradient
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFE8F5E9), Color(0xFFE0F2F1)], // Greenish tint for Partner Mode
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.close_rounded, color: primary),
+        ),
+        actions: [
+          if (_data != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: IconButton(
+                onPressed: _resetApp,
+                icon: Icon(Icons.refresh_rounded, color: primary.withValues(alpha: 0.6)),
               ),
             ),
-          ),
-          
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Colors.black54),
-                      ),
-                      if (_data != null)
-                        IconButton(
-                          onPressed: _resetApp,
-                          icon: const Icon(Icons.refresh, color: Colors.black54),
-                        ),
-                    ],
-                  ),
-                  
-                  if (_data == null && !_isScanning) 
-                    _buildEmptyState()
-                  else if (_isScanning)
-                    _buildScanner()
-                  else if (_data != null)
-                    _buildDashboard(),
-                  
-                  const SizedBox(height: 32),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.favorite_border, size: 80, color: Colors.green),
-          const SizedBox(height: 24),
-          const Text(
-            "Partner Mode",
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_data == null && !_isScanning) 
+                _buildEmptyState(isDark, primary)
+              else if (_isScanning)
+                _buildScanner(isDark, primary)
+              else if (_data != null)
+                _buildDashboard(isDark, primary),
+              
+              const SizedBox(height: 32),
+            ],
           ),
-          const SizedBox(height: 12),
-          const Text(
-            "Scan your partner's QR code or use a shared link to see their cycle predictions.",
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Colors.black54),
-          ),
-          const SizedBox(height: 48),
-          ElevatedButton.icon(
-            onPressed: () => setState(() => _isScanning = true),
-            icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-            label: const Text("Scan QR Code", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScanner() {
-    return Expanded(
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          const Text(
-            "Scan Partner's QR",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 40),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Stack(
-                children: [
-                  MobileScanner(
-                    onDetect: (capture) {
-                      final List<Barcode> barcodes = capture.barcodes;
-                      for (final barcode in barcodes) {
-                        final rawValue = barcode.rawValue;
-                        if (rawValue != null) {
-                          final uri = Uri.tryParse(rawValue);
-                          if (uri != null) {
-                            final result = PartnerSharingService.parseDeepLink(uri);
-                            if (result != null) {
-                              _processPayload(result['data']!, result['key']!);
-                              break;
-                            }
-                          }
-                        }
-                      }
-                    },
-                  ),
-                  _buildScannerOverlay(),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 40),
-          TextButton(
-            onPressed: () => setState(() => _isScanning = false),
-            child: const Text("Cancel"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScannerOverlay() {
-    return Center(
-      child: Container(
-        width: 250,
-        height: 250,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.white, width: 2),
-          borderRadius: BorderRadius.circular(16),
         ),
       ),
     );
   }
 
-  Widget _buildDashboard() {
+  Widget _buildEmptyState(bool isDark, Color primary) {
+    return Expanded(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.favorite_rounded, size: 80, color: primary),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            "Partner Mode",
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: primary,
+              fontFamily: AppTheme.fontFamily,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "Scan your partner's QR code or use a shared link to see their cycle predictions securely.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16, 
+              color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54,
+              fontFamily: AppTheme.fontFamily,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 48),
+          Container(
+            width: double.infinity,
+            height: 64,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: isDark ? [AppTheme.primaryDarkColor, AppTheme.accentDarkColor] : [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.8)],
+              ),
+            ),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                setState(() => _isScanning = true);
+              },
+              icon: Icon(Icons.qr_code_scanner_rounded, color: isDark ? AppTheme.backgroundDarkColor : Colors.white),
+              label: Text(
+                "SCAN QR CODE", 
+                style: TextStyle(
+                  color: isDark ? AppTheme.backgroundDarkColor : Colors.white, 
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                  fontSize: 15,
+                )
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScanner(bool isDark, Color primary) {
+    return Expanded(
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          Text(
+            "Scan Partner's QR",
+            style: TextStyle(
+              fontSize: 24, 
+              fontWeight: FontWeight.w800,
+              color: primary,
+              fontFamily: AppTheme.fontFamily,
+            ),
+          ),
+          const SizedBox(height: 48),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(40),
+                border: Border.all(color: primary.withValues(alpha: 0.2), width: 2),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(38),
+                child: Stack(
+                  children: [
+                    MobileScanner(
+                      onDetect: (capture) {
+                        final List<Barcode> barcodes = capture.barcodes;
+                        for (final barcode in barcodes) {
+                          final rawValue = barcode.rawValue;
+                          if (rawValue != null) {
+                            final uri = Uri.tryParse(rawValue);
+                            if (uri != null) {
+                              final result = PartnerSharingService.parseDeepLink(uri);
+                              if (result != null) {
+                                _processPayload(result['data']!, result['key']!);
+                                break;
+                              }
+                            }
+                          }
+                        }
+                      },
+                    ),
+                    _buildScannerOverlay(primary),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 48),
+          TextButton(
+            onPressed: () => setState(() => _isScanning = false),
+            child: Text(
+              "CANCEL SCAN", 
+              style: TextStyle(
+                color: primary, 
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+                fontSize: 14,
+              )
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScannerOverlay(Color primary) {
+    return Center(
+      child: Container(
+        width: 250,
+        height: 250,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 3),
+          borderRadius: BorderRadius.circular(32),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: 0, left: 0,
+              child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(top: BorderSide(color: primary, width: 6), left: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(topLeft: Radius.circular(32)))),
+            ),
+            Positioned(
+              top: 0, right: 0,
+              child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(top: BorderSide(color: primary, width: 6), right: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(topRight: Radius.circular(32)))),
+            ),
+            Positioned(
+              bottom: 0, left: 0,
+              child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(bottom: BorderSide(color: primary, width: 6), left: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(32)))),
+            ),
+            Positioned(
+              bottom: 0, right: 0,
+              child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(bottom: BorderSide(color: primary, width: 6), right: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(bottomRight: Radius.circular(32)))),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDashboard(bool isDark, Color primary) {
     final now = DateTime.now();
     final nextPeriod = _data!.nextPeriodDate;
     final daysUntil = nextPeriod.difference(now).inDays;
@@ -265,68 +340,108 @@ class _PartnerModePageState extends State<PartnerModePage> {
 
     return Expanded(
       child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Privacy First: This is a read-only view. No logs are shared.",
-              style: TextStyle(fontSize: 12, color: Colors.black45, fontStyle: FontStyle.italic),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              "Partner's Cycle",
+            const SizedBox(height: 12),
+            Text(
+              "Partner's Hub",
               style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                fontSize: 34,
+                fontWeight: FontWeight.w800,
+                color: primary,
+                fontFamily: AppTheme.fontFamily,
+                letterSpacing: -0.5,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
+            Text(
+              "Read-only view of shared predictions.",
+              style: TextStyle(
+                fontSize: 16, 
+                color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black38,
+                fontFamily: AppTheme.fontFamily,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 48),
             
             // Period Countdown
             _InfoCard(
-              title: "Next Period",
-              value: daysUntil > 0 ? "in $daysUntil days" : "Today",
+              title: "NEXT PERIOD",
+              value: daysUntil > 0 ? "In $daysUntil days" : (daysUntil == 0 ? "Today" : "${daysUntil.abs()} days ago"),
               subValue: DateFormat('MMMM d, yyyy').format(nextPeriod),
-              icon: Icons.calendar_today,
-              color: AppTheme.primaryColor,
+              icon: Icons.water_drop_rounded,
+              color: Colors.redAccent,
+              isDark: isDark,
             ),
             
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             
             // Fertility Window
             _InfoCard(
-              title: "Fertility Window",
+              title: "FERTILITY WINDOW",
               value: inWindow 
                   ? "Active Now" 
-                  : (daysUntilWindow > 0 ? "in $daysUntilWindow days" : "Passed"),
+                  : (daysUntilWindow > 0 ? "In $daysUntilWindow days" : "Window Over"),
               subValue: "${DateFormat('MMM d').format(_data!.fertilityWindowStart)} - ${DateFormat('MMM d').format(_data!.fertilityWindowEnd)}",
-              icon: Icons.bubble_chart,
-              color: Colors.green,
+              icon: Icons.bubble_chart_rounded,
+              color: Colors.greenAccent,
               isActive: inWindow,
+              isDark: isDark,
             ),
             
-            const SizedBox(height: 32),
+            const SizedBox(height: 48),
             
             Container(
-              padding: const EdgeInsets.all(20),
-              decoration: AppTheme.glassDecoration(),
+              padding: const EdgeInsets.all(24),
+              decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Note",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  Row(
+                    children: [
+                      Icon(Icons.lock_rounded, size: 16, color: primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        "PRIVACY NOTICE",
+                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: primary, letterSpacing: 1.2),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Predictions are based on previous cycles and are for informational purposes only. Data was last updated:",
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 12),
                   Text(
-                    DateFormat('MMM d, h:mm a').format(_data!.generatedAt),
-                    style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
+                    "Predictions are based on historical cycle patterns. This data is stored only on your device and is not shared with any servers.",
+                    style: TextStyle(
+                      color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54, 
+                      fontSize: 14, 
+                      height: 1.5,
+                      fontFamily: AppTheme.fontFamily
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Last synced:",
+                        style: TextStyle(
+                          color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black38,
+                          fontSize: 12,
+                          fontFamily: AppTheme.fontFamily
+                        ),
+                      ),
+                      Text(
+                        DateFormat('MMM d, h:mm a').format(_data!.generatedAt),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700, 
+                          color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.black45,
+                          fontSize: 12,
+                          fontFamily: AppTheme.fontFamily
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -345,6 +460,7 @@ class _InfoCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final bool isActive;
+  final bool isDark;
 
   const _InfoCard({
     required this.title,
@@ -352,47 +468,69 @@ class _InfoCard extends StatelessWidget {
     required this.subValue,
     required this.icon,
     required this.color,
+    required this.isDark,
     this.isActive = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: AppTheme.glassDecoration(
-        color: isActive ? color.withOpacity(0.2) : null,
+      padding: const EdgeInsets.all(28),
+      decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 32).copyWith(
+        boxShadow: isActive ? [
+          BoxShadow(
+            color: color.withValues(alpha: 0.2),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
+          )
+        ] : null,
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Icon(icon, color: color, size: 28),
+            child: Icon(icon, color: color, size: 32),
           ),
-          const SizedBox(width: 20),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(fontSize: 14, color: Colors.black54),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: isActive ? color : Colors.black87,
+          const SizedBox(width: 24),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 11, 
+                    fontWeight: FontWeight.w900, 
+                    color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black38,
+                    letterSpacing: 1.5,
+                  ),
                 ),
-              ),
-              Text(
-                subValue,
-                style: const TextStyle(fontSize: 14, color: Colors.black54),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: isActive ? color : (isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87),
+                    fontFamily: AppTheme.fontFamily,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subValue,
+                  style: TextStyle(
+                    fontSize: 14, 
+                    color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.black45,
+                    fontFamily: AppTheme.fontFamily,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

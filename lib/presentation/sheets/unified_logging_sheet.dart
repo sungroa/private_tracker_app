@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'symptom_logging_sheet.dart';
 import 'cycle_logging_sheet.dart';
 import '../../domain/models/cycle_log.dart';
@@ -33,10 +34,18 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
     _currentType = widget.initialType;
   }
 
+  void _onToggle(LoggingType type) {
+    if (_currentType == type) return;
+    HapticFeedback.lightImpact();
+    setState(() => _currentType = type);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      decoration: AppTheme.glassDecoration(color: Colors.white).copyWith(
+      decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 32).copyWith(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
@@ -48,19 +57,19 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.2),
+              color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 16),
-          // Switcher Bar
+          const SizedBox(height: 20),
+          // Switcher Bar (Pill design)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+                color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
                 children: [
@@ -68,16 +77,18 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
                     child: _SwitcherButton(
                       label: "Daily Log",
                       isSelected: _currentType == LoggingType.daily,
-                      onTap: () => setState(() => _currentType = LoggingType.daily),
+                      onTap: () => _onToggle(LoggingType.daily),
                       icon: Icons.edit_note_rounded,
+                      isDark: isDark,
                     ),
                   ),
                   Expanded(
                     child: _SwitcherButton(
                       label: "Log Cycle",
                       isSelected: _currentType == LoggingType.cycle,
-                      onTap: () => setState(() => _currentType = LoggingType.cycle),
+                      onTap: () => _onToggle(LoggingType.cycle),
                       icon: Icons.water_drop_outlined,
+                      isDark: isDark,
                     ),
                   ),
                 ],
@@ -86,17 +97,36 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
           ),
           
           Flexible(
-            child: _currentType == LoggingType.daily
-                ? SymptomLoggingSheet(
-                    selectedDay: widget.selectedDay,
-                    existingLog: widget.existingSymptomLog,
-                    isEmbedded: true,
-                  )
-                : CycleLoggingSheet(
-                    selectedDay: widget.selectedDay,
-                    existingEvent: widget.existingCycleLog,
-                    isEmbedded: true,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.02),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
                   ),
+                );
+              },
+              child: _currentType == LoggingType.daily
+                  ? SymptomLoggingSheet(
+                      key: const ValueKey('daily_sheet'),
+                      selectedDay: widget.selectedDay,
+                      existingLog: widget.existingSymptomLog,
+                      isEmbedded: true,
+                    )
+                  : CycleLoggingSheet(
+                      key: const ValueKey('cycle_sheet'),
+                      selectedDay: widget.selectedDay,
+                      existingEvent: widget.existingCycleLog,
+                      isEmbedded: true,
+                    ),
+            ),
           ),
         ],
       ),
@@ -109,30 +139,36 @@ class _SwitcherButton extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final IconData icon;
+  final bool isDark;
 
   const _SwitcherButton({
     required this.label,
     required this.isSelected,
     required this.onTap,
     required this.icon,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
+          color: isSelected 
+              ? (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white) 
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: isSelected && !isDark
               ? [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   )
                 ]
               : [],
@@ -142,16 +178,21 @@ class _SwitcherButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              size: 18,
-              color: isSelected ? AppTheme.primaryColor : Colors.grey[600],
+              size: 20,
+              color: isSelected 
+                  ? (isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor) 
+                  : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[500]),
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: isSelected ? AppTheme.primaryColor : Colors.grey[600],
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected 
+                    ? (isDark ? Colors.white : AppTheme.primaryColor) 
+                    : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[600]),
+                fontFamily: AppTheme.fontFamily,
               ),
             ),
           ],

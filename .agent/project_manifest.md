@@ -1,67 +1,49 @@
 # Project Manifest: Private Tracker App
 
-- **Session ID:** 0ac4c392-2c9c-4c5d-8998-84cad20dd59a
-- **Last Updated:** 2026-04-05T07:15:00Z
-- **Session Health:** NOMINAL (Phase 2 Complete)
+- **Session ID:** f0f81152-b79f-44a3-9efd-5772b9de7659
+- **Last Updated:** 2026-04-05T19:35:00Z
+- **Session Health:** STABILIZING (Phase 4 UI Polish regressions identified)
 - **Project Root:** /home/sungroa/git/private_tracker_app
 - **STRICT_CONSTRAINTS:**
     - **Privacy-First**: No data sent to any server. Local only.
     - **Zero Tech Debt**: Principal Engineer standards. Pure domain layer.
     - **Premium Aesthetics**: Glassmorphic UI is mandatory.
     - **Security**: Authenticated encryption for all data sharing.
+    - **Command Monitoring**: Always redirect command output to a temporary file. Periodically check the file to monitor progress. Terminate the process once it appears finished and proceed.
+    - **Cleanup**: Always remove temporary log files after use.
 
-### Project Status: **STABLE / CLEAN**
+### Project Status: **STABILIZING / UI POLISHED**
 
 - **Audit Report**: `brain/0ac4c392-2c9c-4c5d-8998-84cad20dd59a/audit_report.md`
-- **Current Walkthrough**: `brain/0ac4c392-2c9c-4c5d-8998-84cad20dd59a/walkthrough.md`
-- **Next Phase Plan**: `brain/0ac4c392-2c9c-4c5d-8998-84cad20dd59a/implementation_plan.md`
+- **Implementation Plan**: `brain/f0f81152-b79f-44a3-9efd-5772b9de7659/implementation_plan.md`
 
 ## Progress Tracking
 
 ### [x] Phase 1: Initial Audit & Critical Fixes
-- [x] Fixed Hive key corruption (C-4) and CSV export crash (N-8).
-- [x] Removed deep-link logging (W-7) and redundant UI code (W-3).
-- [x] Refactored Custom Tags into a decoupled `TagProvider` and `TagRepository` (C-2).
-
-### [x] Phase 2: Mandatory Audit Refactor (Hardening & Decoupling)
-- [x] **Security**: Upgraded Partner Sharing to **AES-SIC + HMAC-SHA256** (W-6).
-- [x] **Architecture**: Decoupled all domain models from `HiveObject` framework (C-1).
-- [x] **Organization**: Extracted `SymptomLog` into a dedicated file (N-1).
-- [x] **Performance**: Removed `TrendsProvider`, merged analytics into `CycleProvider` (W-1).
-- [x] **Robustness**: Fixed TOCTOU race (W-5) and implemented migration flags (N-6).
-- [x] **UI Proofing**: Resolved all BuildContext async gap warnings and added deletion feedback (W-4).
-
-### [ ] Phase 3: Deep Refactor (God Class Extraction)
-- [ ] Extract `EncryptedStorageService` responsibilities into modular sub-services (C-3).
-- [ ] Upgrade Backup/Restore logic to Authenticated Encryption.
+### [x] Phase 2: Mandatory Audit Refactor
+### [x] Phase 3: Modular Storage & DI Refactor
+### [x] Phase 4: UI Polish & Premium Aesthetics
+- [x] Enhance Global Theme and Glassmorphic foundation (Outfit Font + Dark Mode).
+- [x] Standardize Authentication Overlay & AppLockWrapper aesthetics.
+- [x] Implement Haptic Feedback across all interactive elements.
+- [x] Refine PartnerModePage with high-fidelity dashboard.
+- [/] **STABILIZING**: Resolve `widget_test.dart` hang in `AppLockWrapper` initialization.
 
 ## Handoff Payload
 
-### Project State
-The codebase is currently in a "Zero Technical Debt" state. All domain models are PURE Dart objects. Persistence is handled by `EncryptedStorageService` via repositories. State management uses `Provider` with a root-level `MultiProvider` configuration.
+### Project State: **STABILIZING / UI POLISHED**
+Phase 4 implementation is complete. The application now features a premium dark-mode theme, glassmorphic aesthetics, and tactical haptic feedback. Structural verification (Smoke Test) is currently blocked by an intermittent hang in `AppLockWrapper` during the `EncryptedStorageService.initialize` step within the `flutter_test` environment.
 
-### Critical Files
-- `lib/data/storage/encrypted_storage_service.dart`: The current bottleneck/target for Phase 3.
-- `lib/domain/models/symptom_log.dart`: Newly extracted model.
-- `lib/domain/services/partner_sharing_service.dart`: Hardened security logic.
-- `lib/presentation/providers/cycle_provider.dart`: Consolidated analytics logic.
+### Technical Debt / Current Blockers
+- **Smoke Test Hang**: Identified that `AppLockWrapper` initialization sequence (specifically `Hive.openBox` calls) can hang in test environments. Refactored `main.dart` to use `StorageConfig` provider to decouple context from private state.
+- **Micro-animations**: Transitioned from `pumpAndSettle` to robust `pump(Duration)` loops to handle infinite loading animations.
 
-### Blockers / Lessons
-- **Async Safety**: Always pre-fetch Providers before async gaps (like `showDialog`) to avoid `use_build_context_synchronously` lints.
-- **Hive Decoupling**: Removing `HiveObject` enables cleaner unit testing of the domain layer but requires manual key-based `put`/`delete` in the data layer.
+### Immediate Next Steps (For next session)
+1. **Initialize**: ALWAYS start by reading `principal-engineer/SKILL.md`.
+2. **Execute Stabilization**: Resolve the `widget_test.dart` hang using `tester.runAsync` and verifying provider ready states.
+3. **Verify**: Ensure 100% pass rate for the full `flutter test` suite.
 
-### Prompt I should use. (Delete these before sending)
-
-Role: Principal Staff Software Engineer & Code Reviewer.
-Project: Private Tracker App (Flutter).
-Current Status: Phase 2 of the Architectural Audit is COMPLETE. 
-- Domain models (CycleEvent, SymptomLog, CustomTag) are PURE Dart objects (Decoupled from HiveObject).
-- Security Hardening: Partner sharing now uses AES-SIC + HMAC-SHA256.
-- Redundancy Fix: TrendsProvider deleted; all logic consolidated in CycleProvider.
-
-OBJECTIVE: Execute Phase 3 of the Audit Refactor.
-1. Read the Implementation Plan: brain/0ac4c392-2c9c-4c5d-8998-84cad20dd59a/implementation_plan.md
-2. Goal: Systematically extract responsibilities from the 'EncryptedStorageService' God Class into modular sub-services (SecureKeyStorage, BackupService, MigrationManager, etc.).
-3. Standard: Zero Technical Debt. Maintain 100% test pass rate.
-
-Please initialize by reading the project_manifest.md and the Phase 3 implementation_plan.md.
+### Context Budget: ~20%
+### Dead Ends
+- **`findAncestorStateOfType<_PrivacyTrackerAppState>`**: Removed in favor of `StorageConfig` provider for testing stability.
+- **`MediaQuery.platformBrightness`**: Replaced by `Theme.of(context).brightness` in `main.dart` builder for reliable theme detection in tests.

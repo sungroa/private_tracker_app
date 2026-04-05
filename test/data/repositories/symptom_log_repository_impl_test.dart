@@ -20,12 +20,11 @@ void main() {
 
   setUp(() {
     mockStorageService = MockEncryptedStorageService();
-    EncryptedStorageService.instance = mockStorageService;
     repository = SymptomLogRepositoryImpl(mockStorageService);
   });
 
   tearDown(() {
-    EncryptedStorageService.resetForTesting();
+    // Reset any global mocks if necessary
   });
 
   group('SymptomLogRepositoryImpl', () {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import 'tracking_calendar_page.dart';
 import 'summary_trends_page.dart';
@@ -22,55 +23,106 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
     return Scaffold(
+      extendBody: true,
       extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text("Cycle Tracker"),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        title: Text(
+          "Cycle Tracker",
+          style: TextStyle(
+            color: primary,
+            fontWeight: FontWeight.w800,
+            fontSize: 22,
+            fontFamily: AppTheme.fontFamily,
+          ),
+        ),
         actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.security, color: AppTheme.primaryColor),
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: IconButton(
+              onPressed: () {
+                HapticFeedback.lightImpact();
+              },
+              icon: Icon(Icons.security_rounded, color: primary.withValues(alpha: 0.6), size: 22),
+            ),
           ),
         ],
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFFDEEF4), // Soft Pink
-              Color(0xFFE6E6FA), // Lavender
-              Colors.white,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _pages[_currentIndex],
-          ),
+      body: SafeArea(
+        bottom: false,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.02, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: _pages[_currentIndex],
         ),
       ),
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.all(20),
-        decoration: AppTheme.glassDecoration(),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: (index) => setState(() => _currentIndex = index),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            selectedItemColor: AppTheme.primaryColor,
-            unselectedItemColor: AppTheme.primaryColor.withValues(alpha: 0.4),
-            showSelectedLabels: false,
-            showUnselectedLabels: false,
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: "Calendar"),
-              BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: "Trends"),
-              BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Settings"),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Container(
+          decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 32).copyWith(
+            boxShadow: [
+              BoxShadow(
+                color: primary.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              )
             ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                if (_currentIndex != index) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _currentIndex = index);
+                }
+              },
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              selectedItemColor: primary,
+              unselectedItemColor: primary.withValues(alpha: 0.3),
+              showSelectedLabels: false,
+              showUnselectedLabels: false,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.calendar_today_rounded), 
+                  activeIcon: Icon(Icons.calendar_month_rounded),
+                  label: "Calendar"
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.analytics_outlined), 
+                  activeIcon: Icon(Icons.analytics_rounded),
+                  label: "Trends"
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings_outlined), 
+                  activeIcon: Icon(Icons.settings_rounded),
+                  label: "Settings"
+                ),
+              ],
+            ),
           ),
         ),
       ),

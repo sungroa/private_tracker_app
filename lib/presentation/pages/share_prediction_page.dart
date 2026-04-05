@@ -40,11 +40,14 @@ class _SharePredictionPageState extends State<SharePredictionPage> {
 
   void _copyToClipboard() {
     if (_deepLink != null) {
+      HapticFeedback.mediumImpact();
       Clipboard.setData(ClipboardData(text: _deepLink!));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Link copied to clipboard'),
-          backgroundColor: AppTheme.primaryColor,
+        SnackBar(
+          content: const Text('Link copied to clipboard', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600)),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppTheme.primaryDarkColor : AppTheme.primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     }
@@ -52,115 +55,137 @@ class _SharePredictionPageState extends State<SharePredictionPage> {
 
   void _shareLink() {
     if (_deepLink != null) {
+      HapticFeedback.mediumImpact();
       Share.share('Check out my cycle predictions: $_deepLink');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          // Background Gradient
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFDEEF4), Color(0xFFF3E5F5)],
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: primary),
+        ),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 12),
+              Text(
+                "Share with Partner",
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  color: primary,
+                  fontFamily: AppTheme.fontFamily,
+                  letterSpacing: -0.5,
+                ),
               ),
-            ),
-          ),
-          
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios, color: AppTheme.primaryColor),
+              const SizedBox(height: 12),
+              Text(
+                "Secure, read-only access to your predictions and logs.",
+                style: TextStyle(
+                  fontSize: 16, 
+                  color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54,
+                  fontFamily: AppTheme.fontFamily,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 48),
+              
+              Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 500),
+                  padding: const EdgeInsets.all(32),
+                  decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 40).copyWith(
+                    boxShadow: [
+                      BoxShadow(
+                        color: primary.withValues(alpha: 0.1),
+                        blurRadius: 40,
+                        offset: const Offset(0, 20),
+                      )
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    "Share with Partner",
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Secure, read-only access to your predictions.",
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 40),
-                  
-                  Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: AppTheme.glassDecoration(),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_deepLink != null)
-                            QrImageView(
-                              data: _deepLink!,
-                              version: QrVersions.auto,
-                              size: 240.0,
-                              foregroundColor: AppTheme.primaryColor,
-                              gapless: false,
-                            )
-                          else
-                            const SizedBox(
-                              width: 200,
-                              height: 200,
-                              child: Center(child: CircularProgressIndicator()),
-                            ),
-                          const SizedBox(height: 24),
-                          const Text(
-                            "Scan this QR code with the tracker app.",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  const Spacer(),
-                  
-                  Row(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(
-                        child: _ActionTile(
-                          icon: Icons.copy,
-                          label: "Copy Link",
-                          onTap: _copyToClipboard,
+                      if (_deepLink != null)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: QrImageView(
+                            data: _deepLink!,
+                            version: QrVersions.auto,
+                            size: 200.0,
+                            foregroundColor: Colors.black87,
+                            gapless: false,
+                          ),
+                        )
+                      else
+                        const SizedBox(
+                          width: 200,
+                          height: 200,
+                          child: Center(child: CircularProgressIndicator()),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _ActionTile(
-                          icon: Icons.share,
-                          label: "Share Link",
-                          onTap: _shareLink,
+                      const SizedBox(height: 32),
+                      Text(
+                        "SCAN QR CODE",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          color: primary,
+                          fontFamily: AppTheme.fontFamily,
+                          letterSpacing: 2,
+                          fontSize: 12,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                ),
+              ),
+              
+              const Spacer(),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: _ActionTile(
+                      icon: Icons.copy_rounded,
+                      label: "Copy Link",
+                      onTap: _copyToClipboard,
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _ActionTile(
+                      icon: Icons.ios_share_rounded,
+                      label: "Share Link",
+                      onTap: _shareLink,
+                      isDark: isDark,
+                    ),
+                  ),
                 ],
               ),
-            ),
+              const SizedBox(height: 24),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -170,30 +195,43 @@ class _ActionTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool isDark;
 
   const _ActionTile({
     required this.icon,
     required this.label,
     required this.onTap,
+    required this.isDark,
   });
 
   @override
   Widget build(BuildContext context) {
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 100,
-        decoration: AppTheme.glassDecoration(),
+        height: 110,
+        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppTheme.primaryColor, size: 30),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: primary, size: 28),
+            ),
+            const SizedBox(height: 12),
             Text(
               label,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.primaryColor,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+                fontFamily: AppTheme.fontFamily,
+                fontSize: 14,
               ),
             ),
           ],

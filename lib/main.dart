@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/notification_service.dart';
 import 'data/storage/encrypted_storage_service.dart';
+import 'data/storage/secure_key_storage.dart';
+import 'data/storage/local_database_manager.dart';
+import 'data/storage/database_migrator.dart';
+import 'data/storage/backup_restore_service.dart';
+import 'data/storage/data_export_service.dart';
+import 'data/storage/partner_storage_service.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'presentation/pages/home_page.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/widgets/authentication_overlay.dart';
@@ -18,6 +25,11 @@ import 'presentation/providers/tag_provider.dart';
 import 'package:app_links/app_links.dart';
 import 'domain/services/partner_sharing_service.dart';
 import 'presentation/pages/partner_mode_page.dart';
+class StorageConfig {
+  final String? storageBasePath;
+  StorageConfig({this.storageBasePath});
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService.instance.initialize();
@@ -25,7 +37,24 @@ void main() async {
 }
 
 class PrivacyTrackerApp extends StatefulWidget {
-  const PrivacyTrackerApp({super.key});
+  final SecureKeyStorage? keyStorage;
+  final LocalDatabaseManager? dbManager;
+  final DatabaseMigrator? migrator;
+  final BackupRestoreService? backupService;
+  final DataExportService? exportService;
+  final AppLinks? appLinks;
+  final String? storageBasePath;
+
+  const PrivacyTrackerApp({
+    super.key,
+    this.keyStorage,
+    this.dbManager,
+    this.migrator,
+    this.backupService,
+    this.exportService,
+    this.appLinks,
+    this.storageBasePath,
+  });
 
   @override
   State<PrivacyTrackerApp> createState() => _PrivacyTrackerAppState();
@@ -42,11 +71,15 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
   }
 
   void _initDeepLinks() {
-    _appLinks = AppLinks();
-    _appLinks.uriLinkStream.listen((uri) {
-      if (!mounted) return;
-      _handleDeepLink(uri);
-    });
+    try {
+      _appLinks = widget.appLinks ?? AppLinks();
+      _appLinks.uriLinkStream.listen((uri) {
+        if (!mounted) return;
+        _handleDeepLink(uri);
+      });
+    } catch (e) {
+      debugPrint("AppLinks initialization failed: $e");
+    }
   }
 
   void _handleDeepLink(Uri uri) {
@@ -67,12 +100,29 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<StorageConfig>(create: (_) => StorageConfig(storageBasePath: widget.storageBasePath)),
+        Provider<SecureKeyStorage>(create: (_) => widget.keyStorage ?? SecureKeyStorage(const FlutterSecureStorage())),
+        Provider<LocalDatabaseManager>(create: (_) => widget.dbManager ?? LocalDatabaseManager()),
+        Provider<DatabaseMigrator>(create: (_) => widget.migrator ?? DatabaseMigrator()),
+        Provider<BackupRestoreService>(create: (_) => widget.backupService ?? BackupRestoreService()),
+        Provider<DataExportService>(create: (_) => widget.exportService ?? DataExportService()),
+        Provider<PartnerStorageService>(create: (context) => PartnerStorageService(context.read<LocalDatabaseManager>())),
+        ProxyProvider5<SecureKeyStorage, LocalDatabaseManager, DatabaseMigrator, BackupRestoreService, DataExportService, EncryptedStorageService>(
+          update: (context, ks, db, mig, backup, export, previous) =>
+              previous ?? EncryptedStorageService(
+                keyStorage: ks,
+                dbManager: db,
+                migrator: mig,
+                backupService: backup,
+                exportService: export,
+              ),
+        ),
         Provider<CycleLogRepository>(
-            create: (_) => CycleLogRepositoryImpl(EncryptedStorageService.instance)),
+            create: (context) => CycleLogRepositoryImpl(context.read<EncryptedStorageService>())),
         Provider<SymptomLogRepository>(
-            create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
+            create: (context) => SymptomLogRepositoryImpl(context.read<EncryptedStorageService>())),
         Provider<TagRepository>(
-            create: (_) => TagRepositoryImpl(EncryptedStorageService.instance)),
+            create: (context) => TagRepositoryImpl(context.read<EncryptedStorageService>())),
         ChangeNotifierProvider(
           create: (context) => CycleProvider(
             context.read<CycleLogRepository>(),
@@ -87,10 +137,43 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
         ),
       ],
       child: MaterialApp(
-        title: 'Women\'s Health Tracker',
+        title: 'Private Tracker',
         navigatorKey: _navigatorKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
+        builder: (context, child) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return Stack(
+            children: [
+              // Premium Mesh Gradient Background
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark ? PremiumGradients.darkBackground : PremiumGradients.lightBackground,
+                  ),
+                ),
+              ),
+              // Subtle Ambient Glows
+              Positioned(
+                top: -150,
+                right: -100,
+                child: Container(
+                  width: 400,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.primaryColor.withValues(alpha: isDark ? 0.08 : 0.04),
+                  ),
+                ),
+              ),
+              if (child != null) child,
+            ],
+          );
+        },
         home: const AppLockWrapper(child: HomePage()),
       ),
     );
@@ -126,7 +209,6 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Re-lock the app when it goes to background and comes back
     if (state == AppLifecycleState.paused) {
       if (_useBiometric) {
         setState(() => _isAuthenticated = false);
@@ -142,12 +224,15 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
     _useBiometric = await AuthService.instance.isBiometricEnabled();
     
     if (!_useBiometric) {
-      await _initializeStorage();
-      if (mounted) {
-        setState(() {
-          _isAuthenticated = true;
-          _isInitializing = false;
-        });
+      try {
+        await _initializeStorage();
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isAuthenticated = true;
+            _isInitializing = false;
+          });
+        }
       }
     } else {
       if (mounted) {
@@ -162,7 +247,6 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
     if (success) {
       await _initializeStorage();
       if (mounted) {
-        // Refresh providers now that storage is ready
         context.read<CycleProvider>().refresh();
         context.read<SymptomProvider>().refresh();
         setState(() => _isAuthenticated = true);
@@ -173,15 +257,26 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
   Future<void> _initializeStorage() async {
     if (_storageInitialized) return;
     try {
-      await EncryptedStorageService.instance.initialize();
+      final config = context.read<StorageConfig>();
+      final basePath = config.storageBasePath;
+      
+      // Implement 10-second timeout to prevent environmental hangs
+      await context.read<EncryptedStorageService>()
+          .initialize(basePath: basePath)
+          .timeout(const Duration(seconds: 10));
+          
       _storageInitialized = true;
     } catch (e) {
       debugPrint("Failed to initialize encrypted storage: $e");
+      // Still set initializing to false to allow UI to show error/retry or at least not hang
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
     if (_isInitializing) {
       return Scaffold(
         body: Container(
@@ -189,25 +284,44 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                AppTheme.backgroundColor,
-                AppTheme.accentColor.withValues(alpha: 0.3),
-              ],
+              colors: isDark ? PremiumGradients.darkBackground : PremiumGradients.lightBackground,
             ),
           ),
-          child: const Center(
+          child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.security_rounded,
-                  size: 64,
-                  color: AppTheme.primaryColor,
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.security_rounded,
+                    size: 64,
+                    color: primary,
+                  ),
                 ),
-                SizedBox(height: 24),
-                CircularProgressIndicator(
-                  color: AppTheme.primaryColor,
-                  strokeWidth: 3,
+                const SizedBox(height: 32),
+                Text(
+                  "SECURE ENVIRONMENT",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: primary,
+                    letterSpacing: 2,
+                    fontFamily: AppTheme.fontFamily,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
+                    color: primary,
+                    strokeWidth: 3,
+                  ),
                 ),
               ],
             ),

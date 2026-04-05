@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_calendar/calendar_grid.dart';
@@ -66,12 +67,14 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
   }
 
   void _onNextMonth() {
+    HapticFeedback.lightImpact();
     setState(() {
       _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);
     });
   }
 
   void _onPrevMonth() {
+    HapticFeedback.lightImpact();
     setState(() {
       _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
     });
@@ -79,6 +82,9 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
     final cycleProvider = context.watch<CycleProvider>();
     final cycleEvents = cycleProvider.cycleEvents;
     final predictedNextPeriod = cycleProvider.predictedNextPeriod;
@@ -91,13 +97,23 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
     };
 
     return ListView(
-      padding: EdgeInsets.zero,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(top: 8),
       children: [
         Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Container(
-            decoration: AppTheme.glassDecoration(),
-            padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 32).copyWith(
+              boxShadow: [
+                BoxShadow(
+                  color: primary.withValues(alpha: 0.1),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                )
+              ],
+            ),
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
                 // Custom Month Header
@@ -105,19 +121,21 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.chevron_left),
+                      icon: Icon(Icons.chevron_left_rounded, color: primary),
                       onPressed: _onPrevMonth,
                     ),
                     Text(
-                      DateFormat('MMMM yyyy').format(_focusedDay),
-                      style: const TextStyle(
-                        color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                      DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase(),
+                      style: TextStyle(
+                        color: primary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        letterSpacing: 1.5,
+                        fontFamily: AppTheme.fontFamily,
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.chevron_right),
+                      icon: Icon(Icons.chevron_right_rounded, color: primary),
                       onPressed: _onNextMonth,
                     ),
                   ],
@@ -131,9 +149,10 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                   predictedNextPeriod: predictedNextPeriod,
                   predictedFertilityDates: predictedFertilityDates,
                   onDaySelected: (selectedDay) {
+                    HapticFeedback.selectionClick();
                     setState(() {
                       _selectedDay = selectedDay;
-                      _focusedDay = selectedDay; // Optional: change focus
+                      _focusedDay = selectedDay; 
                     });
                     _showUnifiedSheet(selectedDay);
                   },
@@ -142,36 +161,62 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         // Action Buttons
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _showUnifiedSheet(_selectedDay ?? DateTime.now(), type: LoggingType.cycle),
-                  icon: const Icon(Icons.water_drop_outlined),
-                  label: const Text("Log Cycle"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
-                    foregroundColor: Colors.redAccent,
-                    elevation: 0,
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      _showUnifiedSheet(_selectedDay ?? DateTime.now(), type: LoggingType.cycle);
+                    },
+                    icon: const Icon(Icons.water_drop_rounded, size: 20),
+                    label: const Text("PERIOD", style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
+                      foregroundColor: Colors.redAccent,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _showUnifiedSheet(_selectedDay ?? DateTime.now()),
-                  icon: const Icon(Icons.add),
-                  label: const Text("Daily Log"),
+                child: Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    gradient: LinearGradient(
+                      colors: isDark ? [AppTheme.primaryDarkColor, AppTheme.accentDarkColor] : [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.8)],
+                    ),
+                  ),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      _showUnifiedSheet(_selectedDay ?? DateTime.now());
+                    },
+                    icon: const Icon(Icons.add_rounded, size: 22),
+                    label: const Text("DAILY LOG", style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      foregroundColor: isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 32),
       ],
     );
   }

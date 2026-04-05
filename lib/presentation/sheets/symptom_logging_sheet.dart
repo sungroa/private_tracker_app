@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/symptom_provider.dart';
 import '../providers/tag_provider.dart';
@@ -61,7 +62,6 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     _selectedFluid = widget.existingLog?.cervicalFluidType;
     _lhPositive = widget.existingLog?.lhTestPositive;
     
-    // Refresh tags
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<TagProvider>().refresh();
@@ -78,6 +78,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
 
   void _onSave() async {
     if (_isSaving) return;
+    HapticFeedback.mediumImpact();
     setState(() => _isSaving = true);
     try {
       final bbt = double.tryParse(_tempController.text);
@@ -104,13 +105,14 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
 
   void _onDelete() async {
     if (widget.existingLog == null) return;
+    HapticFeedback.heavyImpact();
     final symptomProvider = context.read<SymptomProvider>();
     
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Delete Entry"),
-        content: const Text("Are you sure you want to delete this log? This action cannot be undone."),
+        title: const Text("Delete Entry", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+        content: const Text("Are you sure you want to delete this log? This action cannot be undone.", style: TextStyle(fontFamily: AppTheme.fontFamily)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -120,7 +122,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
             onPressed: _isDeleting ? null : () => Navigator.pop(context, true),
             child: Text(
               _isDeleting ? "Deleting..." : "Delete",
-              style: const TextStyle(color: Colors.redAccent),
+              style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -144,11 +146,17 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Symptom'),
+        title: const Text('Add Symptom', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(hintText: 'Symptom name'),
+          style: const TextStyle(fontFamily: AppTheme.fontFamily),
+          decoration: InputDecoration(
+            hintText: 'Symptom name',
+            filled: true,
+            fillColor: Colors.grey.withValues(alpha: 0.05),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
           maxLength: 24,
         ),
         actions: [
@@ -163,7 +171,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
               }
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Add'),
+            child: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -200,17 +208,23 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     );
   }
 
-  Widget _lhChip(bool value, String label, IconData icon) {
+  Widget _lhChip(bool value, String label, IconData icon, bool isDark) {
     final isSelected = _lhPositive == value;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+    
     return GestureDetector(
-      onTap: () => setState(() => _lhPositive = isSelected ? null : value),
-      child: Container(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _lhPositive = isSelected ? null : value);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : Colors.white.withValues(alpha: 0.2),
+          color: isSelected ? primary : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.2)),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : Colors.grey[200]!,
+            color: isSelected ? primary : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey[200]!),
           ),
         ),
         child: Row(
@@ -218,15 +232,16 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
             Icon(
               icon,
               size: 16,
-              color: isSelected ? Colors.white : Colors.grey[600],
+              color: isSelected ? (isDark ? AppTheme.backgroundDarkColor : Colors.white) : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[600]),
             ),
             const SizedBox(width: 4),
             Text(
               label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? Colors.white : Colors.grey[600],
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? (isDark ? AppTheme.backgroundDarkColor : Colors.white) : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[600]),
+                fontFamily: AppTheme.fontFamily,
               ),
             ),
           ],
@@ -237,7 +252,11 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
     final content = SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -248,7 +267,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withValues(alpha: 0.1),
+                  color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -257,10 +276,12 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
           ],
             Text(
               "How are you feeling?",
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: TextStyle(
+                color: primary,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                fontFamily: AppTheme.fontFamily,
+              ),
             ),
             const SizedBox(height: 16),
             // Mood Selector
@@ -270,18 +291,21 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                 final rating = index + 1;
                 final isSelected = _moodRating == rating;
                 return GestureDetector(
-                  onTap: () => setState(() => _moodRating = rating),
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _moodRating = rating);
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.primaryColor : Colors.white.withValues(alpha: 0.2),
+                      color: isSelected ? primary : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.2)),
                       shape: BoxShape.circle,
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                                blurRadius: 8,
+                                color: primary.withValues(alpha: 0.3),
+                                blurRadius: 12,
                                 spreadRadius: 2,
                               )
                             ]
@@ -289,7 +313,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                     ),
                     child: Icon(
                       _moodIcons[index],
-                      color: isSelected ? Colors.white : Colors.grey[600],
+                      color: isSelected ? (isDark ? AppTheme.backgroundDarkColor : Colors.white) : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[600]),
                       size: 28,
                     ),
                   ),
@@ -306,24 +330,31 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                     children: [
                       Text(
                         "Temperature",
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: AppTheme.primaryColor,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style: TextStyle(
+                          color: primary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         key: const Key('bbt_field'),
                         controller: _tempController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: TextStyle(fontFamily: AppTheme.fontFamily, color: isDark ? Colors.white : Colors.black87),
                         decoration: InputDecoration(
                           hintText: "98.6",
                           suffixText: "°F",
                           filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.5),
+                          fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.5),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.transparent),
                           ),
                         ),
                       ),
@@ -337,17 +368,19 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                     children: [
                       Text(
                         "LH Test",
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: AppTheme.primaryColor,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style: TextStyle(
+                          color: primary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          _lhChip(true, "Pos", Icons.add_circle_outline),
+                          _lhChip(true, "Pos", Icons.add_circle_outline, isDark),
                           const SizedBox(width: 8),
-                          _lhChip(false, "Neg", Icons.remove_circle_outline),
+                          _lhChip(false, "Neg", Icons.remove_circle_outline, isDark),
                         ],
                       ),
                     ],
@@ -358,10 +391,12 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
             const SizedBox(height: 32),
             Text(
               "Cervical Fluid",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: TextStyle(
+                color: primary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: AppTheme.fontFamily,
+              ),
             ),
             const SizedBox(height: 12),
             SingleChildScrollView(
@@ -375,10 +410,18 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                       label: Text(type),
                       selected: isSelected,
                       onSelected: (selected) {
+                        HapticFeedback.selectionClick();
                         setState(() => _selectedFluid = selected ? type : null);
                       },
-                      selectedColor: AppTheme.accentColor.withValues(alpha: 0.3),
-                      checkmarkColor: AppTheme.primaryColor,
+                      selectedColor: isDark ? AppTheme.accentDarkColor.withValues(alpha: 0.5) : AppTheme.accentColor.withValues(alpha: 0.3),
+                      checkmarkColor: primary,
+                      labelStyle: TextStyle(
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? primary : (isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54),
+                      ),
+                      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.3),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide.none),
                     ),
                   );
                 }).toList(),
@@ -387,10 +430,12 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
             const SizedBox(height: 32),
             Text(
               "Symptoms",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: TextStyle(
+                color: primary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: AppTheme.fontFamily,
+              ),
             ),
             const SizedBox(height: 12),
             Consumer<TagProvider>(
@@ -404,11 +449,15 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                       final symptom = tag.name;
                       final isSelected = _selectedSymptoms.contains(symptom);
                       return GestureDetector(
-                        onLongPress: () => _confirmDeleteSymptom(tag),
+                        onLongPress: () {
+                          HapticFeedback.mediumImpact();
+                          _confirmDeleteSymptom(tag);
+                        },
                         child: FilterChip(
                           label: Text(symptom),
                           selected: isSelected,
                           onSelected: (selected) {
+                            HapticFeedback.selectionClick();
                             setState(() {
                               if (selected) {
                                 _selectedSymptoms.add(symptom);
@@ -417,16 +466,17 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                               }
                             });
                           },
-                          backgroundColor: Colors.white.withValues(alpha: 0.1),
-                          selectedColor: AppTheme.accentColor.withValues(alpha: 0.3),
+                          backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.1),
+                          selectedColor: isDark ? AppTheme.accentDarkColor.withValues(alpha: 0.5) : AppTheme.accentColor.withValues(alpha: 0.3),
                           labelStyle: TextStyle(
-                            color: isSelected ? AppTheme.primaryColor : Colors.black87,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? primary : (isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black87),
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            fontFamily: AppTheme.fontFamily,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                             side: BorderSide(
-                              color: isSelected ? AppTheme.primaryColor : Colors.grey[200]!,
+                              color: isSelected ? primary : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey[200]!),
                               width: 1,
                             ),
                           ),
@@ -435,11 +485,11 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                     }),
                     ActionChip(
                       onPressed: _showAddSymptomDialog,
-                      label: const Icon(Icons.add, size: 20),
-                      backgroundColor: Colors.white.withValues(alpha: 0.1),
+                      label: Icon(Icons.add, size: 20, color: primary),
+                      backgroundColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.grey[200]!),
+                        side: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey[200]!),
                       ),
                     ),
                   ],
@@ -449,70 +499,89 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
             const SizedBox(height: 32),
             Text(
               "Notes",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: TextStyle(
+                color: primary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: AppTheme.fontFamily,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _notesController,
               maxLines: 3,
-              style: const TextStyle(fontSize: 14),
+              style: TextStyle(fontSize: 14, fontFamily: AppTheme.fontFamily, color: isDark ? Colors.white : Colors.black87),
               decoration: InputDecoration(
                 hintText: "Anything else to log?",
+                hintStyle: TextStyle(color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.grey),
                 filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.5),
+                fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
                   borderSide: BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.5)),
+                  borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.5)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
-                  borderSide: const BorderSide(color: AppTheme.primaryColor),
+                  borderSide: BorderSide(color: primary, width: 1.5),
                 ),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 48),
             SizedBox(
               width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                key: const Key('symptom_save_button'),
-                onPressed: _onSave,
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+              height: 60,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  gradient: LinearGradient(
+                    colors: isDark 
+                        ? [AppTheme.primaryDarkColor, AppTheme.accentDarkColor] 
+                        : [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.8)],
                   ),
-                  elevation: 0,
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: primary.withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    )
+                  ],
                 ),
-                child: _isSaving
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                child: ElevatedButton(
+                  key: const Key('symptom_save_button'),
+                  onPressed: _onSave,
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    elevation: 0,
+                    backgroundColor: Colors.transparent,
+                    foregroundColor: isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                    shadowColor: Colors.transparent,
+                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          widget.existingLog != null ? "Save Changes" : "Add Log",
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18, fontFamily: AppTheme.fontFamily),
                         ),
-                      )
-                    : Text(
-                        widget.existingLog != null ? "Save Changes" : "Add Log",
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
+                ),
               ),
             ),
             if (widget.existingLog != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Center(
                 child: TextButton(
                   onPressed: _onDelete,
-                  child: const Text("Delete Daily Log", style: TextStyle(color: Colors.redAccent)),
+                  child: const Text("Delete Daily Log", style: TextStyle(color: Colors.redAccent, fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -528,7 +597,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
       absorbing: _isSaving,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        decoration: AppTheme.glassDecoration(color: Colors.white).copyWith(
+        decoration: AppTheme.glassDecoration(isDark: isDark).copyWith(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         ),
         child: content,
@@ -536,3 +605,4 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     );
   }
 }
+
