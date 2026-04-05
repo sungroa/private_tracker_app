@@ -54,26 +54,26 @@ void main() {
     // Cycle 2: Mar 29
     // Cycle 1: Mar 1
     // Initial prediction: Mar 29 + 28 days = Apr 26
-    final cycle1Start = DateTime(2026, 3, 1);
-    final cycle2Start = DateTime(2026, 3, 29);
+    final cycle1Start = DateTime.utc(2026, 3, 1);
+    final cycle2Start = DateTime.utc(2026, 3, 29);
     final event1 = CycleEvent(startDate: cycle1Start);
     final event2 = CycleEvent(startDate: cycle2Start);
 
     when(() => mockRepo.getCycleEvents()).thenReturn([event2, event1]);
     provider.refresh(); // Reload with these 2 events
 
-    expect(provider.predictedNextPeriod, DateTime(2026, 3, 29).add(const Duration(days: 28)));
+    expect(provider.predictedNextPeriod, DateTime.utc(2026, 3, 29).add(const Duration(days: 28)));
 
-    // Update: Shift cycle 2 to Mar 32? No, let's shift cycle 1 to Feb 26 (increasing interval to 31 days)
+    // Update: Shift cycle 1 to Feb 26 (increasing interval to 31 days)
     // Newest interval: 31 days. Weighted average of one interval is 31.
     // New prediction: Mar 29 + 31 days = Apr 29
-    final shiftedEvent1 = CycleEvent(startDate: DateTime(2026, 2, 26));
+    final shiftedEvent1 = CycleEvent(startDate: DateTime.utc(2026, 2, 26));
     when(() => mockRepo.updateCycleEvent(any())).thenAnswer((_) async {});
     when(() => mockRepo.getCycleEvents()).thenReturn([event2, shiftedEvent1]);
 
     await provider.updateEvent(shiftedEvent1);
 
-    expect(provider.predictedNextPeriod, DateTime(2026, 3, 29).add(const Duration(days: 31)));
+    expect(provider.predictedNextPeriod, DateTime.utc(2026, 3, 29).add(const Duration(days: 31)));
   });
 
   test('deleteEvent calls repository and reloads events', () async {

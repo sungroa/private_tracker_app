@@ -11,50 +11,79 @@ class SummaryTrendsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+    
     final cycleProvider = context.watch<CycleProvider>();
     final trendData = cycleProvider.trends;
 
     if (trendData == null) {
-      return const Center(child: Text("No data available yet."));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.query_stats, size: 64, color: primary.withValues(alpha: 0.3)),
+            const SizedBox(height: 16),
+            Text(
+              "No data available yet.",
+              style: TextStyle(
+                color: primary.withValues(alpha: 0.6),
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: AppTheme.fontFamily,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 48),
+            const SizedBox(height: 40),
             Text(
               "Your Trends",
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: TextStyle(
+                color: primary,
+                fontSize: 34,
+                fontWeight: FontWeight.w800,
+                fontFamily: AppTheme.fontFamily,
+                letterSpacing: -0.5,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              "Insights from your last cycles",
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              "Deep insights from your biology",
+              style: TextStyle(
+                color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.grey[600],
+                fontSize: 16,
+                fontFamily: AppTheme.fontFamily,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
 
             // BBT Chart Section
             Text(
               "Basal Body Temperature",
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: TextStyle(
+                color: primary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                fontFamily: AppTheme.fontFamily,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             BbtChart(bbtHistory: trendData.bbtHistory),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
             
-            // Cycle Stats Row
+            // Cycle Stats Grid
             Row(
               children: [
                 Expanded(
@@ -82,7 +111,7 @@ class SummaryTrendsPage extends StatelessWidget {
               value: trendData.moodHistory.isEmpty 
                   ? "Logged data" 
                   : _getMoodSummaryText(trendData.moodHistory.last.rating),
-              subtitle: "Last 30 days",
+              subtitle: "Consistency is key",
               icon: Icons.show_chart,
               child: SummaryLineChart(data: trendData.moodHistory),
             ),
@@ -92,26 +121,52 @@ class SummaryTrendsPage extends StatelessWidget {
             SummaryTrendCard(
               title: "TOP SYMPTOMS",
               value: trendData.topSymptoms.isEmpty ? "None" : trendData.topSymptoms.first.key,
-              subtitle: "Frequently logged",
-              icon: Icons.list,
+              subtitle: "Patterns spotted",
+              icon: Icons.auto_awesome_mosaic_rounded,
               child: trendData.topSymptoms.isEmpty 
                   ? null 
-                  : Column(
-                      children: trendData.topSymptoms.skip(1).map((symptom) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(symptom.key, style: const TextStyle(fontWeight: FontWeight.w500)),
-                              Text("${symptom.value} times", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                            ],
-                          ),
-                        );
-                      }).toList(),
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Column(
+                        children: trendData.topSymptoms.skip(1).take(3).map((symptom) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  symptom.key,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: isDark ? Colors.white.withValues(alpha: 0.8) : Colors.black87,
+                                    fontFamily: AppTheme.fontFamily,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    "${symptom.value}x",
+                                    style: TextStyle(
+                                      color: primary,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w800,
+                                      fontFamily: AppTheme.fontFamily,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 64),
           ],
         ),
       ),

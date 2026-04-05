@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
@@ -47,9 +49,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleExportData() async {
+    HapticFeedback.mediumImpact();
     setState(() => _isExporting = true);
+    final storage = context.read<EncryptedStorageService>();
     try {
-      final csvString = await EncryptedStorageService.instance.exportDataToCsv();
+      final csvString = await storage.exportDataToCsv();
       await ExportService.shareCsvFile(csvString);
     } catch (e) {
       if (mounted) {
@@ -68,7 +72,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _toggleBiometric(bool value) async {
-    // Require authentication to change this setting for security
+    HapticFeedback.selectionClick();
     final success = await AuthService.instance.authenticate();
     if (success) {
       await AuthService.instance.setBiometricEnabled(value);
@@ -86,8 +90,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _toggleNotifications(bool value) async {
+    HapticFeedback.selectionClick();
     if (value) {
-      // Request permissions first
       final granted = await NotificationService.instance.requestPermissions();
       if (!granted) {
         if (mounted) {
@@ -100,11 +104,8 @@ class _SettingsPageState extends State<SettingsPage> {
         }
         return;
       }
-      
-      // Schedule the reminder
       await _scheduleReminder();
     } else {
-      // Cancel all notifications
       await NotificationService.instance.cancelAllNotifications();
     }
 
@@ -122,17 +123,19 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _selectTime() async {
+    HapticFeedback.lightImpact();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _reminderTime,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppTheme.primaryColor,
-              onPrimary: Colors.white,
-              onSurface: Colors.black87,
-            ),
+            colorScheme: isDark 
+                ? ColorScheme.dark(primary: primary, onPrimary: AppTheme.backgroundDarkColor, surface: AppTheme.backgroundDarkColor)
+                : ColorScheme.light(primary: primary, onPrimary: Colors.white, onSurface: primary),
           ),
           child: child!,
         );
@@ -149,6 +152,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleCreateBackup() async {
+    HapticFeedback.mediumImpact();
     final password = await _showPasswordDialog(
       title: 'Create Backup',
       message: 'Enter a password to encrypt your backup. You will need this password to restore your data later.',
@@ -157,8 +161,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (password != null && password.isNotEmpty) {
       setState(() => _isExporting = true);
+      final storage = context.read<EncryptedStorageService>();
       try {
-        final file = await EncryptedStorageService.instance.exportEncryptedBackup(password);
+        final file = await storage.exportEncryptedBackup(password);
         final xFile = XFile(file.path);
         await Share.shareXFiles([xFile], text: 'Private Tracker Encrypted Backup');
         
@@ -188,7 +193,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleRestoreBackup() async {
-    // 1. Pick file
+    HapticFeedback.mediumImpact();
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['enc'],
@@ -197,12 +202,11 @@ class _SettingsPageState extends State<SettingsPage> {
     if (result != null && result.files.single.path != null) {
       final file = File(result.files.single.path!);
       
-      // 2. Warning prompt
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Restore Backup?'),
-          content: const Text('This will COMPLETELY OVERWRITE your current local data. This action cannot be undone.'),
+          title: const Text('Restore Backup?', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+          content: const Text('This will COMPLETELY OVERWRITE your current local data. This action cannot be undone.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -211,14 +215,13 @@ class _SettingsPageState extends State<SettingsPage> {
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Overwrite & Restore'),
+              child: const Text('Overwrite & Restore', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
       );
 
       if (confirm == true) {
-        // 3. Password prompt
         final password = await _showPasswordDialog(
           title: 'Restore Backup',
           message: 'Enter the password used to encrypt this backup.',
@@ -227,8 +230,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
         if (password != null && password.isNotEmpty) {
           setState(() => _isExporting = true);
+          final storage = context.read<EncryptedStorageService>();
           try {
-            await EncryptedStorageService.instance.importEncryptedBackup(file, password);
+            await storage.importEncryptedBackup(file, password);
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -240,7 +244,7 @@ class _SettingsPageState extends State<SettingsPage> {
           } catch (e) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+                const SnackBar(
                   content: Text('Failed to restore backup: Incorrect password or corrupted file'),
                   backgroundColor: Colors.red,
                 ),
@@ -264,24 +268,28 @@ class _SettingsPageState extends State<SettingsPage> {
     final controller = TextEditingController();
     final confirmController = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
+        title: Text(title, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
         content: Form(
           key: formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(message, style: const TextStyle(fontSize: 14, color: Colors.black54)),
-              const SizedBox(height: 16),
+              Text(message, style: TextStyle(fontSize: 14, color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54, fontFamily: AppTheme.fontFamily)),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: controller,
                 obscureText: true,
-                decoration: const InputDecoration(
+                style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                decoration: InputDecoration(
                   labelText: 'Password',
-                  border: OutlineInputBorder(),
+                  filled: true,
+                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Password is required';
@@ -294,9 +302,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 TextFormField(
                   controller: confirmController,
                   obscureText: true,
-                  decoration: const InputDecoration(
+                  style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                  decoration: InputDecoration(
                     labelText: 'Confirm Password',
-                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                   validator: (value) {
                     if (value != controller.text) return 'Passwords do not match';
@@ -318,8 +329,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 Navigator.pop(context, controller.text);
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-            child: const Text('Continue', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('Continue', style: TextStyle(color: isDark ? AppTheme.backgroundDarkColor : Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -328,259 +342,227 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _scheduleReminder() async {
     await NotificationService.instance.scheduleDailyReminder(
-      id: 100, // Fixed ID for daily reminder
+      id: 100, 
       time: _reminderTime,
       title: 'Time to log',
       body: 'Don\'t forget to record your symptoms and cycle data today.',
     );
   }
 
+  Widget _buildSectionHeader(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4.0, bottom: 12.0, top: 4.0),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          color: isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor,
+          letterSpacing: 1.2,
+          fontFamily: AppTheme.fontFamily,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsItem({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    Widget? trailing,
+    VoidCallback? onTap,
+    bool isDark = false,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: iconColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: iconColor, size: 22),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+          fontFamily: AppTheme.fontFamily,
+          fontSize: 15,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54,
+          fontFamily: AppTheme.fontFamily,
+          fontSize: 13,
+        ),
+      ),
+      trailing: trailing ?? Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black26),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 120),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 60), // Space for AppBar
-          const Text(
+          const SizedBox(height: 40),
+          Text(
             "Settings",
             style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.primaryColor,
+              fontSize: 34,
+              fontWeight: FontWeight.w800,
+              color: primary,
+              fontFamily: AppTheme.fontFamily,
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 32),
           
           // Security Section
           if (_hardwareSupported) ...[
-            const Text(
-              "Security",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black54,
-              ),
-            ),
-            const SizedBox(height: 12),
+            _buildSectionHeader("Security", isDark),
             Container(
-              decoration: AppTheme.glassDecoration(),
-              child: ListTile(
-                leading: const Icon(Icons.fingerprint, color: AppTheme.primaryColor),
-                title: const Text(
-                  "Biometric Lock",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                subtitle: const Text(
-                  "Lock the app with FaceID, TouchID, or PIN.",
-                  style: TextStyle(color: Colors.black54),
-                ),
-                trailing: Switch(
+              decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
+              child: _buildSettingsItem(
+                icon: Icons.fingerprint_rounded,
+                iconColor: primary,
+                title: "Biometric Lock",
+                subtitle: "FaceID, TouchID, or PIN",
+                isDark: isDark,
+                trailing: Switch.adaptive(
                   value: _biometricEnabled,
                   onChanged: _toggleBiometric,
-                  activeThumbColor: AppTheme.primaryColor,
+                  activeColor: primary,
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
           ],
 
-          const Text(
-            "Reminders",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black54,
-            ),
-          ),
-          const SizedBox(height: 12),
+          _buildSectionHeader("Reminders", isDark),
           Container(
-            decoration: AppTheme.glassDecoration(),
+            decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
             child: Column(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.notifications_active, color: AppTheme.primaryColor),
-                  title: const Text(
-                    "Daily Reminders",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    "Get a daily reminder to log your data.",
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                  trailing: Switch(
+                _buildSettingsItem(
+                  icon: Icons.notifications_active_rounded,
+                  iconColor: primary,
+                  title: "Daily Reminders",
+                  subtitle: "Never miss a log",
+                  isDark: isDark,
+                  trailing: Switch.adaptive(
                     value: _notificationsEnabled,
                     onChanged: _toggleNotifications,
-                    activeThumbColor: AppTheme.primaryColor,
+                    activeColor: primary,
                   ),
                 ),
                 if (_notificationsEnabled) ...[
-                  const Divider(height: 1, indent: 56),
-                  ListTile(
-                    leading: const Icon(Icons.access_time, color: AppTheme.primaryColor),
-                    title: const Text(
-                      "Reminder Time",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    subtitle: Text(
-                      _reminderTime.format(context),
-                      style: const TextStyle(color: Colors.black54),
-                    ),
-                    trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 64),
+                    child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                  ),
+                  _buildSettingsItem(
+                    icon: Icons.access_time_rounded,
+                    iconColor: primary,
+                    title: "Reminder Time",
+                    subtitle: _reminderTime.format(context),
+                    isDark: isDark,
                     onTap: _selectTime,
                   ),
                 ],
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          const Text(
-            "Data Management",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black54,
-            ),
-          ),
-          const SizedBox(height: 12),
+          _buildSectionHeader("Data Management", isDark),
           Container(
-            decoration: AppTheme.glassDecoration(),
+            decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
             child: Column(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.download, color: AppTheme.primaryColor),
-                  title: const Text(
-                    "Export Data",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    "Save your cycle and symptom logs to a CSV file.",
-                    style: TextStyle(color: Colors.black54),
-                  ),
+                _buildSettingsItem(
+                  icon: Icons.ios_share_rounded,
+                  iconColor: primary,
+                  title: "Export Data",
+                  subtitle: "Save as CSV file",
+                  isDark: isDark,
                   trailing: _isExporting
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
-                          ),
-                        )
-                      : const Icon(Icons.chevron_right, color: Colors.black54),
+                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : null,
                   onTap: _isExporting ? null : _handleExportData,
                 ),
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: const Icon(Icons.backup, color: AppTheme.primaryColor),
-                  title: const Text(
-                    "Create Encrypted Backup",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    "Export a password-protected .enc file.",
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                  trailing: _isExporting
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
-                          ),
-                        )
-                      : const Icon(Icons.chevron_right, color: Colors.black54),
+                Padding(
+                  padding: const EdgeInsets.only(left: 64),
+                  child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                ),
+                _buildSettingsItem(
+                  icon: Icons.cloud_upload_rounded,
+                  iconColor: primary,
+                  title: "Create Backup",
+                  subtitle: "Export encrypted .enc file",
+                  isDark: isDark,
                   onTap: _isExporting ? null : _handleCreateBackup,
                 ),
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: const Icon(Icons.settings_backup_restore, color: AppTheme.primaryColor),
-                  title: const Text(
-                    "Restore from Backup",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    "Overwrite local data with a backup file.",
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                Padding(
+                  padding: const EdgeInsets.only(left: 64),
+                  child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                ),
+                _buildSettingsItem(
+                  icon: Icons.restart_alt_rounded,
+                  iconColor: primary,
+                  title: "Restore Backup",
+                  subtitle: "Overwrite from file",
+                  isDark: isDark,
                   onTap: _isExporting ? null : _handleRestoreBackup,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
 
-          const Text(
-            "Partner Sharing",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black54,
-            ),
-          ),
-          const SizedBox(height: 12),
+          _buildSectionHeader("Partner Sharing", isDark),
           Container(
-            decoration: AppTheme.glassDecoration(),
+            decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
             child: Column(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.qr_code, color: AppTheme.primaryColor),
-                  title: const Text(
-                    "Generate Share QR",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    "Securely share your predictions with a partner.",
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                _buildSettingsItem(
+                  icon: Icons.qr_code_2_rounded,
+                  iconColor: AppTheme.accentColor,
+                  title: "Generate Share QR",
+                  subtitle: "Securely share predictions",
+                  isDark: isDark,
                   onTap: () {
+                    HapticFeedback.lightImpact();
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const SharePredictionPage()),
                     );
                   },
                 ),
-                const Divider(height: 1, indent: 56),
-                ListTile(
-                  leading: const Icon(Icons.favorite, color: Colors.green),
-                  title: const Text(
-                    "Enter Partner Mode",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  subtitle: const Text(
-                    "Scan a QR code to see shared predictions.",
-                    style: TextStyle(color: Colors.black54),
-                  ),
-                  trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                Padding(
+                  padding: const EdgeInsets.only(left: 64),
+                  child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                ),
+                _buildSettingsItem(
+                  icon: Icons.favorite_rounded,
+                  iconColor: Colors.redAccent,
+                  title: "Partner Mode",
+                  subtitle: "View shared predictions",
+                  isDark: isDark,
                   onTap: () {
+                    HapticFeedback.lightImpact();
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const PartnerModePage()),

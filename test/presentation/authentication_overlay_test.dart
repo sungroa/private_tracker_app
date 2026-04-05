@@ -23,10 +23,10 @@ void main() {
       ),
     );
 
-    expect(find.text('App Locked'), findsOneWidget);
+    expect(find.text('APP LOCKED'), findsOneWidget);
     expect(find.text('Please authenticate to access your private data'), findsOneWidget);
     expect(find.byIcon(Icons.lock_person_rounded), findsOneWidget);
-    expect(find.text('Unlock Now'), findsOneWidget);
+    expect(find.text('UNLOCK NOW'), findsOneWidget);
   });
 
   testWidgets('Tapping Unlock Now calls AuthService.authenticate and onUnlockSuccess on success', (WidgetTester tester) async {
@@ -42,8 +42,8 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Unlock Now'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.text('UNLOCK NOW'));
+    await tester.pump(const Duration(seconds: 1));
 
     verify(() => mockAuthService.authenticate()).called(1);
     expect(unlocked, true);
@@ -62,8 +62,8 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Unlock Now'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.text('UNLOCK NOW'));
+    await tester.pump(const Duration(seconds: 1));
 
     verify(() => mockAuthService.authenticate()).called(1);
     expect(unlocked, false);

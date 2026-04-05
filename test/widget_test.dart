@@ -1,41 +1,46 @@
 import 'dart:io';
-import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:private_tracker_app/main.dart';
-import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
 import 'package:private_tracker_app/core/services/auth_service.dart';
+import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
+import 'package:private_tracker_app/data/storage/local_database_manager.dart';
+import 'package:private_tracker_app/data/storage/database_migrator.dart';
+import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
+import 'package:private_tracker_app/data/storage/data_export_service.dart';
+import 'package:private_tracker_app/presentation/pages/home_page.dart';
+import 'package:app_links/app_links.dart';
 
 class MockAuthService extends Mock implements AuthService {}
-class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
+class MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
+class MockAppLinks extends Mock implements AppLinks {}
 
 void main() {
   group('App smoke tests', () {
     late Directory tempDir;
     late MockAuthService mockAuthService;
-    late MockFlutterSecureStorage mockStorage;
+    late MockSecureKeyStorage mockKeyStorage;
+    late MockAppLinks mockAppLinks;
 
     setUp(() async {
+      tempDir = await Directory.systemTemp.createTemp('hive_smoke_test');
+      Hive.init(tempDir.path);
+
       mockAuthService = MockAuthService();
       AuthService.instance = mockAuthService;
       
-      mockStorage = MockFlutterSecureStorage();
-      EncryptedStorageService.instance = EncryptedStorageService.test(mockStorage);
-      
-      final key = Hive.generateSecureKey();
-      when(() => mockStorage.containsKey(key: any(named: 'key'))).thenAnswer((_) async => true);
-      when(() => mockStorage.read(key: any(named: 'key'))).thenAnswer((_) async => base64UrlEncode(key));
+      mockKeyStorage = MockSecureKeyStorage();
+      mockAppLinks = MockAppLinks();
+
+      // Mock Storage Services
+      when(() => mockKeyStorage.getOrCreateEncryptionKey()).thenAnswer((_) async => List<int>.filled(32, 0));
+      when(() => mockAppLinks.uriLinkStream).thenAnswer((_) => const Stream<Uri>.empty());
 
       // Default behavior for smoke test: no biometric lock
       when(() => mockAuthService.isBiometricEnabled()).thenAnswer((_) async => false);
       when(() => mockAuthService.isHardwareSupported()).thenAnswer((_) async => false);
-
-      tempDir = await Directory.systemTemp.createTemp('hive_smoke_test');
-      Hive.init(tempDir.path);
-      
-      await EncryptedStorageService.instance.initialize(basePath: tempDir.path);
     });
 
     tearDown(() async {
@@ -46,19 +51,53 @@ void main() {
     });
 
     testWidgets('App smoke test renders home page', (WidgetTester tester) async {
-      await tester.pumpWidget(const PrivacyTrackerApp());
+      await tester.runAsync(() async {
+        await tester.pumpWidget(PrivacyTrackerApp(
+          keyStorage: mockKeyStorage,
+          dbManager: LocalDatabaseManager(),
+          migrator: DatabaseMigrator(),
+          backupService: BackupRestoreService(),
+          exportService: DataExportService(),
+          appLinks: mockAppLinks,
+          storageBasePath: tempDir.path,
+        ));
 
-      // Use explicit pump() calls instead of pumpAndSettle() to avoid
-      // hanging on the CircularProgressIndicator that AppLockWrapper
-      // shows while _isInitializing is true. The async _checkInitialAuth
-      // completes within a few frames (mocked services return instantly),
-      // after which the spinner is replaced by the HomePage.
-      await tester.pump(); // Trigger initState and start _checkInitialAuth
-      await tester.pump(); // Allow async futures (isBiometricEnabled, initialize) to complete
-      await tester.pump(); // Render final state after setState(_isInitializing = false)
-
-      // Verify that the title is present in the AppBar.
-      expect(find.text('Cycle Tracker'), findsOneWidget);
+        // Initial pump to start initialization
+        await tester.pump();
+        
+        // Wait for initialization and animations to complete
+        int retry = 0;
+        bool found = false;
+        while (retry < 150) { // Increased retries for slower environments
+          // Real-time pump to let microtasks work
+          await tester.pump(const Duration(milliseconds: 100));
+          
+          if (find.text('Cycle Tracker').evaluate().isNotEmpty) {
+            found = true;
+            break;
+          }
+          
+          if (retry % 10 == 0) {
+             final currentText = find.byType(Text).evaluate().map((e) => (e.widget as Text).data).join(', ');
+             debugPrint("Smoke test polling [retry $retry], found text: $currentText");
+             // Add a real-time delay to let runAsync tasks progress
+             await Future.delayed(const Duration(milliseconds: 50));
+          }
+          retry++;
+        }
+        
+        // Final pump for any remaining micro-animations
+        await tester.pump(const Duration(seconds: 1));
+        
+        if (!found) {
+          final allText = find.byType(Text).evaluate().map((e) => (e.widget as Text).data).join(', ');
+          debugPrint("FINAL Available text in tree: $allText");
+        }
+        
+        expect(found, isTrue, reason: "Cycle Tracker should be found after initialization.");
+        expect(find.text('Cycle Tracker'), findsOneWidget);
+        expect(find.byType(HomePage), findsOneWidget);
+      });
     });
   });
 }

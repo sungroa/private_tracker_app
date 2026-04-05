@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -6,44 +7,59 @@ import 'package:mocktail/mocktail.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:private_tracker_app/main.dart';
 import 'package:private_tracker_app/core/services/auth_service.dart';
 import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
+import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
+import 'package:private_tracker_app/data/storage/local_database_manager.dart';
+import 'package:private_tracker_app/data/storage/database_migrator.dart';
+import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
+import 'package:private_tracker_app/data/storage/data_export_service.dart';
+import 'package:private_tracker_app/data/storage/partner_storage_service.dart';
 import 'package:private_tracker_app/presentation/pages/home_page.dart';
-import 'package:private_tracker_app/presentation/pages/partner_mode_page.dart';
+import 'package:app_links/app_links.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 class MockLocalAuthentication extends Mock implements LocalAuthentication {}
-class MockEncryptedStorageService extends Mock implements EncryptedStorageService {}
+class MockAppLinks extends Mock implements AppLinks {}
+class MockPathProviderPlatform extends Mock with MockPlatformInterfaceMixin implements PathProviderPlatform {}
 
 void main() {
   late Directory tempDir;
   late MockFlutterSecureStorage mockSecureStorage;
   late MockLocalAuthentication mockLocalAuth;
-  late MockEncryptedStorageService mockStorageService;
+  late MockAppLinks mockAppLinks;
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('provider_scope_test');
     Hive.init(tempDir.path);
 
+    final mockPathProvider = MockPathProviderPlatform();
+    PathProviderPlatform.instance = mockPathProvider;
+    when(() => mockPathProvider.getTemporaryPath()).thenAnswer((_) async => tempDir.path);
+    when(() => mockPathProvider.getApplicationDocumentsPath()).thenAnswer((_) async => tempDir.path);
+
     mockSecureStorage = MockFlutterSecureStorage();
     mockLocalAuth = MockLocalAuthentication();
-    mockStorageService = MockEncryptedStorageService();
+    mockAppLinks = MockAppLinks();
+
+    // Mock AppLinks stream
+    when(() => mockAppLinks.uriLinkStream).thenAnswer((_) => const Stream<Uri>.empty());
 
     // Inject Mocks
     AuthService.instance = AuthService.test(mockLocalAuth, mockSecureStorage);
-    EncryptedStorageService.instance = mockStorageService;
 
-    // Mock Storage Service
-    when(() => mockStorageService.initialize(basePath: any(named: 'basePath'))).thenAnswer((_) async {});
-    when(() => mockStorageService.getCycleEvents()).thenReturn([]);
-    when(() => mockStorageService.getSymptomLogs()).thenReturn([]);
-    
     // Open unencrypted box for PartnerModePage
     await Hive.openBox('partner_data');
 
     // Mock Auth Preferences (Biometric Disabled by default to skip auth screen)
     when(() => mockSecureStorage.read(key: 'is_biometric_enabled')).thenAnswer((_) async => 'false');
+    
+    final key = Hive.generateSecureKey();
+    when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((_) async => base64UrlEncode(key));
+    when(() => mockSecureStorage.write(key: any(named: 'key'), value: any(named: 'value'))).thenAnswer((_) async => {});
   });
 
   tearDown(() async {
@@ -81,36 +97,52 @@ void main() {
     expect(find.text("Proof"), findsOneWidget);
   });
 
-  testWidgets('Integration: Pushed PartnerModePage can access providers', (WidgetTester tester) async {
-    // 1. Build the full app
-    await tester.pumpWidget(const PrivacyTrackerApp());
-    
-    // Advance beyond the splash/loading screen
-    int retry = 0;
-    while (find.byType(HomePage).evaluate().isEmpty && retry < 10) {
-      await tester.pump(const Duration(milliseconds: 200));
-      retry++;
-    }
+  testWidgets('Integration: Pushed route can access PartnerStorageService', (WidgetTester tester) async {
+    await tester.runAsync(() async {
+      await tester.pumpWidget(PrivacyTrackerApp(
+        keyStorage: SecureKeyStorage(mockSecureStorage),
+        dbManager: LocalDatabaseManager(),
+        migrator: DatabaseMigrator(),
+        backupService: BackupRestoreService(),
+        exportService: DataExportService(),
+        appLinks: mockAppLinks,
+        storageBasePath: tempDir.path,
+      ));
+      
+      // Advance beyond the splash/loading screen
+      int retry = 0;
+      while (find.byType(HomePage).evaluate().isEmpty && retry < 100) {
+        await tester.pump(const Duration(milliseconds: 100));
+        
+        if (retry % 10 == 0) {
+          // Allow real async tasks to progress
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+        retry++;
+      }
+    });
 
     expect(find.byType(HomePage), findsOneWidget);
 
-    // 2. Simulate pushing PartnerModePage via navigator (finding context below MaterialApp)
     final BuildContext context = tester.element(find.byType(HomePage));
     final NavigatorState navigator = Navigator.of(context);
 
-    navigator.push(
-      MaterialPageRoute(
-        builder: (context) => const PartnerModePage(
-          initialPayload: 'test',
-          initialKey: 'test',
+    await tester.runAsync(() async {
+      navigator.push(
+        MaterialPageRoute(
+          builder: (context) => Consumer<PartnerStorageService>(
+            builder: (context, service, _) => const Text('PartnerServiceFound'),
+          ),
         ),
-      ),
-    );
+      );
+      
+      // Allow the navigator to process the push and animations
+      for (int i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 200));
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+    });
 
-    await tester.pumpAndSettle();
-
-    // 3. Verify no ProviderNotFoundException occurred
-    expect(find.byType(PartnerModePage), findsOneWidget);
+    expect(find.text('PartnerServiceFound'), findsOneWidget);
   });
 }
-

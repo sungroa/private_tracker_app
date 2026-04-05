@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:private_tracker_app/domain/models/custom_tag.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
 import 'package:private_tracker_app/domain/repositories/symptom_log_repository.dart';
 import 'package:private_tracker_app/domain/repositories/tag_repository.dart';
 import 'package:private_tracker_app/data/repositories/symptom_log_repository_impl.dart';
@@ -15,6 +16,11 @@ import 'package:private_tracker_app/data/repositories/tag_repository_impl.dart';
 import 'package:private_tracker_app/presentation/sheets/symptom_logging_sheet.dart';
 import 'package:private_tracker_app/presentation/sheets/cycle_logging_sheet.dart';
 import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
+import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
+import 'package:private_tracker_app/data/storage/local_database_manager.dart';
+import 'package:private_tracker_app/data/storage/database_migrator.dart';
+import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
+import 'package:private_tracker_app/data/storage/data_export_service.dart';
 import 'package:private_tracker_app/presentation/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
@@ -25,8 +31,6 @@ import 'package:private_tracker_app/presentation/providers/cycle_provider.dart';
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 void main() {
-  // Helper to wrap widgets for testing. Uses a nested Navigator
-  // to ensure Navigator.pop() doesn't pop the root test route.
   Widget buildTestableWidget({
     required Widget child,
     required List<SingleChildWidget> providers,
@@ -49,21 +53,28 @@ void main() {
   group('SymptomLoggingSheet Widget Tests', () {
     late Directory tempDir;
     late MockFlutterSecureStorage mockStorage;
+    late EncryptedStorageService storageService;
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('hive_test_widget');
       Hive.init(tempDir.path);
       
       mockStorage = MockFlutterSecureStorage();
-      EncryptedStorageService.instance = EncryptedStorageService.test(mockStorage);
+      storageService = EncryptedStorageService(
+        keyStorage: SecureKeyStorage(mockStorage),
+        dbManager: LocalDatabaseManager(),
+        migrator: DatabaseMigrator(),
+        backupService: BackupRestoreService(),
+        exportService: DataExportService(),
+      );
       
       final key = Hive.generateSecureKey();
-      when(() => mockStorage.containsKey(key: any(named: 'key'))).thenAnswer((_) async => true);
       when(() => mockStorage.read(key: any(named: 'key'))).thenAnswer((_) async => base64UrlEncode(key));
+      when(() => mockStorage.write(key: any(named: 'key'), value: any(named: 'value'))).thenAnswer((_) async => {});
 
-      await EncryptedStorageService.instance.initialize(basePath: tempDir.path);
+      await storageService.initialize(basePath: tempDir.path);
       
-      final customTagsBox = EncryptedStorageService.instance.getCustomTagsBox();
+      final customTagsBox = storageService.getCustomTagsBox();
       if (customTagsBox.isEmpty) {
         await customTagsBox.addAll([
           CustomTag(name: 'Cramps', isDefault: true),
@@ -77,7 +88,6 @@ void main() {
       if (await tempDir.exists()) {
         await tempDir.delete(recursive: true);
       }
-      EncryptedStorageService.resetForTesting();
     });
 
     testWidgets('SymptomLoggingSheet shows "Add Log" in create mode', (WidgetTester tester) async {
@@ -88,9 +98,10 @@ void main() {
         buildTestableWidget(
           child: SymptomLoggingSheet(selectedDay: DateTime.now()),
           providers: [
-            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
-            Provider<TagRepository>(create: (_) => TagRepositoryImpl(EncryptedStorageService.instance)),
-            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(EncryptedStorageService.instance))),
+            Provider<EncryptedStorageService>.value(value: storageService),
+            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(storageService)),
+            Provider<TagRepository>(create: (_) => TagRepositoryImpl(storageService)),
+            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(storageService))),
             ChangeNotifierProvider(create: (context) => TagProvider(context.read<TagRepository>())),
           ],
         ),
@@ -104,6 +115,7 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       final existing = SymptomLog(
+        id: 'test-symptom-id',
         date: DateTime.now(),
         symptoms: ['Cramps'],
         moodRating: 5,
@@ -115,9 +127,10 @@ void main() {
         buildTestableWidget(
           child: SymptomLoggingSheet(selectedDay: existing.date, existingLog: existing),
           providers: [
-            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
-            Provider<TagRepository>(create: (_) => TagRepositoryImpl(EncryptedStorageService.instance)),
-            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(EncryptedStorageService.instance))),
+            Provider<EncryptedStorageService>.value(value: storageService),
+            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(storageService)),
+            Provider<TagRepository>(create: (_) => TagRepositoryImpl(storageService)),
+            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(storageService))),
             ChangeNotifierProvider(create: (context) => TagProvider(context.read<TagRepository>())),
           ],
         ),
@@ -127,8 +140,6 @@ void main() {
       expect(find.text('Save Changes'), findsOneWidget);
       expect(find.text('Test notes'), findsOneWidget);
       expect(find.text('98.7'), findsOneWidget);
-      
-      // Verify mood rating circle is selected (Simplified check by finding the icon)
       expect(find.byIcon(Icons.sentiment_very_satisfied), findsOneWidget);
     });
 
@@ -136,15 +147,16 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(1000, 2000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      final existing = SymptomLog(date: DateTime.now(), symptoms: [], moodRating: 3);
+      final existing = SymptomLog(id: 'delete-id', date: DateTime.now(), symptoms: [], moodRating: 3);
       
       await tester.pumpWidget(
         buildTestableWidget(
           child: SymptomLoggingSheet(selectedDay: existing.date, existingLog: existing),
           providers: [
-            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
-            Provider<TagRepository>(create: (_) => TagRepositoryImpl(EncryptedStorageService.instance)),
-            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(EncryptedStorageService.instance))),
+            Provider<EncryptedStorageService>.value(value: storageService),
+            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(storageService)),
+            Provider<TagRepository>(create: (_) => TagRepositoryImpl(storageService)),
+            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(storageService))),
             ChangeNotifierProvider(create: (context) => TagProvider(context.read<TagRepository>())),
           ],
         ),
@@ -152,13 +164,13 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Delete Daily Log'));
-      await tester.pump(); // Start dialog animation
-      await tester.pump(); // Process post-frame callback for refresh()
-      await tester.pump(); // Process microtasks from refresh()
-      await tester.pump(const Duration(milliseconds: 100)); // Finish animations
+      await tester.pump(); 
+      await tester.pump(); 
+      await tester.pump(); 
+      await tester.pump(const Duration(milliseconds: 100)); 
 
-      expect(find.text('Delete entry?'), findsOneWidget);
-      expect(find.text('This action cannot be undone.'), findsOneWidget);
+      expect(find.text('Delete Entry'), findsOneWidget);
+      expect(find.text('Are you sure you want to delete this log? This action cannot be undone.'), findsOneWidget);
     });
 
     testWidgets('Selecting a symptom and clicking save should persist data', (WidgetTester tester) async {
@@ -171,36 +183,34 @@ void main() {
         buildTestableWidget(
           child: SymptomLoggingSheet(selectedDay: date),
           providers: [
-            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(EncryptedStorageService.instance)),
-            Provider<TagRepository>(create: (_) => TagRepositoryImpl(EncryptedStorageService.instance)),
-            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(EncryptedStorageService.instance))),
+            Provider<EncryptedStorageService>.value(value: storageService),
+            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(storageService)),
+            Provider<TagRepository>(create: (_) => TagRepositoryImpl(storageService)),
+            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(storageService))),
             ChangeNotifierProvider(create: (context) => TagProvider(context.read<TagRepository>())),
           ],
         ),
       );
 
-      await tester.pump(); // Process post-frame callback for refresh()
-      await tester.pump(); // Process microtasks from refresh()
-      await tester.pump(const Duration(milliseconds: 100)); // Finish animations
+      await tester.pump(); 
+      await tester.pump(); 
+      await tester.pump(const Duration(milliseconds: 100)); 
 
       final crampsChip = find.text('Cramps');
       await tester.tap(crampsChip);
-      await tester.pump(); // Start animation
-      await tester.pump(const Duration(milliseconds: 200)); // Finish animation
+      await tester.pump(); 
+      await tester.pump(const Duration(milliseconds: 200)); 
 
       final saveButton = find.byKey(const Key('symptom_save_button'));
       
-      // Use runAsync to allow real async operations (like Hive/Crypto) to complete
       await tester.runAsync(() async {
         await tester.tap(saveButton);
-        // Give some real time for microtasks/futures to resolve
         await Future.delayed(const Duration(milliseconds: 100));
       });
       
-      // Pump to process the Navigator.pop() and dismissal animation
       await tester.pump(const Duration(seconds: 1)); 
 
-      final logs = EncryptedStorageService.instance.getSymptomLogsForMonth(date);
+      final logs = storageService.getSymptomLogsForMonth(date);
       expect(logs.isNotEmpty, true);
       expect(logs.any((l) => l.symptoms.contains('Cramps')), true);
     });
@@ -218,22 +228,22 @@ void main() {
         basalBodyTemperature: 98.6,
       );
 
-      // Pre-populate the box with the existing log
-      final symptomBox = EncryptedStorageService.instance.getSymptomLogsBox();
+      final symptomBox = storageService.getSymptomLogsBox();
       await symptomBox.put(existing.id, existing);
 
       await tester.pumpWidget(
         buildTestableWidget(
           child: SymptomLoggingSheet(selectedDay: date, existingLog: existing),
           providers: [
-            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(EncryptedStorageService.instance))),
+            Provider<EncryptedStorageService>.value(value: storageService),
+            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(storageService))),
           ],
         ),
       );
 
-      await tester.pump(); // Process post-frame callback for refresh()
-      await tester.pump(); // Process microtasks from refresh()
-      await tester.pump(const Duration(milliseconds: 100)); // Finish animations
+      await tester.pump(); 
+      await tester.pump(); 
+      await tester.pump(const Duration(milliseconds: 100)); 
 
       final bbtField = find.byKey(const Key('bbt_field'));
       await tester.enterText(bbtField, '97.85');
@@ -251,7 +261,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump(const Duration(milliseconds: 500));
 
-      final logs = EncryptedStorageService.instance.getSymptomLogs();
+      final logs = storageService.getSymptomLogs();
       expect(logs.any((l) => l.id == 'test-id-123'), true);
       final updatedLog = logs.firstWhere((l) => l.id == 'test-id-123');
       expect(updatedLog.basalBodyTemperature, 97.85);
@@ -261,19 +271,26 @@ void main() {
   group('CycleLoggingSheet Widget Tests', () {
     late Directory tempDir;
     late MockFlutterSecureStorage mockStorage;
+    late EncryptedStorageService storageService;
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('hive_test_cycle');
       Hive.init(tempDir.path);
       
       mockStorage = MockFlutterSecureStorage();
-      EncryptedStorageService.instance = EncryptedStorageService.test(mockStorage);
+      storageService = EncryptedStorageService(
+        keyStorage: SecureKeyStorage(mockStorage),
+        dbManager: LocalDatabaseManager(),
+        migrator: DatabaseMigrator(),
+        backupService: BackupRestoreService(),
+        exportService: DataExportService(),
+      );
       
       final key = Hive.generateSecureKey();
-      when(() => mockStorage.containsKey(key: any(named: 'key'))).thenAnswer((_) async => true);
       when(() => mockStorage.read(key: any(named: 'key'))).thenAnswer((_) async => base64UrlEncode(key));
+      when(() => mockStorage.write(key: any(named: 'key'), value: any(named: 'value'))).thenAnswer((_) async => {});
 
-      await EncryptedStorageService.instance.initialize(basePath: tempDir.path);
+      await storageService.initialize(basePath: tempDir.path);
     });
 
     tearDown(() async {
@@ -281,7 +298,6 @@ void main() {
       if (await tempDir.exists()) {
         await tempDir.delete(recursive: true);
       }
-      EncryptedStorageService.resetForTesting();
     });
 
     testWidgets('CycleLoggingSheet shows "Add Cycle Log" in create mode', (WidgetTester tester) async {
@@ -292,9 +308,10 @@ void main() {
         buildTestableWidget(
           child: CycleLoggingSheet(selectedDay: DateTime(2026, 3, 28)),
           providers: [
+            Provider<EncryptedStorageService>.value(value: storageService),
             ChangeNotifierProvider(create: (_) => CycleProvider(
-              CycleLogRepositoryImpl(EncryptedStorageService.instance),
-              SymptomLogRepositoryImpl(EncryptedStorageService.instance),
+              CycleLogRepositoryImpl(storageService),
+              SymptomLogRepositoryImpl(storageService),
             )),
           ],
         ),
@@ -308,6 +325,7 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       final existing = CycleEvent(
+        id: 'cycle-id',
         startDate: DateTime(2026, 3, 20),
         endDate: DateTime(2026, 3, 25),
         notes: "Cycle notes",
@@ -318,9 +336,10 @@ void main() {
         buildTestableWidget(
           child: CycleLoggingSheet(selectedDay: DateTime(2026, 3, 28), existingEvent: existing),
           providers: [
+            Provider<EncryptedStorageService>.value(value: storageService),
             ChangeNotifierProvider(create: (_) => CycleProvider(
-              CycleLogRepositoryImpl(EncryptedStorageService.instance),
-              SymptomLogRepositoryImpl(EncryptedStorageService.instance),
+              CycleLogRepositoryImpl(storageService),
+              SymptomLogRepositoryImpl(storageService),
             )),
           ],
         ),
@@ -331,21 +350,22 @@ void main() {
       expect(find.text('Cycle notes'), findsOneWidget);
       expect(find.text('Mar 20, 2026'), findsOneWidget);
       expect(find.text('Mar 25, 2026'), findsOneWidget);
-      expect(find.text('Heavy'), findsOneWidget); // Flow label 4
+      expect(find.text('Heavy'), findsOneWidget); 
     });
 
     testWidgets('CycleLoggingSheet deletion shows confirmation', (WidgetTester tester) async {
       await tester.binding.setSurfaceSize(const Size(1000, 2000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      final existing = CycleEvent(startDate: DateTime.now());
+      final existing = CycleEvent(id: 'del-cycle', startDate: DateTime.now());
       await tester.pumpWidget(
         buildTestableWidget(
           child: CycleLoggingSheet(selectedDay: DateTime.now(), existingEvent: existing),
           providers: [
+            Provider<EncryptedStorageService>.value(value: storageService),
             ChangeNotifierProvider(create: (_) => CycleProvider(
-              CycleLogRepositoryImpl(EncryptedStorageService.instance),
-              SymptomLogRepositoryImpl(EncryptedStorageService.instance),
+              CycleLogRepositoryImpl(storageService),
+              SymptomLogRepositoryImpl(storageService),
             )),
           ],
         ),
@@ -354,9 +374,9 @@ void main() {
 
       await tester.tap(find.text('Delete Cycle Log'));
       await tester.pump();
-      await tester.pump(); // Process post-frame callback for refresh()
-      await tester.pump(); // Process microtasks from refresh()
-      await tester.pump(const Duration(milliseconds: 100)); // Finish animations
+      await tester.pump(); 
+      await tester.pump(); 
+      await tester.pump(const Duration(milliseconds: 100)); 
 
       expect(find.text('Delete Cycle Log?'), findsOneWidget);
     });
@@ -370,17 +390,18 @@ void main() {
         buildTestableWidget(
           child: CycleLoggingSheet(selectedDay: date),
           providers: [
+            Provider<EncryptedStorageService>.value(value: storageService),
             ChangeNotifierProvider(create: (_) => CycleProvider(
-              CycleLogRepositoryImpl(EncryptedStorageService.instance),
-              SymptomLogRepositoryImpl(EncryptedStorageService.instance),
+              CycleLogRepositoryImpl(storageService),
+              SymptomLogRepositoryImpl(storageService),
             )),
           ],
         ),
       );
 
-      await tester.pump(); // Process post-frame callback for refresh()
-      await tester.pump(); // Process microtasks from refresh()
-      await tester.pump(const Duration(milliseconds: 100)); // Finish animations
+      await tester.pump(); 
+      await tester.pump(); 
+      await tester.pump(const Duration(milliseconds: 100)); 
 
       final saveButton = find.text('Add Cycle Log');
       
@@ -391,7 +412,7 @@ void main() {
       
       await tester.pump(const Duration(seconds: 1));
 
-      final logs = EncryptedStorageService.instance.getCycleEvents();
+      final logs = storageService.getCycleEvents();
       expect(logs.length, 1);
       expect(logs.first.startDate.year, 2026);
     });

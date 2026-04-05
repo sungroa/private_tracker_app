@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Palette
+  // --- Palette: Day Mode ---
   static const Color primaryColor = Color(0xFF6750A4); // Deep Indigo
   static const Color accentColor = Color(0xFFFFD8E4); // Soft Rose
   static const Color backgroundColor = Color(0xFFFFFBFE); // Creamy White
-  static const Color surfaceColor = Color(0x66FFFFFF); // Semi-transparent for glassmorphism
+  static const Color surfaceColor = Color(0x66FFFFFF); // Glass Base
+
+  // --- Palette: Night Mode ---
+  static const Color primaryDarkColor = Color(0xFFD0BCFF); // Light Lavender
+  static const Color accentDarkColor = Color(0xFF4F378B); // Deep Violet
+  static const Color backgroundDarkColor = Color(0xFF1C1B1F); // Near Black
+  static const Color surfaceDarkColor = Color(0x22FFFFFF); // Dark Glass Base
+
+  // --- Shared Aesthetics ---
+  static const String fontFamily = 'Outfit'; // Premium look
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -15,57 +24,99 @@ class AppTheme {
         primary: primaryColor,
         secondary: accentColor,
         surface: backgroundColor,
+        brightness: Brightness.light,
       ),
-      scaffoldBackgroundColor: backgroundColor,
+      fontFamily: fontFamily,
+      scaffoldBackgroundColor: Colors.transparent, // Background handled by layer
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
           color: primaryColor,
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      tabBarTheme: TabBarThemeData(
-        labelColor: primaryColor,
-        unselectedLabelColor: primaryColor.withValues(alpha: 0.5),
-        indicator: const UnderlineTabIndicator(
-          borderSide: BorderSide(color: primaryColor, width: 3),
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          fontFamily: fontFamily,
         ),
       ),
       cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.2), width: 1),
+          borderRadius: BorderRadius.circular(28),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
         ),
       ),
     );
   }
 
-  // Glassmorphic Decoration Utility
-  static BoxDecoration glassDecoration({Color? color}) {
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryDarkColor,
+        primary: primaryDarkColor,
+        secondary: accentDarkColor,
+        surface: backgroundDarkColor,
+        brightness: Brightness.dark,
+      ),
+      fontFamily: fontFamily,
+      scaffoldBackgroundColor: Colors.transparent,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          color: primaryDarkColor,
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          fontFamily: fontFamily,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: surfaceDarkColor,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1), width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  // --- Premium Glassmorphism ---
+  static BoxDecoration glassDecoration({bool isDark = false, double borderRadius = 28}) {
     return BoxDecoration(
-      color: color ?? surfaceColor,
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.5),
+      color: isDark ? surfaceDarkColor : surfaceColor,
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(
+        color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.4),
+        width: 1.5,
+      ),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.05),
-          blurRadius: 20,
-          offset: const Offset(0, 10),
+          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
+          blurRadius: 30,
+          offset: const Offset(0, 15),
         ),
       ],
     );
   }
+}
+
+class PremiumGradients {
+  static const List<Color> lightBackground = [
+    Color(0xFFFFFBFE),
+    Color(0xFFFFE0E9), // Gentle soft rose
+  ];
+
+  static const List<Color> darkBackground = [
+    Color(0xFF1C1B1F),
+    Color(0xFF2E1A47), // Deep purple night
+  ];
+
+  static const List<Color> accentGradient = [
+    Color(0xFF6750A4),
+    Color(0xFF9070D8),
+  ];
 }

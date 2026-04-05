@@ -22,7 +22,7 @@ class SummaryTrendCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
-      decoration: AppTheme.glassDecoration(color: Colors.white).copyWith(
+      decoration: AppTheme.glassDecoration(isDark: Theme.of(context).brightness == Brightness.dark).copyWith(
         borderRadius: BorderRadius.circular(24),
       ),
       child: Column(
