@@ -1,32 +1,20 @@
-import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
-part 'symptom_log.g.dart';
-
-@HiveType(typeId: 1)
 class SymptomLog {
-  @HiveField(7, defaultValue: '')
   final String id;
 
-  @HiveField(0)
   final DateTime date;
 
-  @HiveField(1)
   final List<String> symptoms;
 
-  @HiveField(2)
   final int moodRating; // 1-5
 
-  @HiveField(3)
   final String? notes;
 
-  @HiveField(4)
   final double? basalBodyTemperature;
 
-  @HiveField(5)
   final String? cervicalFluidType;
 
-  @HiveField(6)
   final bool? lhTestPositive;
 
   SymptomLog({

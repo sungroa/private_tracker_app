@@ -7,12 +7,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
 import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
-import 'package:private_tracker_app/data/storage/database_migrator.dart';
 import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
 import 'package:private_tracker_app/data/storage/data_export_service.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
-import 'package:private_tracker_app/domain/models/custom_tag.dart';
+import 'package:private_tracker_app/data/storage/hive_dtos.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
@@ -38,7 +37,6 @@ void main() {
       storageService = EncryptedStorageService(
         keyStorage: SecureKeyStorage(mockStorage),
         dbManager: LocalDatabaseManager(),
-        migrator: DatabaseMigrator(),
         backupService: BackupRestoreService(),
         exportService: DataExportService(),
       );
@@ -106,8 +104,8 @@ void main() {
     });
 
     test('exportDataToCsv should format CSV string correctly', () async {
-      await storageService.getBox<CycleEvent>(LocalDatabaseManager.cycleLogBox).clear();
-      await storageService.getBox<SymptomLog>(LocalDatabaseManager.symptomLogBox).clear();
+      await storageService.getBox<CycleEventDto>(LocalDatabaseManager.cycleLogBox).clear();
+      await storageService.getBox<SymptomLogDto>(LocalDatabaseManager.symptomLogBox).clear();
 
       await storageService.saveCycleEvent(CycleEvent(id: 'c1', startDate: DateTime(2026, 3, 1), notes: 'Cycle note'));
       await storageService.saveSymptomLog(SymptomLog(
@@ -126,7 +124,7 @@ void main() {
     });
 
     test('addCustomTag and deleteCustomTag should work', () async {
-      final box = storageService.getCustomTagsBox();
+      final box = storageService.getBox<CustomTagDto>(LocalDatabaseManager.customTagBox);
       await box.clear();
 
       await storageService.addCustomTag('New Symptom');
@@ -136,16 +134,16 @@ void main() {
       await storageService.addCustomTag('NEW SYMPTOM');
       expect(box.length, 1);
 
-      final tag = box.values.first;
+      final tag = box.values.first.sovereignty();
       await storageService.deleteCustomTag(tag);
       expect(box.length, 0);
     });
 
     test('Encrypted backup and restore should preserve all data', () async {
       // 1. Prepare data
-      await storageService.getBox<CycleEvent>(LocalDatabaseManager.cycleLogBox).clear();
-      await storageService.getBox<SymptomLog>(LocalDatabaseManager.symptomLogBox).clear();
-      await storageService.getBox<CustomTag>(LocalDatabaseManager.customTagBox).clear();
+      await storageService.getBox<CycleEventDto>(LocalDatabaseManager.cycleLogBox).clear();
+      await storageService.getBox<SymptomLogDto>(LocalDatabaseManager.symptomLogBox).clear();
+      await storageService.getBox<CustomTagDto>(LocalDatabaseManager.customTagBox).clear();
 
       await storageService.saveCycleEvent(CycleEvent(id: 'c1', startDate: DateTime(2026, 3, 1), notes: 'Backup test'));
       await storageService.saveSymptomLog(SymptomLog(
@@ -162,9 +160,9 @@ void main() {
       expect(await backupFile.exists(), isTrue);
 
       // 3. Clear local state
-      await storageService.getBox<CycleEvent>(LocalDatabaseManager.cycleLogBox).clear();
-      await storageService.getBox<SymptomLog>(LocalDatabaseManager.symptomLogBox).clear();
-      await storageService.getBox<CustomTag>(LocalDatabaseManager.customTagBox).clear();
+      await storageService.getBox<CycleEventDto>(LocalDatabaseManager.cycleLogBox).clear();
+      await storageService.getBox<SymptomLogDto>(LocalDatabaseManager.symptomLogBox).clear();
+      await storageService.getBox<CustomTagDto>(LocalDatabaseManager.customTagBox).clear();
       expect(storageService.getCycleEvents(), isEmpty);
 
       // 4. Restore
@@ -173,7 +171,7 @@ void main() {
       // 5. Verify
       final cycles = storageService.getCycleEvents();
       final symptoms = storageService.getSymptomLogs();
-      final tags = storageService.getCustomTagsBox().values.toList();
+      final tags = storageService.getCustomTags();
 
       expect(cycles.length, 1);
       expect(cycles.first.notes, 'Backup test');

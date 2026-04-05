@@ -5,26 +5,23 @@ import '../../domain/models/symptom_log.dart';
 import '../../domain/models/custom_tag.dart';
 import 'secure_key_storage.dart';
 import 'local_database_manager.dart';
-import 'database_migrator.dart';
 import 'backup_restore_service.dart';
 import 'data_export_service.dart';
+import 'hive_dtos.dart';
 
 class EncryptedStorageService {
   final SecureKeyStorage _keyStorage;
   final LocalDatabaseManager _dbManager;
-  final DatabaseMigrator _migrator;
   final BackupRestoreService _backupService;
   final DataExportService _exportService;
 
   EncryptedStorageService({
     required SecureKeyStorage keyStorage,
     required LocalDatabaseManager dbManager,
-    required DatabaseMigrator migrator,
     required BackupRestoreService backupService,
     required DataExportService exportService,
   }) : _keyStorage = keyStorage,
        _dbManager = dbManager,
-       _migrator = migrator,
        _backupService = backupService,
        _exportService = exportService;
 
@@ -43,9 +40,6 @@ class EncryptedStorageService {
       basePath: basePath,
       encryptionKey: encryptionKey,
     ).timeout(const Duration(seconds: 10));
-
-    // Run migrations
-    await _migrator.migrateToUUIDs();
   }
 
   // Generic methods for CRUD
@@ -53,73 +47,71 @@ class EncryptedStorageService {
 
   /// Saves or updates a symptom log.
   Future<void> saveSymptomLog(SymptomLog log) async {
-    final box = getBox<SymptomLog>(symptomLogBox);
-    await box.put(log.id, log);
+    final box = getBox<SymptomLogDto>(symptomLogBox);
+    await box.put(log.id, SymptomLogDto.fromDomain(log));
   }
 
   /// Deletes a symptom log by id.
   Future<void> deleteSymptomLog(String id) async {
-    final box = getBox<SymptomLog>(symptomLogBox);
+    final box = getBox<SymptomLogDto>(symptomLogBox);
     await box.delete(id);
   }
 
   /// Saves or updates a cycle event.
   Future<void> saveCycleEvent(CycleEvent event) async {
-    final box = getBox<CycleEvent>(cycleLogBox);
-    await box.put(event.id, event);
+    final box = getBox<CycleEventDto>(cycleLogBox);
+    await box.put(event.id, CycleEventDto.fromDomain(event));
   }
 
   /// Deletes a cycle event by id.
   Future<void> deleteCycleEvent(String id) async {
-    final box = getBox<CycleEvent>(cycleLogBox);
+    final box = getBox<CycleEventDto>(cycleLogBox);
     await box.delete(id);
   }
 
   /// Retrieves all symptom logs for a specific month.
   List<SymptomLog> getSymptomLogsForMonth(DateTime month) {
-    final box = getBox<SymptomLog>(symptomLogBox);
-    return box.values.where((log) => 
-      log.date.year == month.year && log.date.month == month.month
-    ).toList();
+    final box = getBox<SymptomLogDto>(symptomLogBox);
+    return box.values
+        .where((dto) => dto.date.year == month.year && dto.date.month == month.month)
+        .map((dto) => dto.sovereignty())
+        .toList();
   }
 
   /// Retrieves all cycle events sorted by start date.
   List<CycleEvent> getCycleEvents() {
-    final box = getBox<CycleEvent>(cycleLogBox);
-    final logs = box.values.toList();
-    logs.sort((a, b) => b.startDate.compareTo(a.startDate)); // Newest first
-    return logs;
+    final box = getBox<CycleEventDto>(cycleLogBox);
+    final dtos = box.values.toList();
+    dtos.sort((a, b) => b.startDate.compareTo(a.startDate)); // Newest first
+    return dtos.map((dto) => dto.sovereignty()).toList();
   }
 
   /// Retrieves all symptom logs.
   List<SymptomLog> getSymptomLogs() {
-    final box = getBox<SymptomLog>(symptomLogBox);
-    return box.values.toList();
+    final box = getBox<SymptomLogDto>(symptomLogBox);
+    return box.values.map((dto) => dto.sovereignty()).toList();
   }
-
-  /// Retrieves the custom tags box.
-  Box<CustomTag> getCustomTagsBox() => getBox<CustomTag>(customTagBox);
-
-  /// Retrieves the symptom logs box.
-  Box<SymptomLog> getSymptomLogsBox() => getBox<SymptomLog>(symptomLogBox);
-
-  /// Retrieves the cycle logs box.
-  Box<CycleEvent> getCycleLogsBox() => getBox<CycleEvent>(cycleLogBox);
 
   /// Adds a new custom tag.
   Future<void> addCustomTag(String name) async {
-    final box = getCustomTagsBox();
-    if (box.values.any((tag) => tag.name.toLowerCase() == name.toLowerCase())) {
+    final box = getBox<CustomTagDto>(customTagBox);
+    if (box.values.any((dto) => dto.name.toLowerCase() == name.toLowerCase())) {
       return;
     }
     final newTag = CustomTag(name: name);
-    await box.put(newTag.id, newTag);
+    await box.put(newTag.id, CustomTagDto.fromDomain(newTag));
   }
 
   /// Deletes a custom tag.
   Future<void> deleteCustomTag(CustomTag tag) async {
-    final box = getBox<CustomTag>(customTagBox);
+    final box = getBox<CustomTagDto>(customTagBox);
     await box.delete(tag.id);
+  }
+
+  /// Retrieves all custom tags.
+  List<CustomTag> getCustomTags() {
+    final box = getBox<CustomTagDto>(customTagBox);
+    return box.values.map((dto) => dto.sovereignty()).toList();
   }
 
   /// Exports all data to a CSV string.
@@ -136,7 +128,7 @@ class EncryptedStorageService {
       userPassword: userPassword,
       cycleEvents: getCycleEvents(),
       symptomLogs: getSymptomLogs(),
-      customTags: getCustomTagsBox().values.toList(),
+      customTags: getCustomTags(),
     );
   }
 
@@ -148,32 +140,32 @@ class EncryptedStorageService {
 
   Future<void> _restoreData(Map<String, dynamic> data) async {
     // Clear boxes
-    await getBox<CycleEvent>(cycleLogBox).clear();
-    await getBox<SymptomLog>(symptomLogBox).clear();
-    await getBox<CustomTag>(customTagBox).clear();
+    await getBox<CycleEventDto>(cycleLogBox).clear();
+    await getBox<SymptomLogDto>(symptomLogBox).clear();
+    await getBox<CustomTagDto>(customTagBox).clear();
 
     // Import Custom Tags first
-    final customTagsBox = getBox<CustomTag>(customTagBox);
+    final customTagsBox = getBox<CustomTagDto>(customTagBox);
     final List<dynamic> tagsJson = data['customTags'] ?? [];
     for (var tagMap in tagsJson) {
       final tag = CustomTag.fromMap(Map<String, dynamic>.from(tagMap));
-      await customTagsBox.put(tag.id, tag);
+      await customTagsBox.put(tag.id, CustomTagDto.fromDomain(tag));
     }
 
     // Import Cycle Events
-    final cycleLogBoxLocal = getBox<CycleEvent>(cycleLogBox);
+    final cycleLogBoxLocal = getBox<CycleEventDto>(cycleLogBox);
     final List<dynamic> cycleLogsJson = data['cycleLogs'] ?? [];
     for (var logMap in cycleLogsJson) {
       final event = CycleEvent.fromMap(Map<String, dynamic>.from(logMap));
-      await cycleLogBoxLocal.put(event.id, event);
+      await cycleLogBoxLocal.put(event.id, CycleEventDto.fromDomain(event));
     }
 
     // Import Symptom Logs
-    final symptomLogBoxLocal = getBox<SymptomLog>(symptomLogBox);
+    final symptomLogBoxLocal = getBox<SymptomLogDto>(symptomLogBox);
     final List<dynamic> symptomLogsJson = data['symptomLogs'] ?? [];
     for (var logMap in symptomLogsJson) {
       final log = SymptomLog.fromMap(Map<String, dynamic>.from(logMap));
-      await symptomLogBoxLocal.put(log.id, log);
+      await symptomLogBoxLocal.put(log.id, SymptomLogDto.fromDomain(log));
     }
   }
 }
