@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:private_tracker_app/domain/models/custom_tag.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 import 'package:private_tracker_app/domain/repositories/symptom_log_repository.dart';
@@ -18,7 +17,6 @@ import 'package:private_tracker_app/presentation/sheets/cycle_logging_sheet.dart
 import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
 import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
-import 'package:private_tracker_app/data/storage/database_migrator.dart';
 import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
 import 'package:private_tracker_app/data/storage/data_export_service.dart';
 import 'package:private_tracker_app/presentation/theme/app_theme.dart';
@@ -27,6 +25,7 @@ import 'package:provider/single_child_widget.dart';
 import 'package:private_tracker_app/presentation/providers/tag_provider.dart';
 import 'package:private_tracker_app/presentation/providers/symptom_provider.dart';
 import 'package:private_tracker_app/presentation/providers/cycle_provider.dart';
+import 'package:private_tracker_app/data/storage/hive_dtos.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
@@ -63,7 +62,6 @@ void main() {
       storageService = EncryptedStorageService(
         keyStorage: SecureKeyStorage(mockStorage),
         dbManager: LocalDatabaseManager(),
-        migrator: DatabaseMigrator(),
         backupService: BackupRestoreService(),
         exportService: DataExportService(),
       );
@@ -74,12 +72,10 @@ void main() {
 
       await storageService.initialize(basePath: tempDir.path);
       
-      final customTagsBox = storageService.getCustomTagsBox();
-      if (customTagsBox.isEmpty) {
-        await customTagsBox.addAll([
-          CustomTag(name: 'Cramps', isDefault: true),
-          CustomTag(name: 'Bloating', isDefault: true),
-        ]);
+      final customTags = storageService.getCustomTags();
+      if (customTags.isEmpty) {
+        await storageService.addCustomTag('Cramps');
+        await storageService.addCustomTag('Bloating');
       }
     });
 
@@ -228,8 +224,8 @@ void main() {
         basalBodyTemperature: 98.6,
       );
 
-      final symptomBox = storageService.getSymptomLogsBox();
-      await symptomBox.put(existing.id, existing);
+      final symptomBox = storageService.getBox<SymptomLogDto>(LocalDatabaseManager.symptomLogBox);
+      await symptomBox.put(existing.id, SymptomLogDto.fromDomain(existing));
 
       await tester.pumpWidget(
         buildTestableWidget(
@@ -281,7 +277,6 @@ void main() {
       storageService = EncryptedStorageService(
         keyStorage: SecureKeyStorage(mockStorage),
         dbManager: LocalDatabaseManager(),
-        migrator: DatabaseMigrator(),
         backupService: BackupRestoreService(),
         exportService: DataExportService(),
       );

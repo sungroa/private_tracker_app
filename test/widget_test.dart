@@ -7,7 +7,6 @@ import 'package:private_tracker_app/main.dart';
 import 'package:private_tracker_app/core/services/auth_service.dart';
 import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
-import 'package:private_tracker_app/data/storage/database_migrator.dart';
 import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
 import 'package:private_tracker_app/data/storage/data_export_service.dart';
 import 'package:private_tracker_app/presentation/pages/home_page.dart';
@@ -55,7 +54,6 @@ void main() {
         await tester.pumpWidget(PrivacyTrackerApp(
           keyStorage: mockKeyStorage,
           dbManager: LocalDatabaseManager(),
-          migrator: DatabaseMigrator(),
           backupService: BackupRestoreService(),
           exportService: DataExportService(),
           appLinks: mockAppLinks,

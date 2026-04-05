@@ -4,7 +4,6 @@ import 'core/services/notification_service.dart';
 import 'data/storage/encrypted_storage_service.dart';
 import 'data/storage/secure_key_storage.dart';
 import 'data/storage/local_database_manager.dart';
-import 'data/storage/database_migrator.dart';
 import 'data/storage/backup_restore_service.dart';
 import 'data/storage/data_export_service.dart';
 import 'data/storage/partner_storage_service.dart';
@@ -39,7 +38,6 @@ void main() async {
 class PrivacyTrackerApp extends StatefulWidget {
   final SecureKeyStorage? keyStorage;
   final LocalDatabaseManager? dbManager;
-  final DatabaseMigrator? migrator;
   final BackupRestoreService? backupService;
   final DataExportService? exportService;
   final AppLinks? appLinks;
@@ -49,7 +47,6 @@ class PrivacyTrackerApp extends StatefulWidget {
     super.key,
     this.keyStorage,
     this.dbManager,
-    this.migrator,
     this.backupService,
     this.exportService,
     this.appLinks,
@@ -103,16 +100,14 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
         Provider<StorageConfig>(create: (_) => StorageConfig(storageBasePath: widget.storageBasePath)),
         Provider<SecureKeyStorage>(create: (_) => widget.keyStorage ?? SecureKeyStorage(const FlutterSecureStorage())),
         Provider<LocalDatabaseManager>(create: (_) => widget.dbManager ?? LocalDatabaseManager()),
-        Provider<DatabaseMigrator>(create: (_) => widget.migrator ?? DatabaseMigrator()),
         Provider<BackupRestoreService>(create: (_) => widget.backupService ?? BackupRestoreService()),
         Provider<DataExportService>(create: (_) => widget.exportService ?? DataExportService()),
         Provider<PartnerStorageService>(create: (context) => PartnerStorageService(context.read<LocalDatabaseManager>())),
-        ProxyProvider5<SecureKeyStorage, LocalDatabaseManager, DatabaseMigrator, BackupRestoreService, DataExportService, EncryptedStorageService>(
-          update: (context, ks, db, mig, backup, export, previous) =>
+        ProxyProvider4<SecureKeyStorage, LocalDatabaseManager, BackupRestoreService, DataExportService, EncryptedStorageService>(
+          update: (context, ks, db, backup, export, previous) =>
               previous ?? EncryptedStorageService(
                 keyStorage: ks,
                 dbManager: db,
-                migrator: mig,
                 backupService: backup,
                 exportService: export,
               ),
@@ -226,6 +221,7 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
     if (!_useBiometric) {
       try {
         await _initializeStorage();
+      } catch (e) {
       } finally {
         if (mounted) {
           setState(() {
@@ -268,7 +264,11 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
       _storageInitialized = true;
     } catch (e) {
       debugPrint("Failed to initialize encrypted storage: $e");
-      // Still set initializing to false to allow UI to show error/retry or at least not hang
+      if (mounted) {
+        setState(() {
+          _isInitializing = false;
+        });
+      }
     }
   }
 

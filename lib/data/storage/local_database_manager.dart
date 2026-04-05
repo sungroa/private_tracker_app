@@ -1,7 +1,6 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../domain/models/cycle_log.dart';
-import '../../domain/models/symptom_log.dart';
 import '../../domain/models/custom_tag.dart';
+import 'hive_dtos.dart';
 
 class LocalDatabaseManager {
   static const String cycleLogBox = 'cycle_logs';
@@ -36,25 +35,24 @@ class LocalDatabaseManager {
         await Hive.initFlutter();
       } catch (e) {
         // Fallback for tests if initFlutter fails
-        print("Hive.initFlutter failed, attempting Hive.init('.'): $e");
         Hive.init('.');
       }
     }
 
     // Register Adapters
-    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(CycleEventAdapter());
-    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SymptomLogAdapter());
-    if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(CustomTagAdapter());
+    if (!Hive.isAdapterRegistered(10)) Hive.registerAdapter(CycleEventDtoAdapter());
+    if (!Hive.isAdapterRegistered(11)) Hive.registerAdapter(SymptomLogDtoAdapter());
+    if (!Hive.isAdapterRegistered(12)) Hive.registerAdapter(CustomTagDtoAdapter());
 
-    await Hive.openBox<CycleEvent>(
+    await Hive.openBox<CycleEventDto>(
       cycleLogBox,
       encryptionCipher: HiveAesCipher(encryptionKey),
     );
-    await Hive.openBox<SymptomLog>(
+    await Hive.openBox<SymptomLogDto>(
       symptomLogBox,
       encryptionCipher: HiveAesCipher(encryptionKey),
     );
-    await Hive.openBox<CustomTag>(
+    await Hive.openBox<CustomTagDto>(
       customTagBox,
       encryptionCipher: HiveAesCipher(encryptionKey),
     );
@@ -69,14 +67,14 @@ class LocalDatabaseManager {
     await _initializeDefaultTags();
     
     _isInitialized = true;
-    } catch (e) {
+    } catch (e, stack) {
       _initializeFuture = null;
       rethrow;
     }
   }
 
   Future<void> _initializeDefaultTags() async {
-    final box = Hive.box<CustomTag>(customTagBox);
+    final box = Hive.box<CustomTagDto>(customTagBox);
     if (box.isEmpty) {
       final defaults = [
         'Cramps',
@@ -88,7 +86,7 @@ class LocalDatabaseManager {
       ];
       for (var name in defaults) {
         final tag = CustomTag(name: name, isDefault: true);
-        await box.put(tag.id, tag);
+        await box.put(tag.id, CustomTagDto.fromDomain(tag));
       }
     }
   }

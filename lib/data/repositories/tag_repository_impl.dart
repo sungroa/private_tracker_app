@@ -9,7 +9,7 @@ class TagRepositoryImpl implements TagRepository {
 
   @override
   Future<List<CustomTag>> getTags() async {
-    return _storage.getCustomTagsBox().values.toList();
+    return _storage.getCustomTags();
   }
 
   @override
