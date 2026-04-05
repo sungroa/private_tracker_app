@@ -26,7 +26,7 @@ void main() {
     expect(provider.symptomLogs, isEmpty);
   });
 
-  test('addLog calls repository and reloads logs', () async {
+  test('addSymptomLog calls repository and reloads logs', () async {
     final log = SymptomLog(date: DateTime(2023, 1, 1), symptoms: [], moodRating: 3);
     when(() => mockRepo.addSymptomLog(any())).thenAnswer((_) async {});
     when(() => mockRepo.getSymptomLogs()).thenReturn([log]);
@@ -34,7 +34,7 @@ void main() {
     int listenerCallCount = 0;
     provider.addListener(() => listenerCallCount++);
 
-    await provider.addLog(log);
+    await provider.addSymptomLog(log);
 
     verify(() => mockRepo.addSymptomLog(log)).called(1);
     verify(() => mockRepo.getSymptomLogs()).called(2);
@@ -42,31 +42,31 @@ void main() {
     expect(listenerCallCount, 1);
   });
 
-  test('updateLog calls repository and reloads logs', () async {
+  test('updateSymptomLog calls repository and reloads logs', () async {
     final log = SymptomLog(date: DateTime(2023, 1, 1), symptoms: [], moodRating: 3);
-    when(() => mockRepo.updateSymptomEvent(any())).thenAnswer((_) async {});
+    when(() => mockRepo.updateSymptomLog(any())).thenAnswer((_) async {});
     when(() => mockRepo.getSymptomLogs()).thenReturn([log]);
 
     int listenerCallCount = 0;
     provider.addListener(() => listenerCallCount++);
 
-    await provider.updateLog(log);
+    await provider.updateSymptomLog(log);
 
-    verify(() => mockRepo.updateSymptomEvent(log)).called(1);
+    verify(() => mockRepo.updateSymptomLog(log)).called(1);
     verify(() => mockRepo.getSymptomLogs()).called(2);
     expect(provider.symptomLogs, [log]);
     expect(listenerCallCount, 1);
   });
 
-  test('deleteLog calls repository and reloads logs', () async {
-    when(() => mockRepo.deleteSymptomEvent(any())).thenAnswer((_) async {});
+  test('deleteSymptomLog calls repository and reloads logs', () async {
+    when(() => mockRepo.deleteSymptomLog(any())).thenAnswer((_) async {});
     
     int listenerCallCount = 0;
     provider.addListener(() => listenerCallCount++);
 
-    await provider.deleteLog('test-id');
+    await provider.deleteSymptomLog('test-id');
 
-    verify(() => mockRepo.deleteSymptomEvent('test-id')).called(1);
+    verify(() => mockRepo.deleteSymptomLog('test-id')).called(1);
     verify(() => mockRepo.getSymptomLogs()).called(2);
     expect(listenerCallCount, 1);
   });

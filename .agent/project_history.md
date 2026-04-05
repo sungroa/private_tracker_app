@@ -22,3 +22,6 @@
 - [x] UI Refactoring: Wired presentation layer to use the new Provider state management.
 - [x] Feature: Added 'Delete' functionality to logging sheets.
 - [x] Unit Testing: Added 9 tests for the new provider layer (PASSED).
+- [x] Feature: Secure Partner Sharing (QR/Deep Link) implementation.
+- [x] Unit Testing: Added 4 tests for PartnerSharingService (PASSED).
+- [x] Integration: Deep Link Handling in `main.dart`.

@@ -1,4 +1,5 @@
 import 'models/cycle_log.dart';
+import 'trends_calculator.dart';
 
 class CycleCalculator {
   // Average cycle length (default 28 days)
@@ -8,7 +9,7 @@ class CycleCalculator {
   /// If [symptomLogs] are provided, it attempts to mathematically confirm ovulation
   /// using the 3-over-6 rule and overrides the average prediction.
   static DateTime predictNextPeriod(
-    List<CycleLog> cycleLogs, [
+    List<CycleEvent> cycleLogs, [
     List<SymptomLog>? symptomLogs,
     double threshold = 0.2,
   ]) {
@@ -17,39 +18,39 @@ class CycleCalculator {
     }
 
     // Sort newest first
-    final sortedCycleLogs = List<CycleLog>.from(cycleLogs)
+    final sortedCycleEvents = List<CycleEvent>.from(cycleLogs)
       ..sort((a, b) => b.startDate.compareTo(a.startDate));
 
     // 1. Try to confirm ovulation for the current cycle if symptom logs are available
     if (symptomLogs != null && symptomLogs.isNotEmpty) {
-      final latestCycleStart = sortedCycleLogs.first.startDate;
-      final currentCycleLogs = symptomLogs
+      final latestCycleStart = sortedCycleEvents.first.startDate;
+      final currentCycleEvents = symptomLogs
           .where((log) => !log.date.isBefore(latestCycleStart))
           .toList();
 
-      final confirmedOvulation = confirmOvulation(currentCycleLogs, threshold: threshold);
+      final confirmedOvulation = confirmOvulation(currentCycleEvents, threshold: threshold);
       if (confirmedOvulation != null) {
         // STM standard: Luteal phase is consistently ~14 days
         return confirmedOvulation.add(const Duration(days: 14));
       }
     }
 
-    if (sortedCycleLogs.length < 2) {
-      return sortedCycleLogs.first.startDate.add(const Duration(days: defaultCycleLength));
+    if (sortedCycleEvents.length < 2) {
+      return sortedCycleEvents.first.startDate.add(const Duration(days: defaultCycleLength));
     }
 
     // 2. Fallback to historical weighted average
     final lengths = <int>[];
-    for (int i = 0; i < sortedCycleLogs.length - 1; i++) {
+    for (int i = 0; i < sortedCycleEvents.length - 1; i++) {
       lengths.add(
-        sortedCycleLogs[i].startDate.difference(sortedCycleLogs[i + 1].startDate).inDays,
+        sortedCycleEvents[i].startDate.difference(sortedCycleEvents[i + 1].startDate).inDays,
       );
     }
 
-    final filteredLengths = _filterOutliers(lengths);
-    final averageLength = _calculateWeightedAverage(filteredLengths);
+    final filteredLengths = TrendsCalculator.filterOutliers(lengths);
+    final averageLength = TrendsCalculator.calculateWeightedAverage(filteredLengths);
 
-    return sortedCycleLogs.first.startDate.add(Duration(days: averageLength));
+    return sortedCycleEvents.first.startDate.add(Duration(days: averageLength));
   }
 
   /// Implements the Sympto-Thermal Method "3-over-6 rule" to confirm ovulation.
@@ -102,51 +103,13 @@ class CycleCalculator {
     return latestConfirmed;
   }
 
-  /// Excludes anomalous cycle lengths using the Interquartile Range (IQR) method.
-  static List<int> _filterOutliers(List<int> lengths) {
-    if (lengths.length < 4) return lengths;
-
-    final sorted = List<int>.from(lengths)..sort();
-    final n = sorted.length;
-
-    // Use simple index-based quartiles
-    final q1 = sorted[(n / 4).floor()];
-    final q3 = sorted[(n * 3 / 4).floor()];
-    final iqr = q3 - q1;
-
-    final lowerBound = q1 - 1.5 * iqr;
-    final upperBound = q3 + 1.5 * iqr;
-
-    return lengths.where((l) => l >= lowerBound && l <= upperBound).toList();
-  }
-
-  /// Calculates a decaying weighted average of cycle lengths.
-  /// Decal weights: 50% for newest, 30% for previous, 20% for 3rd previous.
-  static int _calculateWeightedAverage(List<int> lengths) {
-    if (lengths.isEmpty) return defaultCycleLength;
-
-    final weights = [0.5, 0.3, 0.2];
-    double weightedSum = 0;
-    double totalWeight = 0;
-
-    for (int i = 0; i < lengths.length && i < weights.length; i++) {
-      weightedSum += lengths[i] * weights[i];
-      totalWeight += weights[i];
-    }
-
-    // Fallback to simple average if weighted sum fails or for older cycles beyond the first 3
-    if (totalWeight == 0) return defaultCycleLength;
-
-    return (weightedSum / totalWeight).round();
-  }
-
   /// Calculates the current cycle day (1, 2, 3...)
   static int currentCycleDay(DateTime lastPeriodStart) {
     return DateTime.now().difference(lastPeriodStart).inDays + 1;
   }
 
   /// Checks if the user is currently in their period.
-  static bool isCurrentlyInPeriod(List<CycleLog> logs) {
+  static bool isCurrentlyInPeriod(List<CycleEvent> logs) {
     if (logs.isEmpty) return false;
     logs.sort((a, b) => b.startDate.compareTo(a.startDate));
     final latest = logs.first;

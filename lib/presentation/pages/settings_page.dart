@@ -7,6 +7,8 @@ import '../../data/services/export_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/notification_service.dart';
 import '../theme/app_theme.dart';
+import 'share_prediction_page.dart';
+import 'partner_mode_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -523,6 +525,67 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   trailing: const Icon(Icons.chevron_right, color: Colors.black54),
                   onTap: _isExporting ? null : _handleRestoreBackup,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          const Text(
+            "Partner Sharing",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            decoration: AppTheme.glassDecoration(),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.qr_code, color: AppTheme.primaryColor),
+                  title: const Text(
+                    "Generate Share QR",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    "Securely share your predictions with a partner.",
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const SharePredictionPage()),
+                    );
+                  },
+                ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  leading: const Icon(Icons.favorite, color: Colors.green),
+                  title: const Text(
+                    "Enter Partner Mode",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    "Scan a QR code to see shared predictions.",
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, color: Colors.black54),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const PartnerModePage()),
+                    );
+                  },
                 ),
               ],
             ),

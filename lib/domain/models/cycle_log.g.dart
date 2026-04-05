@@ -6,28 +6,29 @@ part of 'cycle_log.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
-class CycleLogAdapter extends TypeAdapter<CycleLog> {
+class CycleEventAdapter extends TypeAdapter<CycleEvent> {
   @override
   final int typeId = 0;
 
   @override
-  CycleLog read(BinaryReader reader) {
+  CycleEvent read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return CycleLog(
+    return CycleEvent(
       id: fields[3] == null ? '' : fields[3] as String?,
       startDate: fields[0] as DateTime,
       endDate: fields[1] as DateTime?,
       notes: fields[2] as String?,
+      flowIntensity: fields[4] == null ? 3 : fields[4] as int,
     );
   }
 
   @override
-  void write(BinaryWriter writer, CycleLog obj) {
+  void write(BinaryWriter writer, CycleEvent obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(3)
       ..write(obj.id)
       ..writeByte(0)
@@ -35,7 +36,9 @@ class CycleLogAdapter extends TypeAdapter<CycleLog> {
       ..writeByte(1)
       ..write(obj.endDate)
       ..writeByte(2)
-      ..write(obj.notes);
+      ..write(obj.notes)
+      ..writeByte(4)
+      ..write(obj.flowIntensity);
   }
 
   @override
@@ -44,7 +47,7 @@ class CycleLogAdapter extends TypeAdapter<CycleLog> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is CycleLogAdapter &&
+      other is CycleEventAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

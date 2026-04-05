@@ -4,15 +4,17 @@ import '../providers/trends_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/summary_trend_card.dart';
 import '../widgets/summary_line_chart.dart';
+import '../analytics/widgets/bbt_chart.dart';
 
 class SummaryTrendsPage extends StatelessWidget {
   const SummaryTrendsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final _trendData = context.watch<TrendsProvider>().trendData;
+    final trendsProvider = context.watch<TrendsProvider>();
+    final trendData = trendsProvider.trendData;
 
-    if (_trendData == null) {
+    if (trendData == null) {
       return const Center(child: Text("No data available yet."));
     }
 
@@ -39,6 +41,18 @@ class SummaryTrendsPage extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 32),
+
+            // BBT Chart Section
+            Text(
+              "Basal Body Temperature",
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppTheme.primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            BbtChart(bbtHistory: trendData.bbtHistory),
+            const SizedBox(height: 32),
             
             // Cycle Stats Row
             Row(
@@ -46,7 +60,7 @@ class SummaryTrendsPage extends StatelessWidget {
                 Expanded(
                   child: SummaryTrendCard(
                     title: "AVG CYCLE",
-                    value: "${_trendData!.averageCycleLength.toStringAsFixed(0)}d",
+                    value: "${trendData.averageCycleLength.toStringAsFixed(0)}d",
                     icon: Icons.loop,
                   ),
                 ),
@@ -54,7 +68,7 @@ class SummaryTrendsPage extends StatelessWidget {
                 Expanded(
                   child: SummaryTrendCard(
                     title: "AVG PERIOD",
-                    value: "${_trendData!.averagePeriodDuration.toStringAsFixed(1)}d",
+                    value: "${trendData.averagePeriodDuration.toStringAsFixed(1)}d",
                     icon: Icons.water_drop,
                   ),
                 ),
@@ -65,25 +79,25 @@ class SummaryTrendsPage extends StatelessWidget {
             // Mood Trend Card
             SummaryTrendCard(
               title: "MOOD TREND",
-              value: _trendData!.moodHistory.isEmpty 
+              value: trendData.moodHistory.isEmpty 
                   ? "Logged data" 
-                  : _getMoodSummaryText(_trendData!.moodHistory.last.rating),
+                  : _getMoodSummaryText(trendData.moodHistory.last.rating),
               subtitle: "Last 30 days",
               icon: Icons.show_chart,
-              child: SummaryLineChart(data: _trendData!.moodHistory),
+              child: SummaryLineChart(data: trendData.moodHistory),
             ),
             const SizedBox(height: 24),
             
             // Top Symptoms Card
             SummaryTrendCard(
               title: "TOP SYMPTOMS",
-              value: _trendData!.topSymptoms.isEmpty ? "None" : _trendData!.topSymptoms.first.key,
+              value: trendData.topSymptoms.isEmpty ? "None" : trendData.topSymptoms.first.key,
               subtitle: "Frequently logged",
               icon: Icons.list,
-              child: _trendData!.topSymptoms.isEmpty 
+              child: trendData.topSymptoms.isEmpty 
                   ? null 
                   : Column(
-                      children: _trendData!.topSymptoms.skip(1).map((symptom) {
+                      children: trendData.topSymptoms.skip(1).map((symptom) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8.0),
                           child: Row(

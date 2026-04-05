@@ -5,8 +5,10 @@ import '../../../domain/models/cycle_log.dart';
 class CustomCalendarGrid extends StatelessWidget {
   final DateTime focusedDay;
   final DateTime? selectedDay;
-  final List<CycleLog> cycleLogs;
+  final List<CycleEvent> cycleLogs;
   final Map<DateTime, SymptomLog> symptomMap;
+  final DateTime? predictedNextPeriod;
+  final List<DateTime> predictedFertilityDates;
   final Function(DateTime) onDaySelected;
 
   const CustomCalendarGrid({
@@ -15,8 +17,24 @@ class CustomCalendarGrid extends StatelessWidget {
     this.selectedDay,
     required this.cycleLogs,
     required this.symptomMap,
+    this.predictedNextPeriod,
+    this.predictedFertilityDates = const [],
     required this.onDaySelected,
   });
+
+  bool _isPredictedBleeding(DateTime day) {
+    if (predictedNextPeriod == null) return false;
+    final dateOnly = DateUtils.dateOnly(day);
+    final start = DateUtils.dateOnly(predictedNextPeriod!);
+    // Assume 4 days of predicted bleeding if not specified
+    final end = start.add(const Duration(days: 4));
+    return (dateOnly.isAtSameMomentAs(start) || (dateOnly.isAfter(start) && dateOnly.isBefore(end.add(const Duration(days: 1)))));
+  }
+
+  bool _isPredictedFertility(DateTime day) {
+    final dateOnly = DateUtils.dateOnly(day);
+    return predictedFertilityDates.any((d) => DateUtils.isSameDay(d, dateOnly));
+  }
 
   bool _isBleeding(DateTime day) {
     final dateOnly = DateTime(day.year, day.month, day.day);
@@ -84,12 +102,17 @@ class CustomCalendarGrid extends StatelessWidget {
 
             final currentDay = DateTime(focusedDay.year, focusedDay.month, dayNumber);
             final bleeding = _isBleeding(currentDay);
+            final predictedBleeding = _isPredictedBleeding(currentDay);
+            final predictedFertility = _isPredictedFertility(currentDay);
+            
             final prevBleeding = _isBleeding(currentDay.subtract(const Duration(days: 1)));
             final nextBleeding = _isBleeding(currentDay.add(const Duration(days: 1)));
 
             return CalendarDayCell(
               date: currentDay,
               isBleeding: bleeding,
+              isPredictedBleeding: predictedBleeding,
+              isPredictedFertility: predictedFertility,
               isStartOfSpan: bleeding && !prevBleeding,
               isEndOfSpan: bleeding && !nextBleeding,
               isSelected: selectedDay != null && 

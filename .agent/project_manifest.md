@@ -1,8 +1,8 @@
 # Project Manifest: Private Tracker App
 
-- **Session ID:** 0687f167-7b5a-4cc9-9bb6-ec00983f524f
-- **Last Updated:** 2026-04-04T14:18:00Z
-- **Session Health:** HANDOFF_PENDING
+- **Session ID:** 4b7ed6bc-9ef0-42b2-8341-40463e7885c9
+- **Last Updated:** 2026-04-05T23:00:00Z
+- **Session Health:** NOMINAL
 - **Project Root:** /home/sungroa/git/private_tracker_app
 - **STRICT_CONSTRAINTS:**
     - Privacy-First: No data sent to any server. Local only.
@@ -10,64 +10,54 @@
     - Premium Aesthetics: High-fidelity (Glassmorphic) UI required.
     - Native Approach: Flutter implementation.
     - Testing: No feature is complete without passing tests.
-- **Verification Token:** Pass: 9 Provider Unit Tests.
-- **Context Budget:** ~80% (CRITICAL)
+- [x] Phase 4: Verification
+    - [x] Write unit test for `CycleProvider` prediction shift.
+    - [x] Run `flutter test`.
+- **Verification Token:** PASSED (CycleProvider prediction shift test)
+- **Context Budget:** ~30% (Turn 1)
 
 ## Progress Tracking
 
-### [x] Recent Milestones
-- [x] Integrated MultiProvider in `main.dart`.
-- [x] Implemented `CycleProvider`, `SymptomProvider`, and `TrendsProvider`.
-- [x] Refactored `TrackingCalendarPage` and `SummaryTrendsPage` to use Providers.
-- [x] Updated logging sheets with 'Delete' support and Provider dispatch.
-- [x] Verified State Management with 9 unit tests.
+### [ ] Feature: Extend Symptom Log Edit Capability
+- [ ] Rename repository methods to `updateSymptomLog` / `deleteSymptomLog`
+- [ ] Rename provider methods to `addSymptomLog` / `updateSymptomLog` / `deleteSymptomLog`
+- [ ] Update `SymptomLoggingSheet` implementation
+- [ ] Add regression tests for BBT editing
 
-### [/] Active Work
-- [/] Quality: Fixing `sheets_test.dart` regressions. Widget tests are hanging on `flutter_tester` during dismiss animations. Fixed constructor mismatches, but environmental hangs persist.
+### [x] Recent Milestones
+- [x] Feature: Automatic cycle and fertility prediction updates in `CycleProvider`.
+- [x] Refactor: Consolidated medical-grade logic (IQR, weighted avg) in `TrendsCalculator`.
+- [x] UI: High-fidelity prediction markers in `CalendarGrid` and `CalendarDayCell`.
+- [x] Unit Testing: Added regression test for prediction shift on past data update.
+
+### Active Work
+- Planning: Symptom Log Edit Extension
 
 ### Next Steps
-1. **Stabilize Widget Tests**: Resolve the remaining hangs in `test/presentation/sheets_test.dart`.
-2. **UI Polishing**: Final visual tweaks and micro-animations for the calendar.
+1. **Approval**: Wait for user approval on `implementation_plan.md`.
+2. **Execution**: Execute the renames and UI updates.
+3. **Verification**: Run comprehensive widget tests.
+
+
 
 ## Handoff Payload
 
 ### Completed This Session
-- Full migration from direct storage calls to a tiered Provider architecture.
-- Separation of concerns: `CycleProvider` (log management), `SymptomProvider` (daily logs), and `TrendsProvider` (recalculations).
-- Added `Delete` functionality for both symptoms and cycle events.
-- Repository DI implementation in `main.dart`.
+- Research on `CycleLog` model, `CycleProvider`, and `CycleLoggingSheet`.
+- Created `implementation_plan.md` for refactoring cycle logging.
 
 ### In-Flight Work
-- `test/presentation/sheets_test.dart`: Currently modified to use providers, but tests are hanging. Repository dependencies have been updated to include `EncryptedStorageService.instance`.
+- Refactor Cycle Logging: Analysis of Hive impact and naming consistency.
 
 ### Blockers / Dead Ends
-- `flutter_tester` environment hangs on certain animations (`BottomSheet` dismissal). Use `tester.pump(Duration(seconds: 1))` to bypass, but even that is currently unstable in this environment.
+- None currently.
 
 ### Critical Files
-- `lib/presentation/providers/` (Whole directory)
-- `lib/main.dart` (DI setup)
-- `test/presentation/sheets_test.dart` (Failing/Hanging)
+- `lib/domain/models/cycle_log.dart`
+- `lib/presentation/sheets/cycle_logging_sheet.dart`
+- `lib/presentation/providers/cycle_provider.dart`
+- `lib/domain/repositories/cycle_log_repository.dart`
+- `lib/data/storage/encrypted_storage_service.dart`
 
 ## Dead Ends & Lessons
-- **Architecture**: Separating providers (`Cycle` vs `Symptom`) avoids unnecessary rebuilds for unrelated state changes.
-- **Testing**: Passing `EncryptedStorageService.instance` explicitly to log repositories ensures the tests (which use a mocked instance) stay in sync with the state management layer.
-
-## 🔄 Handoff Prompt — Copy & Paste Into New Thread
-
-> I'm continuing work from a previous session. Please read the project manifest
-> at `.agent/project_manifest.md` in workspace `/home/sungroa/git/private_tracker_app` and resume
-> from the `Handoff Payload` section.
->
-> **Previous Session ID:** 0687f167-7b5a-4cc9-9bb6-ec00983f524f
-> **Primary Objective:** Wire repositories into Provider state management.
-> **Current State:** Providers are implemented and UI is refactored. Unit tests pass (+9), but widget tests in `sheets_test.dart` are hanging.
-> **Immediate Next Step:** Stabilize and fix `test/presentation/sheets_test.dart`.
->
-> Start by reading the manifest and validating the project state.
-
-
-I'm continuing work from a previous session. Please read the project manifest at .agent/project_manifest.md in workspace /home/sungroa/git/private_tracker_app and resume from the Handoff Payload section.
-
-Previous Session ID: 0687f167-7b5a-4cc9-9bb6-ec00983f524f Primary Objective: Wire repositories into Provider state management. Current State: Providers are implemented and UI is refactored. Unit tests pass (+9), but widget tests in sheets_test.dart are hanging. Immediate Next Step: Stabilize and fix test/presentation/sheets_test.dart.
-
-Start by reading the manifest and validating the project state.
+- **Provider Scope**: Pushed routes in a `Navigator` do not inherit providers from the `home` widget's tree if the `Navigator` is an ancestor of that widget. Lifing providers to the root is the robust fix.

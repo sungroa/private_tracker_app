@@ -19,6 +19,8 @@ class EncryptedStorageService {
   final FlutterSecureStorage _secureStorage;
   bool _isInitialized = false;
 
+  bool get isInitialized => _isInitialized;
+
   // Singleton instance
   static EncryptedStorageService _instance = EncryptedStorageService._internal(
     const FlutterSecureStorage(),
@@ -57,7 +59,7 @@ class EncryptedStorageService {
     }
 
     // Register Adapters
-    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(CycleLogAdapter());
+    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(CycleEventAdapter());
     if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SymptomLogAdapter());
     if (!Hive.isAdapterRegistered(2)) Hive.registerAdapter(CustomTagAdapter());
 
@@ -65,7 +67,7 @@ class EncryptedStorageService {
     final encryptionKey = await _getOrCreateEncryptionKey();
 
     // Open boxes with encryption
-    await Hive.openBox<CycleLog>(
+    await Hive.openBox<CycleEvent>(
       cycleLogBox,
       encryptionCipher: HiveAesCipher(encryptionKey),
     );
@@ -106,16 +108,17 @@ class EncryptedStorageService {
   }
 
   Future<void> _migrateToUUIDs() async {
-    // Migrate Cycle Logs
-    final cycleBox = Hive.box<CycleLog>(cycleLogBox);
+    // Migrate Cycle Events
+    final cycleBox = Hive.box<CycleEvent>(cycleLogBox);
     for (var key in cycleBox.keys.toList()) {
       final log = cycleBox.get(key);
       if (log != null && log.id.isEmpty) {
-        final newLog = CycleLog(
+        final newLog = CycleEvent(
           id: const Uuid().v4(),
           startDate: log.startDate,
           endDate: log.endDate,
           notes: log.notes,
+          flowIntensity: 3, // Default for migrated
         );
         await cycleBox.put(newLog.id, newLog);
         if (key != newLog.id) {
@@ -202,15 +205,15 @@ class EncryptedStorageService {
     await box.delete(id);
   }
 
-  /// Saves or updates a cycle log.
-  Future<void> saveCycleLog(CycleLog log) async {
-    final box = getBox<CycleLog>(cycleLogBox);
-    await box.put(log.id, log);
+  /// Saves or updates a cycle event.
+  Future<void> saveCycleEvent(CycleEvent event) async {
+    final box = getBox<CycleEvent>(cycleLogBox);
+    await box.put(event.id, event);
   }
 
-  /// Deletes a cycle log by id.
-  Future<void> deleteCycleLog(String id) async {
-    final box = getBox<CycleLog>(cycleLogBox);
+  /// Deletes a cycle event by id.
+  Future<void> deleteCycleEvent(String id) async {
+    final box = getBox<CycleEvent>(cycleLogBox);
     await box.delete(id);
   }
 
@@ -222,9 +225,9 @@ class EncryptedStorageService {
     ).toList();
   }
 
-  /// Retrieves all cycle logs sorted by start date.
-  List<CycleLog> getCycleLogs() {
-    final box = getBox<CycleLog>(cycleLogBox);
+  /// Retrieves all cycle events sorted by start date.
+  List<CycleEvent> getCycleEvents() {
+    final box = getBox<CycleEvent>(cycleLogBox);
     final logs = box.values.toList();
     logs.sort((a, b) => b.startDate.compareTo(a.startDate)); // Newest first
     return logs;
@@ -238,6 +241,12 @@ class EncryptedStorageService {
 
   /// Retrieves the custom tags box.
   Box<CustomTag> getCustomTagsBox() => Hive.box<CustomTag>(customTagBox);
+
+  /// Retrieves the symptom logs box.
+  Box<SymptomLog> getSymptomLogsBox() => Hive.box<SymptomLog>(symptomLogBox);
+
+  /// Retrieves the cycle logs box.
+  Box<CycleEvent> getCycleLogsBox() => Hive.box<CycleEvent>(cycleLogBox);
 
   /// Adds a new custom tag.
   Future<void> addCustomTag(String name) async {
@@ -259,8 +268,8 @@ class EncryptedStorageService {
     final List<List<dynamic>> rows = [];
     rows.add(['Log Type', 'Start Date/Date', 'End Date', 'Symptoms', 'Mood Rating', 'BBT', 'Fluid', 'LH Test', 'Notes']);
     
-    final cycleLogs = getCycleLogs();
-    for (var log in cycleLogs) {
+    final List<CycleEvent> cycleEvents = getCycleEvents();
+    for (var log in cycleEvents) {
       rows.add([
         'Cycle',
         log.startDate.toIso8601String().split('T')[0],
@@ -300,7 +309,7 @@ class EncryptedStorageService {
     final data = {
       'version': 1,
       'createdAt': DateTime.now().toIso8601String(),
-      'cycleLogs': getCycleLogs().map((l) => l.toMap()).toList(),
+      'cycleLogs': getCycleEvents().map((l) => l.toMap()).toList(),
       'symptomLogs': getSymptomLogs().map((l) => l.toMap()).toList(),
       'customTags': getBox<CustomTag>(customTagBox).values.map((t) => t.toMap()).toList(),
     };
@@ -390,7 +399,7 @@ class EncryptedStorageService {
 
   Future<void> _restoreData(Map<String, dynamic> data) async {
     // Clear boxes
-    await Hive.box<CycleLog>(cycleLogBox).clear();
+    await Hive.box<CycleEvent>(cycleLogBox).clear();
     await Hive.box<SymptomLog>(symptomLogBox).clear();
     await Hive.box<CustomTag>(customTagBox).clear();
 
@@ -401,11 +410,11 @@ class EncryptedStorageService {
       await customTagsBox.add(CustomTag.fromMap(Map<String, dynamic>.from(tagMap)));
     }
 
-    // Import Cycle Logs
-    final cycleLogBoxLocal = Hive.box<CycleLog>(cycleLogBox);
+    // Import Cycle Events
+    final cycleLogBoxLocal = Hive.box<CycleEvent>(cycleLogBox);
     final List<dynamic> cycleLogsJson = data['cycleLogs'] ?? [];
     for (var logMap in cycleLogsJson) {
-      await cycleLogBoxLocal.add(CycleLog.fromMap(Map<String, dynamic>.from(logMap)));
+      await cycleLogBoxLocal.add(CycleEvent.fromMap(Map<String, dynamic>.from(logMap)));
     }
 
     // Import Symptom Logs

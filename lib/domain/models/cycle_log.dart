@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 part 'cycle_log.g.dart';
 
 @HiveType(typeId: 0)
-class CycleLog extends HiveObject {
+class CycleEvent extends HiveObject {
   @HiveField(3, defaultValue: '')
   final String id;
 
@@ -17,11 +17,15 @@ class CycleLog extends HiveObject {
   @HiveField(2)
   final String? notes;
 
-  CycleLog({
+  @HiveField(4, defaultValue: 3)
+  final int flowIntensity;
+
+  CycleEvent({
     String? id,
     required this.startDate,
     this.endDate,
     this.notes,
+    this.flowIntensity = 3,
   }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toMap() {
@@ -30,15 +34,17 @@ class CycleLog extends HiveObject {
       'startDate': startDate.toIso8601String(),
       'endDate': endDate?.toIso8601String(),
       'notes': notes,
+      'flowIntensity': flowIntensity,
     };
   }
 
-  factory CycleLog.fromMap(Map<String, dynamic> map) {
-    return CycleLog(
+  factory CycleEvent.fromMap(Map<String, dynamic> map) {
+    return CycleEvent(
       id: map['id'],
       startDate: DateTime.parse(map['startDate']),
       endDate: map['endDate'] != null ? DateTime.parse(map['endDate']) : null,
       notes: map['notes'],
+      flowIntensity: map['flowIntensity'] ?? 3,
     );
   }
 }

@@ -19,12 +19,12 @@ void main() {
 
   setUp(() {
     mockCycleRepo = MockCycleLogRepository();
-    when(() => mockCycleRepo.getCycleLogs()).thenReturn([]);
+    when(() => mockCycleRepo.getCycleEvents()).thenReturn([]);
     
     mockSymptomRepo = MockSymptomLogRepository();
     when(() => mockSymptomRepo.getSymptomLogs()).thenReturn([]);
 
-    cycleProvider = CycleProvider(mockCycleRepo);
+    cycleProvider = CycleProvider(mockCycleRepo, mockSymptomRepo);
     symptomProvider = SymptomProvider(mockSymptomRepo);
     
     trendsProvider = TrendsProvider();
@@ -35,10 +35,10 @@ void main() {
     trendsProvider.addListener(() => listenerCallCount++);
 
     // Give it some data
-    final log = CycleLog(startDate: DateTime(2023, 1, 1));
-    when(() => mockCycleRepo.getCycleLogs()).thenReturn([log]);
+    final event = CycleEvent(startDate: DateTime(2023, 1, 1));
+    when(() => mockCycleRepo.getCycleEvents()).thenReturn([event]);
     // Manually reload it within testing
-    cycleProvider = CycleProvider(mockCycleRepo);
+    cycleProvider = CycleProvider(mockCycleRepo, mockSymptomRepo);
 
     trendsProvider.update(cycleProvider, symptomProvider);
 

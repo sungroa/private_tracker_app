@@ -58,20 +58,20 @@ void main() {
       verify(() => mockStorageService.saveSymptomLog(log)).called(1);
     });
 
-    test('updateSymptomEvent calls storage save', () async {
+    test('updateSymptomLog calls storage save', () async {
       final log = SymptomLog(date: DateTime.now(), symptoms: [], moodRating: 3);
       when(() => mockStorageService.saveSymptomLog(any())).thenAnswer((_) async {});
 
-      await repository.updateSymptomEvent(log);
+      await repository.updateSymptomLog(log);
 
       verify(() => mockStorageService.saveSymptomLog(log)).called(1);
     });
 
-    test('deleteSymptomEvent calls storage delete', () async {
+    test('deleteSymptomLog calls storage delete', () async {
       const id = 'test-symptom-id';
       when(() => mockStorageService.deleteSymptomLog(any())).thenAnswer((_) async {});
 
-      await repository.deleteSymptomEvent(id);
+      await repository.deleteSymptomLog(id);
 
       verify(() => mockStorageService.deleteSymptomLog(id)).called(1);
     });

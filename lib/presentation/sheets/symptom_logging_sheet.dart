@@ -11,10 +11,13 @@ class SymptomLoggingSheet extends StatefulWidget {
   final DateTime selectedDay;
   final SymptomLog? existingLog;
 
+  final bool isEmbedded;
+  
   const SymptomLoggingSheet({
     super.key,
     required this.selectedDay,
     this.existingLog,
+    this.isEmbedded = false,
   });
 
   @override
@@ -82,9 +85,9 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
         lhTestPositive: _lhPositive,
       );
       if (widget.existingLog != null) {
-        await context.read<SymptomProvider>().updateLog(log);
+        await context.read<SymptomProvider>().updateSymptomLog(log);
       } else {
-        await context.read<SymptomProvider>().addLog(log);
+        await context.read<SymptomProvider>().addSymptomLog(log);
       }
       if (mounted) Navigator.pop(context, true);
     } finally {
@@ -94,9 +97,30 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
 
   void _onDelete() async {
     if (widget.existingLog == null) return;
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete entry?"),
+        content: const Text("This action cannot be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     setState(() => _isSaving = true);
     try {
-      await context.read<SymptomProvider>().deleteLog(widget.existingLog!.id);
+      await context.read<SymptomProvider>().deleteSymptomLog(widget.existingLog!.id);
       if (mounted) Navigator.pop(context, true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -201,18 +225,12 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return AbsorbPointer(
-      absorbing: _isSaving,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        decoration: AppTheme.glassDecoration(color: Colors.white).copyWith(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
+    final content = SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!widget.isEmbedded) ...[
             Center(
               child: Container(
                 width: 40,
@@ -224,6 +242,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
               ),
             ),
             const SizedBox(height: 24),
+          ],
             Text(
               "How are you feeling?",
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -283,6 +302,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                       ),
                       const SizedBox(height: 12),
                       TextField(
+                        key: const Key('bbt_field'),
                         controller: _tempController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(
@@ -471,9 +491,9 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        "Save Log",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    : Text(
+                        widget.existingLog != null ? "Save Changes" : "Add Log",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
               ),
             ),
@@ -486,10 +506,22 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                 ),
               ),
             ],
-            const SizedBox(height: 16),
-          ],
-        ),
+        ],
       ),
+    );
+
+    if (widget.isEmbedded) {
+      return content;
+    }
+
+    return AbsorbPointer(
+      absorbing: _isSaving,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        decoration: AppTheme.glassDecoration(color: Colors.white).copyWith(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: content,
       ),
     );
   }

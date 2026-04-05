@@ -15,7 +15,7 @@ void main() {
     EncryptedStorageService.instance = mockStorageService;
     repository = CycleLogRepositoryImpl(mockStorageService);
     
-    registerFallbackValue(CycleLog(startDate: DateTime.now()));
+    registerFallbackValue(CycleEvent(startDate: DateTime.now()));
   });
 
   tearDown(() {
@@ -23,42 +23,42 @@ void main() {
   });
 
   group('CycleLogRepositoryImpl', () {
-    test('getCycleLogs returns logs from storage', () {
-      final log = CycleLog(startDate: DateTime.now());
-      when(() => mockStorageService.getCycleLogs()).thenReturn([log]);
+    test('getCycleEvents returns events from storage', () {
+      final event = CycleEvent(startDate: DateTime.now());
+      when(() => mockStorageService.getCycleEvents()).thenReturn([event]);
 
-      final result = repository.getCycleLogs();
+      final result = repository.getCycleEvents();
 
       expect(result.length, 1);
-      expect(result.first, log);
-      verify(() => mockStorageService.getCycleLogs()).called(1);
+      expect(result.first, event);
+      verify(() => mockStorageService.getCycleEvents()).called(1);
     });
 
-    test('addCycleLog calls storage', () async {
-      final log = CycleLog(startDate: DateTime.now());
-      when(() => mockStorageService.saveCycleLog(any())).thenAnswer((_) async {});
+    test('addCycleEvent calls storage', () async {
+      final event = CycleEvent(startDate: DateTime.now());
+      when(() => mockStorageService.saveCycleEvent(any())).thenAnswer((_) async {});
 
-      await repository.addCycleLog(log);
+      await repository.addCycleEvent(event);
 
-      verify(() => mockStorageService.saveCycleLog(log)).called(1);
+      verify(() => mockStorageService.saveCycleEvent(event)).called(1);
     });
 
     test('updateCycleEvent calls storage save', () async {
-      final log = CycleLog(startDate: DateTime.now());
-      when(() => mockStorageService.saveCycleLog(any())).thenAnswer((_) async {});
+      final event = CycleEvent(startDate: DateTime.now());
+      when(() => mockStorageService.saveCycleEvent(any())).thenAnswer((_) async {});
 
-      await repository.updateCycleEvent(log);
+      await repository.updateCycleEvent(event);
 
-      verify(() => mockStorageService.saveCycleLog(log)).called(1);
+      verify(() => mockStorageService.saveCycleEvent(event)).called(1);
     });
 
     test('deleteCycleEvent calls storage delete', () async {
       const id = 'test-id';
-      when(() => mockStorageService.deleteCycleLog(any())).thenAnswer((_) async {});
+      when(() => mockStorageService.deleteCycleEvent(any())).thenAnswer((_) async {});
 
       await repository.deleteCycleEvent(id);
 
-      verify(() => mockStorageService.deleteCycleLog(id)).called(1);
+      verify(() => mockStorageService.deleteCycleEvent(id)).called(1);
     });
   });
 }
