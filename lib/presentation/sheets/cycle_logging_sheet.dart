@@ -190,7 +190,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                 fontFamily: AppTheme.fontFamily,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
             // Date Selection
             Row(
               children: [

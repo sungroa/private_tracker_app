@@ -43,13 +43,22 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Container(
-      decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 32).copyWith(
+      height: screenHeight * 0.8, // Fixed height for consistency
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.backgroundDarkColor : AppTheme.backgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 12),
           // Drag Handle
@@ -96,7 +105,7 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
             ),
           ),
           
-          Flexible(
+          Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
               switchInCurve: Curves.easeOutCubic,
@@ -106,7 +115,7 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
                   opacity: animation,
                   child: SlideTransition(
                     position: Tween<Offset>(
-                      begin: const Offset(0, 0.02),
+                      begin: const Offset(0, 0.05),
                       end: Offset.zero,
                     ).animate(animation),
                     child: child,

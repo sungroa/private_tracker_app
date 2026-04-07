@@ -590,7 +590,10 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     );
 
     if (widget.isEmbedded) {
-      return content;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: content,
+      );
     }
 
     return AbsorbPointer(
