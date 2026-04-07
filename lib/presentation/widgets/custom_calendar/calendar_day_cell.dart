@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 import '../../../domain/models/cycle_log.dart';
 
@@ -32,8 +33,14 @@ class CalendarDayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       borderRadius: BorderRadius.circular(8),
       child: Stack(
         alignment: Alignment.center,
@@ -71,42 +78,37 @@ class CalendarDayCell extends StatelessWidget {
               ),
             ),
 
-          // Day Circle/Highlight
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isToday && !isSelected
-                      ? AppTheme.primaryColor.withValues(alpha: 0.1)
-                      : Colors.transparent,
-              border: isSelected
-                  ? Border.all(color: AppTheme.primaryColor, width: 2)
-                  : isToday
-                      ? Border.all(color: AppTheme.primaryColor, width: 1)
-                      : null,
-              boxShadow: isSelected 
-                  ? [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      )
-                    ]
-                  : null,
-            ),
+          // Day Circle/Highlight (Animated Glass Orb)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutBack,
+            width: isSelected ? 40 : 36,
+            height: isSelected ? 40 : 36,
+            decoration: isSelected 
+                ? AppTheme.calendarSelectionDecoration(isDark: isDark)
+                : BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isToday
+                            ? primary.withValues(alpha: 0.1)
+                            : Colors.transparent,
+                    border: isToday
+                            ? Border.all(color: primary.withValues(alpha: 0.5), width: 1.5)
+                            : null,
+                  ),
             child: Center(
               child: Text(
                 '${date.day}',
                 style: TextStyle(
                   color: isSelected
-                      ? AppTheme.primaryColor
+                      ? (isDark ? Colors.white : AppTheme.primaryColor)
                       : isOutsideMonth
-                          ? Colors.grey[400]
+                          ? (isDark ? Colors.white24 : Colors.grey[400])
                           : isBleeding 
                               ? Colors.redAccent
-                              : Colors.black87,
+                              : (isDark ? Colors.white : Colors.black87),
                   fontWeight: isToday || isSelected || isBleeding ? FontWeight.bold : FontWeight.normal,
+                  fontSize: isSelected ? 15 : 14,
+                  fontFamily: AppTheme.fontFamily,
                 ),
               ),
             ),

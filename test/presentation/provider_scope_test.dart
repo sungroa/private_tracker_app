@@ -11,7 +11,6 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:private_tracker_app/main.dart';
 import 'package:private_tracker_app/core/services/auth_service.dart';
-import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
 import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
 import 'package:private_tracker_app/data/storage/backup_restore_service.dart';

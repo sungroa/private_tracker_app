@@ -1,34 +1,34 @@
-import '../../domain/models/cycle_log.dart';
+import '../../domain/models/symptom_log.dart';
 import '../../domain/repositories/symptom_log_repository.dart';
-import '../storage/encrypted_storage_service.dart';
+import '../storage/data_sources/symptom_data_source.dart';
 
 class SymptomLogRepositoryImpl implements SymptomLogRepository {
-  final EncryptedStorageService _storageService;
+  final SymptomDataSource _dataSource;
 
-  SymptomLogRepositoryImpl(this._storageService);
+  SymptomLogRepositoryImpl(this._dataSource);
 
   @override
   List<SymptomLog> getSymptomLogs() {
-    return _storageService.getSymptomLogs();
+    return _dataSource.getAllSymptomLogs();
   }
 
   @override
   List<SymptomLog> getSymptomLogsForMonth(DateTime month) {
-    return _storageService.getSymptomLogsForMonth(month);
+    return _dataSource.getSymptomLogsForMonth(month);
   }
 
   @override
   Future<void> addSymptomLog(SymptomLog log) async {
-    await _storageService.saveSymptomLog(log);
+    await _dataSource.saveSymptomLog(log);
   }
 
   @override
   Future<void> updateSymptomLog(SymptomLog log) async {
-    await _storageService.saveSymptomLog(log);
+    await _dataSource.saveSymptomLog(log);
   }
 
   @override
   Future<void> deleteSymptomLog(String id) async {
-    await _storageService.deleteSymptomLog(id);
+    await _dataSource.deleteSymptomLog(id);
   }
 }

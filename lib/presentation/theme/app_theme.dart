@@ -102,6 +102,39 @@ class AppTheme {
       ],
     );
   }
+
+  static BoxDecoration calendarSelectionDecoration({bool isDark = false}) {
+    final primary = isDark ? primaryDarkColor : primaryColor;
+    return BoxDecoration(
+      shape: BoxShape.circle,
+      color: isDark ? primary.withValues(alpha: 0.2) : primary.withValues(alpha: 0.1),
+      border: Border.all(
+        color: primary.withValues(alpha: 0.5),
+        width: 2,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: primary.withValues(alpha: 0.4),
+          blurRadius: 12,
+          spreadRadius: 2,
+        ),
+        BoxShadow(
+          color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.4),
+          blurRadius: 4,
+          spreadRadius: -2,
+          offset: const Offset(-2, -2),
+        ),
+      ],
+      gradient: RadialGradient(
+        colors: [
+          primary.withValues(alpha: isDark ? 0.3 : 0.15),
+          primary.withValues(alpha: isDark ? 0.1 : 0.05),
+        ],
+        center: const Alignment(-0.3, -0.3),
+        radius: 0.8,
+      ),
+    );
+  }
 }
 
 class PremiumGradients {

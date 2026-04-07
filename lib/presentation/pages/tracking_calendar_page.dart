@@ -7,7 +7,6 @@ import '../sheets/unified_logging_sheet.dart';
 import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
 import '../providers/symptom_provider.dart';
-import '../../domain/models/cycle_log.dart';
 
 class TrackingCalendarPage extends StatefulWidget {
   const TrackingCalendarPage({super.key});
@@ -24,29 +23,12 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
    void _showUnifiedSheet(DateTime day, {LoggingType type = LoggingType.daily}) async {
     if (_isSheetOpen) return;
     
-    final symptomLogs = context.read<SymptomProvider>().symptomLogs;
-    final cycleEvents = context.read<CycleProvider>().cycleEvents;
+    final symptomProvider = context.read<SymptomProvider>();
+    final cycleProvider = context.read<CycleProvider>();
 
-    // Find SymptomLog
-    SymptomLog? existingSymptom;
-    existingSymptom = symptomLogs.cast<SymptomLog?>().firstWhere(
-      (log) => DateUtils.isSameDay(log!.date, day),
-      orElse: () => null,
-    );
-
-    // Find CycleEvent
-    CycleEvent? existingCycle;
-    for (var log in cycleEvents) {
-      final start = DateUtils.dateOnly(log.startDate);
-      final end = log.endDate != null ? DateUtils.dateOnly(log.endDate!) : start.add(const Duration(days: 4));
-      final target = DateUtils.dateOnly(day);
-
-      if ((target.isAtSameMomentAs(start) || target.isAfter(start)) && 
-          (target.isAtSameMomentAs(end) || target.isBefore(end))) {
-        existingCycle = log;
-        break;
-      }
-    }
+    // O(1) Lookups using pre-indexed maps
+    final existingSymptom = symptomProvider.getSymptomByDate(day);
+    final existingCycle = cycleProvider.getEventByDate(day);
 
     _isSheetOpen = true;
     try {
@@ -86,15 +68,11 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
     final cycleProvider = context.watch<CycleProvider>();
-    final cycleEvents = cycleProvider.cycleEvents;
+    final calendarEventMap = cycleProvider.calendarEventMap;
     final predictedNextPeriod = cycleProvider.predictedNextPeriod;
     final predictedFertilityDates = cycleProvider.predictedFertilityDates;
     
-    final symptomLogs = context.watch<SymptomProvider>().symptomLogs;
-    final symptomMap = {
-      for (var log in symptomLogs)
-        DateTime(log.date.year, log.date.month, log.date.day): log
-    };
+    final symptomMap = context.watch<SymptomProvider>().symptomMap;
 
     return ListView(
       physics: const BouncingScrollPhysics(),
@@ -144,7 +122,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                 CustomCalendarGrid(
                   focusedDay: _focusedDay,
                   selectedDay: _selectedDay,
-                  cycleLogs: cycleEvents,
+                  calendarEventMap: calendarEventMap,
                   symptomMap: symptomMap,
                   predictedNextPeriod: predictedNextPeriod,
                   predictedFertilityDates: predictedFertilityDates,

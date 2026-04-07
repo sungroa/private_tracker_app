@@ -5,8 +5,8 @@ import '../../../domain/models/cycle_log.dart';
 class CustomCalendarGrid extends StatelessWidget {
   final DateTime focusedDay;
   final DateTime? selectedDay;
-  final List<CycleEvent> cycleLogs;
-  final Map<DateTime, SymptomLog> symptomMap;
+  final Map<String, CycleEvent> calendarEventMap;
+  final Map<String, SymptomLog> symptomMap;
   final DateTime? predictedNextPeriod;
   final List<DateTime> predictedFertilityDates;
   final Function(DateTime) onDaySelected;
@@ -15,12 +15,15 @@ class CustomCalendarGrid extends StatelessWidget {
     super.key,
     required this.focusedDay,
     this.selectedDay,
-    required this.cycleLogs,
+    required this.calendarEventMap,
     required this.symptomMap,
     this.predictedNextPeriod,
     this.predictedFertilityDates = const [],
     required this.onDaySelected,
   });
+
+  String _formatKey(DateTime date) => 
+      "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
   bool _isPredictedBleeding(DateTime day) {
     if (predictedNextPeriod == null) return false;
@@ -37,20 +40,7 @@ class CustomCalendarGrid extends StatelessWidget {
   }
 
   bool _isBleeding(DateTime day) {
-    final dateOnly = DateTime(day.year, day.month, day.day);
-    for (var log in cycleLogs) {
-      final start = DateTime(log.startDate.year, log.startDate.month, log.startDate.day);
-      DateTime end;
-      if (log.endDate != null) {
-        end = DateTime(log.endDate!.year, log.endDate!.month, log.endDate!.day);
-      } else {
-        end = start.add(const Duration(days: 4));
-      }
-      if (dateOnly.isAtSameMomentAs(start) || (dateOnly.isAfter(start) && dateOnly.isBefore(end.add(const Duration(days: 1))))) {
-        return true;
-      }
-    }
-    return false;
+    return calendarEventMap.containsKey(_formatKey(day));
   }
 
   @override
@@ -120,7 +110,7 @@ class CustomCalendarGrid extends StatelessWidget {
                   selectedDay!.month == currentDay.month &&
                   selectedDay!.day == currentDay.day,
               isToday: DateUtils.isSameDay(DateTime.now(), currentDay),
-              symptomLog: symptomMap[currentDay],
+              symptomLog: symptomMap[_formatKey(currentDay)],
               onTap: () => onDaySelected(currentDay),
             );
           },
