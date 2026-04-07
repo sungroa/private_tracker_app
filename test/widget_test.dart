@@ -22,6 +22,7 @@ void main() {
     late MockAuthService mockAuthService;
     late MockSecureKeyStorage mockKeyStorage;
     late MockAppLinks mockAppLinks;
+    late LocalDatabaseManager dbManager;
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('hive_smoke_test');
@@ -32,6 +33,7 @@ void main() {
       
       mockKeyStorage = MockSecureKeyStorage();
       mockAppLinks = MockAppLinks();
+      dbManager = LocalDatabaseManager();
 
       // Mock Storage Services
       when(() => mockKeyStorage.getOrCreateEncryptionKey()).thenAnswer((_) async => List<int>.filled(32, 0));
@@ -43,6 +45,7 @@ void main() {
     });
 
     tearDown(() async {
+      await dbManager.close();
       await Hive.close();
       if (await tempDir.exists()) {
         await tempDir.delete(recursive: true);
@@ -53,7 +56,7 @@ void main() {
       await tester.runAsync(() async {
         await tester.pumpWidget(PrivacyTrackerApp(
           keyStorage: mockKeyStorage,
-          dbManager: LocalDatabaseManager(),
+          dbManager: dbManager,
           backupService: BackupRestoreService(),
           exportService: DataExportService(),
           appLinks: mockAppLinks,
@@ -66,7 +69,7 @@ void main() {
         // Wait for initialization and animations to complete
         int retry = 0;
         bool found = false;
-        while (retry < 150) { // Increased retries for slower environments
+        while (retry < 150) { 
           // Real-time pump to let microtasks work
           await tester.pump(const Duration(milliseconds: 100));
           
@@ -95,6 +98,14 @@ void main() {
         expect(found, isTrue, reason: "Cycle Tracker should be found after initialization.");
         expect(find.text('Cycle Tracker'), findsOneWidget);
         expect(find.byType(HomePage), findsOneWidget);
+      });
+    });
+    group('Diagnostics', () {
+      test('Initialization stability', () async {
+        await dbManager.initialize(encryptionKey: List<int>.filled(32, 0), basePath: tempDir.path);
+        expect(dbManager.isInitialized, isTrue);
+        await dbManager.close();
+        expect(dbManager.isInitialized, isFalse);
       });
     });
   });

@@ -1,5 +1,5 @@
 import 'models/cycle_log.dart';
-import 'trends_calculator.dart';
+import 'calculators/cycle_stats_calculator.dart';
 
 class CycleCalculator {
   // Average cycle length (default 28 days)
@@ -47,8 +47,8 @@ class CycleCalculator {
       );
     }
 
-    final filteredLengths = TrendsCalculator.filterOutliers(lengths);
-    final averageLength = TrendsCalculator.calculateWeightedAverage(filteredLengths);
+    final filteredLengths = CycleStatsCalculator.filterOutliers(lengths);
+    final averageLength = CycleStatsCalculator.calculateWeightedAverage(filteredLengths);
 
     return sortedCycleEvents.first.startDate.add(Duration(days: averageLength));
   }

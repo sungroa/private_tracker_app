@@ -1,46 +1,34 @@
-# Project Manifest: Private Tracker Refactor
+# 🧭 Project Manifest: Private Tracker Refactor
 
-## Context & Session Info
-- **Session ID**: `5bc302f4-139f-4fda-8d33-a32266359197`
-- **Phase**: Principal Refactor (Zero Technical Debt)
-- **Current Health**: GREEN (Fully functional, tests passing)
-- **Progress**: 25% (Phase 1 Complete)
+## 📊 Session Data
+- **Last Updated:** 2026-04-06T23:45:00
+- **Session ID:** `86932ca1-504f-4dc9-8f12-7b52df67c1fb`
+- **Session Health:** STABLE
+- **Context Budget:** ~40% (Turn 25)
 
-## Active Work & State
-- **Objective**: Execute a "Zero Technical Debt" refactor focusing on Clean Architecture, Domain Purity, and Storage Decomposition.
-- **Last Milestone**: Phase 1 (Domain Purity & Hive Decoupling) COMPLETED.
-    - Removed all Hive dependencies from Domain layer.
-    - Implemented DTO-based storage in `lib/data/storage/hive_dtos.dart`.
-    - Hardened `AppLockWrapper` initialization to solve intermittent test hangs.
-    - Verified with +18 passing tests.
-- **Audit Report**: [audit_report.md](file:///home/sungroa/.gemini/antigravity/brain/5bc302f4-139f-4fda-8d33-a32266359197/audit_report.md)
-- **Implementation Plan**: [implementation_plan.md](file:///home/sungroa/.gemini/antigravity/brain/5bc302f4-139f-4fda-8d33-a32266359197/implementation_plan.md)
-- **Task List**: [task.md](file:///home/sungroa/.gemini/antigravity/brain/5bc302f4-139f-4fda-8d33-a32266359197/task.md)
+## 🎯 Objectives & Constraints
+- **Primary Objective:** Execute a "Zero Technical Debt" refactor focusing on Clean Architecture, Performance, and Premium UI.
+- **STRICT_CONSTRAINTS:**
+  1. No global singletons for storage (use Provider).
+  2. Domain models must remain pure Dart (no Hive annotations).
+  3. 100% test pass rate with zero local hangs.
 
-## Next Steps (Phase 2)
-1.  **Decompose Storage Service**: Split `EncryptedStorageService` into specialized DataSources (Cycle, Symptom, Tag) under `lib/data/storage/data_sources/`.
-2.  **Repository Refactor**: Update repositories to depend on granular DataSources.
-3.  **UI Performance**: Optimize `TrendsCalculator` and `CustomCalendarGrid`.
+## 🛠️ Validation & State
+- **fast_validation_command:** `flutter test test/domain/storage_test.dart`
+- **full_validation_command:** `for f in $(find test -name "*.dart"); do flutter test "$f" || exit 1; done`
+- **Best Known State:**
+  - **Mission Complete:** Phases 1-5 are 100% verified.
+  - **Premium Aesthetics:** Calendar uses glassmorphic "Orb" selection with glowing effects and fluid micro-animations.
+  - **Modular Predictors:** `TrendsCalculator` is fully decomposed for long-term maintainability.
+  - **Performance Optimization:** Date-based lookups are `O(1)` indexed maps.
+- **Verification Token:** Pass: 18/18 files passed sequentially (Complete).
 
-## Technical Notes
-- **Hive Type IDs**: Standardized on 10 (Cycle), 11 (Symptom), 12 (Tag) for DTOs to avoid conflict with stale adapters.
-- **Initialization**: `LocalDatabaseManager` now includes diagnostic logging and explicit `timeout` to prevent environmental hangs.
-- **Verification**: Run `flutter test test/domain/storage_test.dart test/presentation/sheets_test.dart test/presentation/provider_scope_test.dart test/widget_test.dart`.
+## 📋 Action Plan
 
-## Prompt for the next agent (delete)
-Role: Principal Staff Software Engineer (Clean Architecture Specialist). Project: Private Tracker App. Context: We are executing a "Zero Technical Debt" refactor. Phase 1 (Domain Purity & Hive Decoupling) is 100% complete and fully verified with +18 passing tests. The domain layer is now pure Dart. Current State:
-
-Health: GREEN (All tests passing).
-Key Files: lib/data/storage/hive_dtos.dart (DTO Layer), lib/data/storage/encrypted_storage_service.dart (Current God Service).
-Manifest: 
-
-project_manifest.md
-Task List: 
-task.md
-Your Mission (Phase 2): Decompose the EncryptedStorageService "God Class" into specialized DataSources (CycleDataSource, SymptomDataSource, TagDataSource) under lib/data/storage/data_sources/. Update the repositories to depend on these granular sources instead of the global service. Maintain the 100% test pass rate throughout the transition.
-
-Read principal-engineer/SKILL.md.
-Review the 
-Implementation Plan
- for Phase 2.
-Start execution.
+### Final Summary
+- [x] **Phase 1 (Storage)**: Split singletons into DataSources and repositories.
+- [x] **Phase 2 (Stability)**: Fix all test hangs and resource contention for 100% pass rate.
+- [x] **Phase 3 (Performance)**: Implement `O(1)` calendar lookups in providers.
+- [x] **Phase 4 (Logic)**: Modularize calculations into specialized domain calculators.
+- [x] **Phase 5 (Polish)**: Implement glassmorphism selection indicators and haptics.
+- [x] Final code audit and 18/18 test verification.

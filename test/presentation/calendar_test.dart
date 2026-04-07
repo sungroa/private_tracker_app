@@ -8,13 +8,16 @@ void main() {
   group('CustomCalendar Widget Tests', () {
     final testMonth = DateTime(2026, 4, 1);
     
+    String _formatKey(DateTime date) => 
+        "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
     testWidgets('CustomCalendarGrid renders correct number of days for April 2026', (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
             body: CustomCalendarGrid(
               focusedDay: testMonth,
-              cycleLogs: const [],
+              calendarEventMap: const {},
               symptomMap: const {},
               onDaySelected: (_) {},
             ),
@@ -81,7 +84,7 @@ void main() {
           home: Scaffold(
             body: CustomCalendarGrid(
               focusedDay: testMonth,
-              cycleLogs: const [],
+              calendarEventMap: const {},
               symptomMap: const {},
               onDaySelected: (day) => selected = day,
             ),
@@ -98,7 +101,7 @@ void main() {
     testWidgets('Symptom markers are displayed on relevant days', (WidgetTester tester) async {
       final symptomDay = DateTime(2026, 4, 15);
       final symptomMap = {
-        symptomDay: SymptomLog(
+        _formatKey(symptomDay): SymptomLog(
           date: symptomDay,
           symptoms: ['Cramps'],
           moodRating: 3,
@@ -110,7 +113,7 @@ void main() {
           home: Scaffold(
             body: CustomCalendarGrid(
               focusedDay: testMonth,
-              cycleLogs: const [],
+              calendarEventMap: const {},
               symptomMap: symptomMap,
               onDaySelected: (_) {},
             ),

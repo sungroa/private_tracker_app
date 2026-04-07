@@ -67,7 +67,7 @@ class LocalDatabaseManager {
     await _initializeDefaultTags();
     
     _isInitialized = true;
-    } catch (e, stack) {
+    } catch (e) {
       _initializeFuture = null;
       rethrow;
     }
@@ -92,4 +92,19 @@ class LocalDatabaseManager {
   }
 
   Box<T> getBox<T>(String name) => Hive.box<T>(name);
+  
+  /// Closes all managed boxes and resets the initialization state.
+  Future<void> close() async {
+    if (!_isInitialized) return;
+    
+    // Use type-safe box retrieval to avoid "Box already open with different type" errors
+    if (Hive.isBoxOpen(cycleLogBox)) await Hive.box<CycleEventDto>(cycleLogBox).close();
+    if (Hive.isBoxOpen(symptomLogBox)) await Hive.box<SymptomLogDto>(symptomLogBox).close();
+    if (Hive.isBoxOpen(customTagBox)) await Hive.box<CustomTagDto>(customTagBox).close();
+    if (Hive.isBoxOpen(metaBox)) await Hive.box<String>(metaBox).close();
+    if (Hive.isBoxOpen(partnerDataBox)) await Hive.box(partnerDataBox).close();
+    
+    _isInitialized = false;
+    _initializeFuture = null;
+  }
 }

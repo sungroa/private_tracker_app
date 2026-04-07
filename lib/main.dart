@@ -24,6 +24,9 @@ import 'presentation/providers/tag_provider.dart';
 import 'package:app_links/app_links.dart';
 import 'domain/services/partner_sharing_service.dart';
 import 'presentation/pages/partner_mode_page.dart';
+import 'data/storage/data_sources/cycle_data_source.dart';
+import 'data/storage/data_sources/symptom_data_source.dart';
+import 'data/storage/data_sources/tag_data_source.dart';
 class StorageConfig {
   final String? storageBasePath;
   StorageConfig({this.storageBasePath});
@@ -42,6 +45,9 @@ class PrivacyTrackerApp extends StatefulWidget {
   final DataExportService? exportService;
   final AppLinks? appLinks;
   final String? storageBasePath;
+  final CycleDataSource? cycleDataSource;
+  final SymptomDataSource? symptomDataSource;
+  final TagDataSource? tagDataSource;
 
   const PrivacyTrackerApp({
     super.key,
@@ -51,6 +57,9 @@ class PrivacyTrackerApp extends StatefulWidget {
     this.exportService,
     this.appLinks,
     this.storageBasePath,
+    this.cycleDataSource,
+    this.symptomDataSource,
+    this.tagDataSource,
   });
 
   @override
@@ -103,21 +112,26 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
         Provider<BackupRestoreService>(create: (_) => widget.backupService ?? BackupRestoreService()),
         Provider<DataExportService>(create: (_) => widget.exportService ?? DataExportService()),
         Provider<PartnerStorageService>(create: (context) => PartnerStorageService(context.read<LocalDatabaseManager>())),
-        ProxyProvider4<SecureKeyStorage, LocalDatabaseManager, BackupRestoreService, DataExportService, EncryptedStorageService>(
-          update: (context, ks, db, backup, export, previous) =>
-              previous ?? EncryptedStorageService(
-                keyStorage: ks,
-                dbManager: db,
-                backupService: backup,
-                exportService: export,
-              ),
+        Provider<CycleDataSource>(create: (context) => widget.cycleDataSource ?? CycleDataSource(context.read<LocalDatabaseManager>())),
+        Provider<SymptomDataSource>(create: (context) => widget.symptomDataSource ?? SymptomDataSource(context.read<LocalDatabaseManager>())),
+        Provider<TagDataSource>(create: (context) => widget.tagDataSource ?? TagDataSource(context.read<LocalDatabaseManager>())),
+        Provider<EncryptedStorageService>(
+          create: (context) => EncryptedStorageService(
+            keyStorage: context.read<SecureKeyStorage>(),
+            dbManager: context.read<LocalDatabaseManager>(),
+            backupService: context.read<BackupRestoreService>(),
+            exportService: context.read<DataExportService>(),
+            cycleDataSource: context.read<CycleDataSource>(),
+            symptomDataSource: context.read<SymptomDataSource>(),
+            tagDataSource: context.read<TagDataSource>(),
+          ),
         ),
         Provider<CycleLogRepository>(
-            create: (context) => CycleLogRepositoryImpl(context.read<EncryptedStorageService>())),
+            create: (context) => CycleLogRepositoryImpl(context.read<CycleDataSource>())),
         Provider<SymptomLogRepository>(
-            create: (context) => SymptomLogRepositoryImpl(context.read<EncryptedStorageService>())),
+            create: (context) => SymptomLogRepositoryImpl(context.read<SymptomDataSource>())),
         Provider<TagRepository>(
-            create: (context) => TagRepositoryImpl(context.read<EncryptedStorageService>())),
+            create: (context) => TagRepositoryImpl(context.read<TagDataSource>())),
         ChangeNotifierProvider(
           create: (context) => CycleProvider(
             context.read<CycleLogRepository>(),
