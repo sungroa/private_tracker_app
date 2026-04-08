@@ -200,15 +200,41 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _handleRestoreBackup() async {
     HapticFeedback.mediumImpact();
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['enc'],
-    );
+    
+    FilePickerResult? result;
+    try {
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+      );
+    } on PlatformException catch (e) {
+      debugPrint('File picker error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to open file picker. Please check storage permissions.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     if (!mounted) return;
 
     if (result != null && result.files.single.path != null) {
+      final path = result.files.single.path!;
+      if (!path.toLowerCase().endsWith('.enc')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid file type. Please select a .enc backup file.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
       final storage = context.read<EncryptedStorageService>();
-      final file = File(result.files.single.path!);
+      final file = File(path);
       
       final confirm = await showDialog<bool>(
         context: context,
