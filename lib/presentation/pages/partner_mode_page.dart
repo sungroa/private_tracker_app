@@ -75,7 +75,7 @@ class _PartnerModePageState extends State<PartnerModePage> {
 
   void _resetApp() async {
     HapticFeedback.mediumImpact();
-    
+    final partnerService = context.read<PartnerStorageService>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -95,7 +95,7 @@ class _PartnerModePageState extends State<PartnerModePage> {
     );
 
     if (confirm == true) {
-      await context.read<PartnerStorageService>().clearPartnerData();
+      await partnerService.clearPartnerData();
       if (mounted) {
         setState(() {
           _data = null;

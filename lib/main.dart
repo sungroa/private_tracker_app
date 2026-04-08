@@ -236,6 +236,7 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
       try {
         await _initializeStorage();
       } catch (e) {
+        debugPrint("Initial storage initialization failed: $e");
       } finally {
         if (mounted) {
           setState(() {

@@ -1,6 +1,5 @@
 import 'package:hive/hive.dart';
 import '../../domain/models/cycle_log.dart';
-import '../../domain/models/symptom_log.dart';
 import '../../domain/models/custom_tag.dart';
 
 part 'hive_dtos.g.dart';
