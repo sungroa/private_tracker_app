@@ -1,6 +1,5 @@
 import 'package:csv/csv.dart';
 import '../../domain/models/cycle_log.dart';
-import '../../domain/models/symptom_log.dart';
 
 class DataExportService {
   /// Exports all data to a CSV string.

@@ -169,12 +169,20 @@ void main() {
         final baseDate = DateTime.utc(2026, 3, 1);
         
         // First shift (Mar 7)
-        for (int i = 0; i < 6; i++) logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.0));
-        for (int i = 6; i < 9; i++) logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.3));
+        for (int i = 0; i < 6; i++) {
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.0));
+        }
+        for (int i = 6; i < 9; i++) {
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.3));
+        }
         
         // Second shift (Mar 15)
-        for (int i = 9; i < 14; i++) logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.3));
-        for (int i = 14; i < 17; i++) logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.6));
+        for (int i = 9; i < 14; i++) {
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.3));
+        }
+        for (int i = 14; i < 17; i++) {
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.6));
+        }
 
         final result = CycleCalculator.confirmOvulation(logs);
         // Latest shift starts at index 14 (Mar 15). Ovulation is Mar 14.

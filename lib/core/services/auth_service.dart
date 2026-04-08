@@ -1,8 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
-import 'package:meta/meta.dart';
-import 'package:flutter/material.dart'; // Required for TimeOfDay
+import 'package:flutter/material.dart'; // Required for TimeOfDay and @visibleForTesting
 
 class AuthService {
   static const String _biometricEnabledKey = 'is_biometric_enabled';

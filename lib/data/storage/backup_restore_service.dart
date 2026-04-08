@@ -6,7 +6,6 @@ import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:path_provider/path_provider.dart';
 import 'package:pointycastle/export.dart' as pc;
 import '../../domain/models/cycle_log.dart';
-import '../../domain/models/symptom_log.dart';
 import '../../domain/models/custom_tag.dart';
 
 class BackupRestoreService {

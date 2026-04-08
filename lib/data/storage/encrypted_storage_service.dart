@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../domain/models/cycle_log.dart';
-import '../../domain/models/symptom_log.dart';
 import '../../domain/models/custom_tag.dart';
 import 'secure_key_storage.dart';
 import 'local_database_manager.dart';

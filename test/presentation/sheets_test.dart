@@ -86,7 +86,7 @@ void main() {
 
       await storageService.initialize(basePath: hiveDir.path).timeout(const Duration(seconds: 5));
       
-      if ((await tagDataSource.getCustomTags()).isEmpty) {
+      if (tagDataSource.getCustomTags().isEmpty) {
         await tagDataSource.addCustomTag('Cramps');
       }
     });

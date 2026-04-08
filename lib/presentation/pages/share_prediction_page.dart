@@ -56,7 +56,7 @@ class _SharePredictionPageState extends State<SharePredictionPage> {
   void _shareLink() {
     if (_deepLink != null) {
       HapticFeedback.mediumImpact();
-      Share.share('Check out my cycle predictions: $_deepLink');
+      SharePlus.instance.share(ShareParams(text: 'Check out my cycle predictions: $_deepLink'));
     }
   }
 
@@ -132,7 +132,14 @@ class _SharePredictionPageState extends State<SharePredictionPage> {
                             data: _deepLink!,
                             version: QrVersions.auto,
                             size: 200.0,
-                            foregroundColor: Colors.black87,
+                            eyeStyle: const QrEyeStyle(
+                              eyeShape: QrEyeShape.square,
+                              color: Colors.black87,
+                            ),
+                            dataModuleStyle: const QrDataModuleStyle(
+                              dataModuleShape: QrDataModuleShape.square,
+                              color: Colors.black87,
+                            ),
                             gapless: false,
                           ),
                         )

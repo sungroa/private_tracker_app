@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../lib/domain/services/partner_sharing_service.dart';
-import '../../lib/domain/models/cycle_log.dart';
-import '../../lib/domain/models/shared_phase_data.dart';
+import 'package:private_tracker_app/domain/services/partner_sharing_service.dart';
+import 'package:private_tracker_app/domain/models/cycle_log.dart';
+import 'package:private_tracker_app/domain/models/shared_phase_data.dart';
 
 void main() {
   group('PartnerSharingService Tests', () {

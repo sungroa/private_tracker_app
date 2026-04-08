@@ -153,6 +153,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _handleCreateBackup() async {
     HapticFeedback.mediumImpact();
+    final storage = context.read<EncryptedStorageService>();
     final password = await _showPasswordDialog(
       title: 'Create Backup',
       message: 'Enter a password to encrypt your backup. You will need this password to restore your data later.',
@@ -160,12 +161,17 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     if (password != null && password.isNotEmpty) {
+      if (!mounted) return;
       setState(() => _isExporting = true);
-      final storage = context.read<EncryptedStorageService>();
       try {
         final file = await storage.exportEncryptedBackup(password);
         final xFile = XFile(file.path);
-        await Share.shareXFiles([xFile], text: 'Private Tracker Encrypted Backup');
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [xFile],
+            text: 'Private Tracker Encrypted Backup',
+          ),
+        );
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -198,8 +204,10 @@ class _SettingsPageState extends State<SettingsPage> {
       type: FileType.custom,
       allowedExtensions: ['enc'],
     );
+    if (!mounted) return;
 
     if (result != null && result.files.single.path != null) {
+      final storage = context.read<EncryptedStorageService>();
       final file = File(result.files.single.path!);
       
       final confirm = await showDialog<bool>(
@@ -227,10 +235,8 @@ class _SettingsPageState extends State<SettingsPage> {
           message: 'Enter the password used to encrypt this backup.',
           isCreate: false,
         );
-
         if (password != null && password.isNotEmpty) {
           setState(() => _isExporting = true);
-          final storage = context.read<EncryptedStorageService>();
           try {
             await storage.importEncryptedBackup(file, password);
             if (mounted) {
@@ -444,7 +450,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 trailing: Switch.adaptive(
                   value: _biometricEnabled,
                   onChanged: _toggleBiometric,
-                  activeColor: primary,
+                  activeThumbColor: primary,
+                  activeTrackColor: primary.withValues(alpha: 0.5),
                 ),
               ),
             ),
@@ -465,7 +472,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   trailing: Switch.adaptive(
                     value: _notificationsEnabled,
                     onChanged: _toggleNotifications,
-                    activeColor: primary,
+                    activeThumbColor: primary,
+                    activeTrackColor: primary.withValues(alpha: 0.5),
                   ),
                 ),
                 if (_notificationsEnabled) ...[

@@ -10,7 +10,6 @@ import 'package:private_tracker_app/data/storage/local_database_manager.dart';
 import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
 import 'package:private_tracker_app/data/storage/data_export_service.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
-import 'package:private_tracker_app/domain/models/symptom_log.dart';
 import 'package:private_tracker_app/data/storage/data_sources/cycle_data_source.dart';
 import 'package:private_tracker_app/data/storage/data_sources/symptom_data_source.dart';
 import 'package:private_tracker_app/data/storage/data_sources/tag_data_source.dart';
@@ -28,6 +27,7 @@ void main() {
     late CycleDataSource cycleDataSource;
     late SymptomDataSource symptomDataSource;
     late TagDataSource tagDataSource;
+    late LocalDatabaseManager dbManager;
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('hive_test');
@@ -39,7 +39,7 @@ void main() {
       when(() => mockPathProvider.getTemporaryPath()).thenAnswer((_) async => tempDir.path);
       when(() => mockPathProvider.getApplicationDocumentsPath()).thenAnswer((_) async => tempDir.path);
 
-      final dbManager = LocalDatabaseManager();
+      dbManager = LocalDatabaseManager();
       cycleDataSource = CycleDataSource(dbManager);
       symptomDataSource = SymptomDataSource(dbManager);
       tagDataSource = TagDataSource(dbManager);
@@ -63,6 +63,7 @@ void main() {
     });
 
     tearDown(() async {
+      await dbManager.close();
       await Hive.close();
       if (await tempDir.exists()) {
         await tempDir.delete(recursive: true);

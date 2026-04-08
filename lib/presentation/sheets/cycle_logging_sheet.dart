@@ -88,10 +88,10 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     );
     if (picked != null) setState(() => _endDate = picked);
   }
-
   void _onSave() async {
     if (_isSaving) return;
     HapticFeedback.mediumImpact();
+    final navigator = Navigator.of(context);
     setState(() => _isSaving = true);
     try {
       final event = CycleEvent(
@@ -101,12 +101,13 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         flowIntensity: _flowIntensity,
       );
+      final provider = context.read<CycleProvider>();
       if (widget.existingEvent != null) {
-        await context.read<CycleProvider>().updateEvent(event);
+        await provider.updateEvent(event);
       } else {
-        await context.read<CycleProvider>().addEvent(event);
+        await provider.addEvent(event);
       }
-      if (mounted) Navigator.pop(context, true);
+      if (mounted) navigator.pop(true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -116,6 +117,8 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     if (widget.existingEvent == null) return;
     HapticFeedback.heavyImpact();
     
+    final navigator = Navigator.of(context);
+    final provider = context.read<CycleProvider>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -139,8 +142,8 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
 
     setState(() => _isSaving = true);
     try {
-      await context.read<CycleProvider>().deleteEvent(widget.existingEvent!.id);
-      if (mounted) Navigator.pop(context, true);
+      await provider.deleteEvent(widget.existingEvent!.id);
+      if (mounted) navigator.pop(true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
