@@ -25,3 +25,11 @@
 - [x] Feature: Secure Partner Sharing (QR/Deep Link) implementation.
 - [x] Unit Testing: Added 4 tests for PartnerSharingService (PASSED).
 - [x] Integration: Deep Link Handling in `main.dart`.
+- [x] Phase 1-2 (Storage): Split singletons into DataSources and repositories.
+- [x] Phase 3 (Performance): Implement `O(1)` calendar lookups in providers.
+- [x] Phase 4 (Logic): Modularize calculations into specialized domain calculators.
+- [x] Phase 5 (Polish): Implement glassmorphism selection indicators and haptics.
+- [x] Phase 6 (Refinement): Fix transparency and finalize fixed-height logging sheets.
+- [x] Hotfix: Resolve Android 12 `android:exported` build error.
+- [x] Bug Fix: Resolve "Restore Backup" crash by refactoring file picking logic.
+- [x] Codebase Cleanup: Resolve analysis issues, fix test hangs, and improve documentation.
