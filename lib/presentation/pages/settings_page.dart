@@ -115,6 +115,7 @@ class _SettingsPageState extends State<SettingsPage> {
       await notificationService.cancelAllNotifications();
     }
 
+    if (!mounted) return;
     final prefs = context.read<PreferencesService>();
     await prefs.setNotificationsEnabled(value);
     setState(() => _notificationsEnabled = value);
@@ -150,6 +151,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     if (picked != null && picked != _reminderTime) {
+      if (!mounted) return;
       setState(() => _reminderTime = picked);
       await context.read<PreferencesService>().setNotificationTime(picked);
       if (_notificationsEnabled) {
