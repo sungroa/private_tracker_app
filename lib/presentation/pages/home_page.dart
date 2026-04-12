@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import 'tracking_calendar_page.dart';
@@ -46,12 +47,14 @@ class _HomePageState extends State<HomePage> {
                 color: primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Image.asset(
-                'assets/icon/app_icon_foreground.png',
-                width: 24,
-                height: 24,
-                color: primary,
-              ),
+              child: kIsWeb 
+                ? Icon(Icons.bubble_chart_rounded, color: primary, size: 24)
+                : Image.asset(
+                    'assets/icon/app_icon_foreground.png',
+                    width: 24,
+                    height: 24,
+                    color: primary,
+                  ),
             ),
             const SizedBox(width: 12),
             Text(

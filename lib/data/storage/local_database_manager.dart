@@ -47,21 +47,23 @@ class LocalDatabaseManager {
     await Hive.openBox<CycleLogDto>(
       cycleLogBox,
       encryptionCipher: HiveAesCipher(encryptionKey),
-    );
+    ).timeout(const Duration(seconds: 5));
+    
     await Hive.openBox<SymptomLogDto>(
       symptomLogBox,
       encryptionCipher: HiveAesCipher(encryptionKey),
-    );
+    ).timeout(const Duration(seconds: 5));
+    
     await Hive.openBox<CustomTagDto>(
       customTagBox,
       encryptionCipher: HiveAesCipher(encryptionKey),
-    );
+    ).timeout(const Duration(seconds: 5));
 
     // Open meta box (unencrypted, stores only flags)
-    await Hive.openBox<String>(metaBox);
+    await Hive.openBox<String>(metaBox).timeout(const Duration(seconds: 5));
     
     // Open partner data box
-    await Hive.openBox(partnerDataBox);
+    await Hive.openBox(partnerDataBox).timeout(const Duration(seconds: 5));
 
     // Pre-populate defaults if empty
     await _initializeDefaultTags();
