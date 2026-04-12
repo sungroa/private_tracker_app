@@ -51,5 +51,31 @@ We maintain a strict "Zero Technical Debt" policy. No PR should be merged withou
 flutter test --reporter expanded
 ```
 
+## 📦 Building for Production
+
+Ensure all tests pass and Hive adapters are generated (`flutter pub run build_runner build`) before building.
+
+### Android
+```bash
+# Build APK (Release)
+flutter build apk --release
+
+# Build App Bundle (Release)
+flutter build appbundle --release
+```
+
+### iOS
+*Note: Requires macOS and Xcode.*
+```bash
+# Build IPA (Release)
+flutter build ipa --release
+```
+
+### Web
+```bash
+# Build Web (Release)
+flutter build web --release
+```
+
 ## 📘 Further Reading
 - [DEVELOPMENT.md](file:///home/sungroa/git/private_tracker_app/DEVELOPMENT.md): Detailed guide on architecture, security protocols, and coding standards.
