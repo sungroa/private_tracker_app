@@ -183,12 +183,13 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: SafeArea(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: SafeArea(
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 600), // Clean on tablets too
@@ -394,7 +395,8 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
             ),
           ),
         ),
-      ],
-    );
+      );
+    },
+  );
   }
 }

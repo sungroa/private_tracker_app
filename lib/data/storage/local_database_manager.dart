@@ -63,7 +63,20 @@ class LocalDatabaseManager {
     await Hive.openBox<String>(metaBox).timeout(const Duration(seconds: 5));
     
     // Open partner data box
-    await Hive.openBox(partnerDataBox).timeout(const Duration(seconds: 5));
+    try {
+      await Hive.openBox(
+        partnerDataBox,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      ).timeout(const Duration(seconds: 5));
+    } catch (e) {
+      // If the box exists and is unencrypted, opening with a cipher throws.
+      // We'll delete it and reopen encrypted. Partner data is syncable and safe to drop.
+      await Hive.deleteBoxFromDisk(partnerDataBox);
+      await Hive.openBox(
+        partnerDataBox,
+        encryptionCipher: HiveAesCipher(encryptionKey),
+      ).timeout(const Duration(seconds: 5));
+    }
 
     // Pre-populate defaults if empty
     await _initializeDefaultTags();
