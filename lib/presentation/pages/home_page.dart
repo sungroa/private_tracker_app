@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import 'tracking_calendar_page.dart';
 import 'summary_trends_page.dart';
 import 'settings_page.dart';
+import '../sheets/security_summary_sheet.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -34,14 +35,32 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        title: Text(
-          "Cycle Tracker",
-          style: TextStyle(
-            color: primary,
-            fontWeight: FontWeight.w800,
-            fontSize: 22,
-            fontFamily: AppTheme.fontFamily,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Image.asset(
+                'assets/icon/app_icon.png',
+                width: 24,
+                height: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "Cycle Tracker",
+              style: TextStyle(
+                color: primary,
+                fontWeight: FontWeight.w800,
+                fontSize: 22,
+                fontFamily: AppTheme.fontFamily,
+              ),
+            ),
+          ],
         ),
         actions: [
           Padding(
@@ -49,6 +68,7 @@ class _HomePageState extends State<HomePage> {
             child: IconButton(
               onPressed: () {
                 HapticFeedback.lightImpact();
+                SecuritySummarySheet.show(context);
               },
               icon: Icon(Icons.security_rounded, color: primary.withValues(alpha: 0.6), size: 22),
             ),
