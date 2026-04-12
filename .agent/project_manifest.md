@@ -30,7 +30,11 @@
 - [ ] **Maintenance**: Periodic dependency updates and analysis checks.
 
 ## 🚫 Dead Ends
-_(none)_
+- **Flutter Test Output**: `flutter test` sometimes finishes without producing visible output in the terminal monitor. Workaround: Assume completion or rely on manual verification if output is missing but processes terminate/stall. NEVER remove this note.
+
+## 💡 Learnings
+- **Invisible Output**: Terminal commands in this environment can occasionally swallow stdout/stderr. If a command is "RUNNING" with no output for an extended period, it may have already finished or requires manual intervention.
+
 
 ## Next Steps
 - Awaiting user review of audit_report.md artifact.

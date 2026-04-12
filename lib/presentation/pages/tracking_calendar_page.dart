@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_calendar/calendar_grid.dart';
 import '../sheets/unified_logging_sheet.dart';
+import '../sheets/day_summary_sheet.dart';
+import '../sheets/calendar_legend_sheet.dart';
 import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
 import '../providers/symptom_provider.dart';
@@ -62,6 +64,54 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
     });
   }
 
+  bool _isPredictedBleeding(DateTime day, DateTime? predictedNextPeriod) {
+    if (predictedNextPeriod == null) return false;
+    final dateOnly = DateUtils.dateOnly(day);
+    final start = DateUtils.dateOnly(predictedNextPeriod);
+    final end = start.add(const Duration(days: 4));
+    return (dateOnly.isAtSameMomentAs(start) || (dateOnly.isAfter(start) && dateOnly.isBefore(end.add(const Duration(days: 1)))));
+  }
+
+  bool _isPredictedFertility(DateTime day, List<DateTime> predictedFertilityDates) {
+    final dateOnly = DateUtils.dateOnly(day);
+    return predictedFertilityDates.any((d) => DateUtils.isSameDay(d, dateOnly));
+  }
+
+  void _showLegend() {
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const CalendarLegendSheet(),
+    );
+  }
+
+  void _showDaySummary(DateTime day) async {
+    final symptomProvider = context.read<SymptomProvider>();
+    final cycleProvider = context.read<CycleProvider>();
+
+    final existingSymptom = symptomProvider.getSymptomByDate(day);
+    final existingCycle = cycleProvider.getEventByDate(day);
+    final isPredBleeding = _isPredictedBleeding(day, cycleProvider.predictedNextPeriod);
+    final isPredFertility = _isPredictedFertility(day, cycleProvider.predictedFertilityDates);
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DaySummarySheet(
+        selectedDay: day,
+        isPredictedBleeding: isPredBleeding,
+        isPredictedFertility: isPredFertility,
+        existingSymptomLog: existingSymptom,
+        existingCycleLog: existingCycle,
+        onEditDailyLog: () => _showUnifiedSheet(day, type: LoggingType.daily),
+        onEditPeriodLog: () => _showUnifiedSheet(day, type: LoggingType.cycle),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -102,15 +152,27 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                       icon: Icon(Icons.chevron_left_rounded, color: primary),
                       onPressed: _onPrevMonth,
                     ),
-                    Text(
-                      DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase(),
-                      style: TextStyle(
-                        color: primary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        letterSpacing: 1.5,
-                        fontFamily: AppTheme.fontFamily,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase(),
+                          style: TextStyle(
+                            color: primary,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            letterSpacing: 1.5,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: Icon(Icons.info_outline_rounded, color: primary.withValues(alpha: 0.5), size: 18),
+                          onPressed: _showLegend,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
                     ),
                     IconButton(
                       icon: Icon(Icons.chevron_right_rounded, color: primary),
@@ -132,7 +194,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                       _selectedDay = selectedDay;
                       _focusedDay = selectedDay; 
                     });
-                    _showUnifiedSheet(selectedDay);
+                    _showDaySummary(selectedDay);
                   },
                 ),
               ],
