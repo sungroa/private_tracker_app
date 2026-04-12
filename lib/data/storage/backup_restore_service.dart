@@ -16,50 +16,56 @@ class BackupRestoreService {
   static const int ivLength = 16;
   static const int hmacLength = 32;
 
-  /// Exports all data to an encrypted and compressed (.enc) file using Authenticated Encryption.
+  /// Exports all data to an encrypted and compressed (.enc) file using a raw encryption key.
+  Future<File> exportBackupWithKey({
+    required List<int> encryptionKey,
+    required List<CycleLog> cycleEvents,
+    required List<SymptomLog> symptomLogs,
+    required List<CustomTag> customTags,
+  }) async {
+    final compressedBytes = _serializeAndCompress(cycleEvents, symptomLogs, customTags);
+    final iv = encrypt.IV.fromSecureRandom(ivLength);
+    final key = encrypt.Key(Uint8List.fromList(encryptionKey));
+    final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.sic));
+    final encrypted = encrypter.encryptBytes(compressedBytes, iv: iv);
+
+    final dummySalt = Uint8List(saltLength); 
+    final finalPayload = BytesBuilder();
+    finalPayload.addByte(currentVersion);
+    finalPayload.add(dummySalt);
+    finalPayload.add(iv.bytes);
+    
+    final hmac = _calculateHmac(key.bytes, _buildHmacPayload(currentVersion, dummySalt, iv.bytes, encrypted.bytes));
+    finalPayload.add(hmac);
+    finalPayload.add(encrypted.bytes);
+
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/cloud_backup_${DateTime.now().millisecondsSinceEpoch}.enc');
+    await file.writeAsBytes(finalPayload.toBytes());
+    
+    return file;
+  }
+
+  /// Exports all data to an encrypted and compressed (.enc) file using Authenticated Encryption and a password.
   Future<File> exportEncryptedBackup({
     required String userPassword,
     required List<CycleLog> cycleEvents,
     required List<SymptomLog> symptomLogs,
     required List<CustomTag> customTags,
   }) async {
-    // 1. Serialize all data
-    final data = {
-      'version': 1, // Logic version of data schema
-      'createdAt': DateTime.now().toIso8601String(),
-      'cycleLogs': cycleEvents.map((l) => l.toMap()).toList(),
-      'symptomLogs': symptomLogs.map((l) => l.toMap()).toList(),
-      'customTags': customTags.map((t) => t.toMap()).toList(),
-    };
+    final compressedBytes = _serializeAndCompress(cycleEvents, symptomLogs, customTags);
 
-    final jsonString = jsonEncode(data);
-
-    // 2. Compress (GZip) - GZip output can be null if it fails
-    final jsonBytes = utf8.encode(jsonString);
-    final compressedBytes = GZipEncoder().encode(jsonBytes);
-    if (compressedBytes == null) throw Exception("Compression failed");
-
-    // 3. Encrypt (AES-256-SIC / CTR)
     final salt = encrypt.IV.fromSecureRandom(saltLength).bytes;
     final iv = encrypt.IV.fromSecureRandom(ivLength);
     
     final keyBytes = await _deriveKeyFromPassword(userPassword, Uint8List.fromList(salt));
     final key = encrypt.Key(keyBytes);
     final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.sic));
-    
     final encrypted = encrypter.encryptBytes(compressedBytes, iv: iv);
 
-    // 4. Calculate HMAC-SHA256 over [Version] [Salt] [IV] [Ciphertext]
     final hmacKey = await _deriveHmacKeyFromPassword(userPassword, Uint8List.fromList(salt));
-    final hmacPayload = BytesBuilder();
-    hmacPayload.addByte(currentVersion);
-    hmacPayload.add(salt);
-    hmacPayload.add(iv.bytes);
-    hmacPayload.add(encrypted.bytes);
-    
-    final hmac = _calculateHmac(hmacKey, hmacPayload.toBytes());
+    final hmac = _calculateHmac(hmacKey, _buildHmacPayload(currentVersion, salt, iv.bytes, encrypted.bytes));
 
-    // 5. Build final payload: [Version(1)] [Salt(16)] [IV(16)] [HMAC(32)] [Ciphertext]
     final finalPayload = BytesBuilder();
     finalPayload.addByte(currentVersion);
     finalPayload.add(salt);
@@ -67,12 +73,61 @@ class BackupRestoreService {
     finalPayload.add(hmac);
     finalPayload.add(encrypted.bytes);
 
-    // 6. Write to temp file
     final tempDir = await getTemporaryDirectory();
     final file = File('${tempDir.path}/private_tracker_backup_${DateTime.now().millisecondsSinceEpoch}.enc');
     await file.writeAsBytes(finalPayload.toBytes());
     
     return file;
+  }
+
+  Uint8List _serializeAndCompress(List<CycleLog> cycleEvents, List<SymptomLog> symptomLogs, List<CustomTag> customTags) {
+    final data = {
+      'version': 1,
+      'createdAt': DateTime.now().toIso8601String(),
+      'cycleLogs': cycleEvents.map((l) => l.toMap()).toList(),
+      'symptomLogs': symptomLogs.map((l) => l.toMap()).toList(),
+      'customTags': customTags.map((t) => t.toMap()).toList(),
+    };
+
+    final jsonString = jsonEncode(data);
+    final jsonBytes = utf8.encode(jsonString);
+    final compressedBytes = GZipEncoder().encode(jsonBytes);
+    if (compressedBytes == null) throw Exception("Compression failed");
+    return Uint8List.fromList(compressedBytes);
+  }
+
+  /// Imports and restores data from an encrypted backup file using a raw encryption key.
+  Future<Map<String, dynamic>> importBackupWithKey(File file, List<int> encryptionKey) async {
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty) throw Exception("Invalid backup file: empty");
+
+    if (bytes[0] != currentVersion) throw Exception("Unsupported backup version");
+
+    const headerSize = 1 + saltLength + ivLength + hmacLength;
+    final iv = encrypt.IV(bytes.sublist(1 + saltLength, 1 + saltLength + ivLength));
+    final providedHmac = bytes.sublist(1 + saltLength + ivLength, headerSize);
+    final ciphertext = bytes.sublist(headerSize);
+
+    final key = encrypt.Key(Uint8List.fromList(encryptionKey));
+    final calculatedHmac = _calculateHmac(key.bytes, _buildHmacPayload(currentVersion, bytes.sublist(1, 1 + saltLength), iv.bytes, ciphertext));
+
+    if (!_compareUint8Lists(providedHmac, calculatedHmac)) {
+      throw Exception("Integrity check failed: Incorrect key or corrupted backup");
+    }
+
+    final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.sic));
+    final decryptedBytes = encrypter.decryptBytes(encrypt.Encrypted(ciphertext), iv: iv);
+
+    return _decompressAndParse(decryptedBytes);
+  }
+
+  Uint8List _buildHmacPayload(int version, Uint8List salt, Uint8List iv, Uint8List ciphertext) {
+    final builder = BytesBuilder();
+    builder.addByte(version);
+    builder.add(salt);
+    builder.add(iv);
+    builder.add(ciphertext);
+    return builder.toBytes();
   }
 
   /// Imports and restores data from an encrypted backup file, supporting legacy formats.
@@ -102,13 +157,7 @@ class BackupRestoreService {
 
     // 2. Verify HMAC
     final hmacKey = await _deriveHmacKeyFromPassword(userPassword, salt);
-    final hmacPayload = BytesBuilder();
-    hmacPayload.addByte(currentVersion);
-    hmacPayload.add(salt);
-    hmacPayload.add(iv.bytes);
-    hmacPayload.add(ciphertext);
-    
-    final calculatedHmac = _calculateHmac(hmacKey, hmacPayload.toBytes());
+    final calculatedHmac = _calculateHmac(hmacKey, _buildHmacPayload(currentVersion, salt, iv.bytes, ciphertext));
     
     if (!_compareUint8Lists(providedHmac, calculatedHmac)) {
       throw Exception("Integrity check failed: Incorrect password or corrupted backup");

@@ -5,6 +5,8 @@ class PreferencesService {
   static const String _biometricEnabledKey = 'is_biometric_enabled';
   static const String _notificationsEnabledKey = 'is_notifications_enabled';
   static const String _notificationTimeKey = 'notification_time';
+  static const String _cloudSyncEnabledKey = 'is_cloud_sync_enabled';
+  static const String _lastSyncTimeKey = 'last_sync_time';
 
   final FlutterSecureStorage _secureStorage;
 
@@ -49,5 +51,26 @@ class PreferencesService {
   Future<void> setNotificationTime(TimeOfDay time) async {
     final value = '${time.hour}:${time.minute}';
     await _secureStorage.write(key: _notificationTimeKey, value: value);
+  }
+
+  Future<bool> isCloudSyncEnabled() async {
+    final value = await _secureStorage.read(key: _cloudSyncEnabledKey);
+    return value == 'true';
+  }
+
+  Future<void> setCloudSyncEnabled(bool enabled) async {
+    await _secureStorage.write(key: _cloudSyncEnabledKey, value: enabled.toString());
+  }
+
+  Future<DateTime?> getLastSyncTime() async {
+    final value = await _secureStorage.read(key: _lastSyncTimeKey);
+    if (value != null) {
+      return DateTime.tryParse(value);
+    }
+    return null;
+  }
+
+  Future<void> setLastSyncTime(DateTime time) async {
+    await _secureStorage.write(key: _lastSyncTimeKey, value: time.toIso8601String());
   }
 }

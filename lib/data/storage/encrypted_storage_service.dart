@@ -9,6 +9,7 @@ import 'data_export_service.dart';
 import 'data_sources/cycle_data_source.dart';
 import 'data_sources/symptom_data_source.dart';
 import 'data_sources/tag_data_source.dart';
+import 'hive_dtos.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
 
@@ -102,11 +103,36 @@ class EncryptedStorageService {
   /// WARNING: This operation wipes all current local data before importing backup contents.
   Future<void> importEncryptedBackup(File file, String userPassword) async {
     final data = await _backupService.importEncryptedBackup(file, userPassword);
-    await _restoreData(data);
+    await restoreData(data);
+  }
+
+  /// Exports a cloud-specific backup using a persistent secret key.
+  Future<File> exportCloudBackup(List<int> cloudKey) async {
+    return _backupService.exportBackupWithKey(
+      encryptionKey: cloudKey,
+      cycleEvents: _cycleDataSource.getCycleLogs(),
+      symptomLogs: _symptomDataSource.getAllSymptomLogs(),
+      customTags: _tagDataSource.getCustomTags(),
+    );
+  }
+
+  /// Imports a cloud-specific backup using a persistent secret key.
+  Future<void> importCloudBackup(File file, List<int> cloudKey) async {
+    final data = await _backupService.importBackupWithKey(file, cloudKey);
+    await restoreData(data);
+  }
+
+  /// Aggregates all currently stored data into a single serializable Map.
+  Map<String, dynamic> getAllDataAsMap() {
+    return {
+      'cycleLogs': _cycleDataSource.getCycleLogs().map((l) => l.toMap()).toList(),
+      'symptomLogs': _symptomDataSource.getAllSymptomLogs().map((l) => l.toMap()).toList(),
+      'customTags': _tagDataSource.getCustomTags().map((t) => t.toMap()).toList(),
+    };
   }
 
   /// Internal helper to atomically update local storage with restored data.
-  Future<void> _restoreData(Map<String, dynamic> data) async {
+  Future<void> restoreData(Map<String, dynamic> data) async {
     // 1. Wipe current state to ensure a clean restoration
     await _cycleDataSource.clear();
     await _symptomDataSource.clear();
@@ -132,5 +158,27 @@ class EncryptedStorageService {
       final log = SymptomLog.fromMap(Map<String, dynamic>.from(logMap));
       await _symptomDataSource.saveSymptomLog(log);
     }
+  }
+
+  /// Persists merged data into local storage without wiping existing records first.
+  /// Uses the provided models to update or add records.
+  Future<void> persistMergedData({
+    required List<CycleLog> cycleLogs,
+    required List<SymptomLog> symptomLogs,
+    required List<CustomTag> customTags,
+  }) async {
+    for (var tag in customTags) {
+      // Use put directly to preserve the tag's updatedAt and ID
+      await _tagDataSource.put(tag.id, CustomTagDto.fromDomain(tag));
+    }
+    for (var log in cycleLogs) {
+      await _cycleDataSource.put(log.id, CycleLogDto.fromDomain(log));
+    }
+    for (var log in symptomLogs) {
+      await _symptomDataSource.put(log.id, SymptomLogDto.fromDomain(log));
+    }
+    
+    // Notify the database manager that a bulk modification occurred
+    await _dbManager.updateLastModified();
   }
 }

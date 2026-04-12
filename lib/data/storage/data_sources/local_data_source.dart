@@ -13,9 +13,15 @@ abstract class LocalDataSource<T> {
 
   List<T> getAll() => _box.values.toList();
 
-  Future<void> put(String id, T item) => _box.put(id, item);
+  Future<void> put(String id, T item) async {
+    await _box.put(id, item);
+    await _dbManager.updateLastModified();
+  }
 
-  Future<void> delete(String id) => _box.delete(id);
+  Future<void> delete(String id) async {
+    await _box.delete(id);
+    await _dbManager.updateLastModified();
+  }
 
   Future<void> clear() => _box.clear();
 

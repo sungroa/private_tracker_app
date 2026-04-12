@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      hive_generator:
+        generate_for:
+          include:
+            - lib/data/storage/hive_dtos.dart
