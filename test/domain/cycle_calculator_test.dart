@@ -6,14 +6,11 @@ import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
 void main() {
   group('CycleCalculator Tests', () {
-    test('predictNextPeriod with empty logs should return today + 28 days', () {
+    test('predictNextPeriod with empty logs should return null', () {
       final logs = <CycleLog>[];
       final prediction = CycleCalculator.predictNextPeriod(logs);
       
-      final expected = DateTime.now().add(const Duration(days: 28));
-      expect(prediction.year, expected.year);
-      expect(prediction.month, expected.month);
-      expect(prediction.day, expected.day);
+      expect(prediction, isNull);
     });
 
     test('predictNextPeriod with one log should return startDate + 28 days', () {

@@ -5,6 +5,8 @@ import 'tracking_calendar_page.dart';
 import 'summary_trends_page.dart';
 import 'settings_page.dart';
 import '../sheets/security_summary_sheet.dart';
+import 'package:provider/provider.dart';
+import '../providers/cycle_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -45,9 +47,10 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Image.asset(
-                'assets/icon/app_icon.png',
+                'assets/icon/app_icon_foreground.png',
                 width: 24,
                 height: 24,
+                color: primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -63,6 +66,24 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 0.0),
+            child: IconButton(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                context.read<CycleProvider>().refresh();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text("Predictions updated"),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+              icon: Icon(Icons.refresh_rounded, color: primary.withValues(alpha: 0.6), size: 22),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: IconButton(

@@ -10,13 +10,13 @@ class CycleCalculator {
   /// Predicts the next period start date based on previous logs.
   /// If [symptomLogs] are provided, it attempts to mathematically confirm ovulation
   /// using the 3-over-6 rule and overrides the average prediction.
-  static DateTime predictNextPeriod(
+  static DateTime? predictNextPeriod(
     List<CycleLog> cycleLogs, [
     List<SymptomLog>? symptomLogs,
     double threshold = 0.2,
   ]) {
     if (cycleLogs.isEmpty) {
-      return DateTime.now().add(const Duration(days: defaultCycleLength));
+      return null;
     }
 
     // Sort newest first
