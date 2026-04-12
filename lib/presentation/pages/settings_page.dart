@@ -9,6 +9,7 @@ import '../../data/services/export_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/notification_service.dart';
 import '../theme/app_theme.dart';
+import '../../core/services/preferences_service.dart';
 import 'share_prediction_page.dart';
 import 'partner_mode_page.dart';
 
@@ -33,10 +34,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _loadSettings() async {
-    final supported = await AuthService.instance.isHardwareSupported();
-    final biometric = await AuthService.instance.isBiometricEnabled();
-    final notifications = await AuthService.instance.isNotificationsEnabled();
-    final time = await AuthService.instance.getNotificationTime();
+    final authService = context.read<AuthService>();
+    final prefs = context.read<PreferencesService>();
+    final supported = await authService.isHardwareSupported();
+    final biometric = await prefs.isBiometricEnabled();
+    final notifications = await prefs.isNotificationsEnabled();
+    final time = await prefs.getNotificationTime();
     
     if (mounted) {
       setState(() {
@@ -73,9 +76,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _toggleBiometric(bool value) async {
     HapticFeedback.selectionClick();
-    final success = await AuthService.instance.authenticate();
+    final authService = context.read<AuthService>();
+    final prefs = context.read<PreferencesService>();
+    final success = await authService.authenticate();
     if (success) {
-      await AuthService.instance.setBiometricEnabled(value);
+      await prefs.setBiometricEnabled(value);
       setState(() => _biometricEnabled = value);
       
       if (mounted) {
@@ -91,8 +96,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _toggleNotifications(bool value) async {
     HapticFeedback.selectionClick();
+    final notificationService = context.read<NotificationService>();
     if (value) {
-      final granted = await NotificationService.instance.requestPermissions();
+      final granted = await notificationService.requestPermissions();
       if (!granted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -106,10 +112,11 @@ class _SettingsPageState extends State<SettingsPage> {
       }
       await _scheduleReminder();
     } else {
-      await NotificationService.instance.cancelAllNotifications();
+      await notificationService.cancelAllNotifications();
     }
 
-    await AuthService.instance.setNotificationsEnabled(value);
+    final prefs = context.read<PreferencesService>();
+    await prefs.setNotificationsEnabled(value);
     setState(() => _notificationsEnabled = value);
     
     if (mounted) {
@@ -144,7 +151,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (picked != null && picked != _reminderTime) {
       setState(() => _reminderTime = picked);
-      await AuthService.instance.setNotificationTime(picked);
+      await context.read<PreferencesService>().setNotificationTime(picked);
       if (_notificationsEnabled) {
         await _scheduleReminder();
       }
@@ -373,7 +380,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _scheduleReminder() async {
-    await NotificationService.instance.scheduleDailyReminder(
+    await context.read<NotificationService>().scheduleDailyReminder(
       id: 100, 
       time: _reminderTime,
       title: 'Time to log',

@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/domain/cycle_calculator.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 void main() {
   group('CycleCalculator Tests', () {
@@ -58,9 +60,9 @@ void main() {
       expect(prediction, latestStart.add(const Duration(days: 28)));
     });
 
-    test('predictNextPeriod should apply decaying weights (50/30/20)', () {
+    test('predictNextPeriod should apply exponential decay weights', () {
       // 3 intervals: 32 (newest), 28, 24
-      // Weighted: (32*0.5 + 28*0.3 + 24*0.2) / (0.5+0.3+0.2) = 16 + 8.4 + 4.8 = 29.2 -> 29
+      // Exponential decay (0.85^i): (32*1.0 + 28*0.85 + 24*0.7225) / 2.5725 ≈ 28.43 -> 28
       final base = DateTime(2026, 1, 1);
       final logs = [
         CycleEvent(startDate: base.add(const Duration(days: 84))), // Day 84
@@ -72,7 +74,7 @@ void main() {
       final prediction = CycleCalculator.predictNextPeriod(logs);
       final latestStart = logs.first.startDate;
       
-      expect(prediction, latestStart.add(const Duration(days: 29)));
+      expect(prediction, latestStart.add(const Duration(days: 28)));
     });
 
     test('isCurrentlyInPeriod should detect active period if no endDate', () {
@@ -87,7 +89,8 @@ void main() {
 
     test('predictNextPeriod with fewer than 4 intervals should skip IQR filtering', () {
       // Only 3 intervals: IQR requires >= 4, so no filtering should occur.
-      // Intervals: 30, 28, 26 — all kept, weighted: (30*0.5 + 28*0.3 + 26*0.2) / 1.0 = 28.6 -> 29
+      // Intervals: 30, 28, 26 — all kept
+      // Exponential decay: (30*1.0 + 28*0.85 + 26*0.7225) / 2.5725 ≈ 28.22 -> 28
       final base = DateTime(2026, 1, 1);
       final logs = [
         CycleEvent(startDate: base.add(const Duration(days: 84))), // Day 84
@@ -99,8 +102,7 @@ void main() {
       final prediction = CycleCalculator.predictNextPeriod(logs);
       final latestStart = logs.first.startDate;
       
-      // Weighted: (30*0.5 + 28*0.3 + 26*0.2) / 1.0 = 15 + 8.4 + 5.2 = 28.6 -> 29
-      expect(prediction, latestStart.add(const Duration(days: 29)));
+      expect(prediction, latestStart.add(const Duration(days: 28)));
     });
 
     test('predictNextPeriod with uniform cycles should keep all values through IQR', () {
@@ -126,7 +128,7 @@ void main() {
       test('confirmOvulation returns null if fewer than 9 logs', () {
         final logs = List.generate(8, (i) => SymptomLog(
           date: DateTime.utc(2026, 3, i + 1),
-          symptoms: [],
+          symptoms: const [],
           moodRating: 3,
           basalBodyTemperature: 97.0 + i * 0.1,
         ));
@@ -137,10 +139,10 @@ void main() {
         final logs = <SymptomLog>[];
         final baseDate = DateTime.utc(2026, 3, 1);
         for (int i = 0; i < 6; i++) {
-          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.0));
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: const [], moodRating: 3, basalBodyTemperature: 97.0));
         }
         for (int i = 6; i < 9; i++) {
-          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.2));
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: const [], moodRating: 3, basalBodyTemperature: 97.2));
         }
 
         final result = CycleCalculator.confirmOvulation(logs);
@@ -151,10 +153,10 @@ void main() {
         final logs = <SymptomLog>[];
         final baseDate = DateTime.utc(2026, 3, 1);
         for (int i = 0; i < 6; i++) {
-          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 36.5));
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: const [], moodRating: 3, basalBodyTemperature: 36.5));
         }
         for (int i = 6; i < 9; i++) {
-          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 36.6));
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: const [], moodRating: 3, basalBodyTemperature: 36.6));
         }
 
         // With default 0.2, should be null
@@ -170,18 +172,18 @@ void main() {
         
         // First shift (Mar 7)
         for (int i = 0; i < 6; i++) {
-          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.0));
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: const [], moodRating: 3, basalBodyTemperature: 97.0));
         }
         for (int i = 6; i < 9; i++) {
-          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.3));
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: const [], moodRating: 3, basalBodyTemperature: 97.3));
         }
         
         // Second shift (Mar 15)
         for (int i = 9; i < 14; i++) {
-          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.3));
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: const [], moodRating: 3, basalBodyTemperature: 97.3));
         }
         for (int i = 14; i < 17; i++) {
-          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.6));
+          logs.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: const [], moodRating: 3, basalBodyTemperature: 97.6));
         }
 
         final result = CycleCalculator.confirmOvulation(logs);
@@ -195,7 +197,7 @@ void main() {
         for (int i = 0; i < 9; i++) {
           logs.add(SymptomLog(
             date: baseDate.add(Duration(days: i)),
-            symptoms: [],
+            symptoms: const [],
             moodRating: 3,
             basalBodyTemperature: (i == 4) ? null : 97.0 + (i >= 6 ? 0.3 : 0),
           ));
@@ -212,10 +214,10 @@ void main() {
         final symptoms = <SymptomLog>[];
         final baseDate = DateTime.utc(2026, 3, 1);
         for (int i = 0; i < 6; i++) {
-          symptoms.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.0));
+          symptoms.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: const [], moodRating: 3, basalBodyTemperature: 97.0));
         }
         for (int i = 6; i < 9; i++) {
-          symptoms.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: [], moodRating: 3, basalBodyTemperature: 97.2));
+          symptoms.add(SymptomLog(date: baseDate.add(Duration(days: i)), symptoms: const [], moodRating: 3, basalBodyTemperature: 97.2));
         }
 
         // Ovulation confirmed at Mar 6. Prediction should be Mar 6 + 14 days = Mar 20.
@@ -227,7 +229,7 @@ void main() {
       test('predictNextPeriod uses default if no ovulation confirmed', () {
         final cycleLogs = [CycleEvent(startDate: DateTime.utc(2026, 3, 1))];
         final symptoms = [
-          SymptomLog(date: DateTime.utc(2026, 3, 1), symptoms: [], moodRating: 3, basalBodyTemperature: 97.0),
+          SymptomLog(date: DateTime.utc(2026, 3, 1), symptoms: const [], moodRating: 3, basalBodyTemperature: 97.0),
         ];
 
         final prediction = CycleCalculator.predictNextPeriod(cycleLogs, symptoms);

@@ -1,5 +1,7 @@
 import '../models/cycle_log.dart';
 import '../models/trends.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 class BbtMapper {
   static List<BbtPoint> getBbtHistoryForCurrentCycle(List<CycleEvent> cycleLogs, List<SymptomLog> symptomLogs) {

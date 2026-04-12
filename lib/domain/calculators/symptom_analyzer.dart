@@ -1,5 +1,6 @@
-import '../models/cycle_log.dart';
 import '../models/trends.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 class SymptomAnalyzer {
   static List<MapEntry<String, int>> calculateTopSymptoms(List<SymptomLog> logs) {

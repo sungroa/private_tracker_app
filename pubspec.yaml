@@ -60,6 +60,7 @@ dependencies:
   qr_flutter: ^4.1.0
   mobile_scanner: ^5.1.1
   app_links: ^6.1.1
+  collection: ^1.19.1
 
 dev_dependencies:
   flutter_test:

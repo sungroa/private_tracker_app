@@ -1,4 +1,5 @@
-import '../models/cycle_log.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 abstract class SymptomLogRepository {
   List<SymptomLog> getSymptomLogs();

@@ -16,7 +16,7 @@ void main() {
     setUp(() {
       tz.initializeTimeZones();
       mockPlugin = MockFlutterLocalNotificationsPlugin();
-      service = NotificationService.test(mockPlugin);
+      service = NotificationService(notificationsPlugin: mockPlugin);
       
       // Register fallback value for TZDateTime
       registerFallbackValue(tz.TZDateTime.now(tz.UTC));

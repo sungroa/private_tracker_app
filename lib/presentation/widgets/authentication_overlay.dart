@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../core/services/auth_service.dart';
 import '../theme/app_theme.dart';
 
@@ -14,7 +15,7 @@ class AuthenticationOverlay extends StatelessWidget {
 
   Future<void> _handleUnlock(BuildContext context) async {
     HapticFeedback.mediumImpact();
-    final bool success = await AuthService.instance.authenticate();
+    final bool success = await context.read<AuthService>().authenticate();
     if (success) {
       onUnlockSuccess();
     }

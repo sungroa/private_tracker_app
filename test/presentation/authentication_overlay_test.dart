@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 import 'package:private_tracker_app/core/services/auth_service.dart';
 import 'package:private_tracker_app/presentation/widgets/authentication_overlay.dart';
 import 'package:private_tracker_app/presentation/theme/app_theme.dart';
@@ -12,14 +13,16 @@ void main() {
 
   setUp(() {
     mockAuthService = MockAuthService();
-    AuthService.instance = mockAuthService;
   });
 
   testWidgets('AuthenticationOverlay renders correctly', (WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: AuthenticationOverlay(onUnlockSuccess: () {}),
+      Provider<AuthService>.value(
+        value: mockAuthService,
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: AuthenticationOverlay(onUnlockSuccess: () {}),
+        ),
       ),
     );
 
@@ -34,10 +37,13 @@ void main() {
     when(() => mockAuthService.authenticate()).thenAnswer((_) async => true);
 
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: AuthenticationOverlay(
-          onUnlockSuccess: () => unlocked = true,
+      Provider<AuthService>.value(
+        value: mockAuthService,
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: AuthenticationOverlay(
+            onUnlockSuccess: () => unlocked = true,
+          ),
         ),
       ),
     );
@@ -54,10 +60,13 @@ void main() {
     when(() => mockAuthService.authenticate()).thenAnswer((_) async => false);
 
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.lightTheme,
-        home: AuthenticationOverlay(
-          onUnlockSuccess: () => unlocked = true,
+      Provider<AuthService>.value(
+        value: mockAuthService,
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: AuthenticationOverlay(
+            onUnlockSuccess: () => unlocked = true,
+          ),
         ),
       ),
     );

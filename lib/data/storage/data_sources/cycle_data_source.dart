@@ -9,7 +9,7 @@ class CycleDataSource extends LocalDataSource<CycleEventDto> {
   List<CycleEvent> getCycleEvents() {
     final dtos = getAll();
     dtos.sort((a, b) => b.startDate.compareTo(a.startDate)); // Newest first
-    return dtos.map((dto) => dto.sovereignty()).toList();
+    return dtos.map((dto) => dto.toDomain()).toList();
   }
 
   Future<void> saveCycleEvent(CycleEvent event) {

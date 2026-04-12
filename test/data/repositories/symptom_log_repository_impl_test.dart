@@ -13,7 +13,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(SymptomLog(
       date: DateTime.now(),
-      symptoms: [],
+      symptoms: const [],
       moodRating: 3,
     ));
   });
@@ -29,7 +29,7 @@ void main() {
 
   group('SymptomLogRepositoryImpl', () {
     test('getSymptomLogs returns logs from storage', () {
-      final log = SymptomLog(date: DateTime.now(), symptoms: [], moodRating: 3);
+      final log = SymptomLog(date: DateTime.now(), symptoms: const [], moodRating: 3);
       when(() => mockDataSource.getAllSymptomLogs()).thenReturn([log]);
 
       final result = repository.getSymptomLogs();
@@ -49,7 +49,7 @@ void main() {
     });
 
     test('addSymptomLog calls storage save', () async {
-      final log = SymptomLog(date: DateTime.now(), symptoms: [], moodRating: 3);
+      final log = SymptomLog(date: DateTime.now(), symptoms: const [], moodRating: 3);
       when(() => mockDataSource.saveSymptomLog(any())).thenAnswer((_) async {});
 
       await repository.addSymptomLog(log);
@@ -58,7 +58,7 @@ void main() {
     });
 
     test('updateSymptomLog calls storage save', () async {
-      final log = SymptomLog(date: DateTime.now(), symptoms: [], moodRating: 3);
+      final log = SymptomLog(date: DateTime.now(), symptoms: const [], moodRating: 3);
       when(() => mockDataSource.saveSymptomLog(any())).thenAnswer((_) async {});
 
       await repository.updateSymptomLog(log);

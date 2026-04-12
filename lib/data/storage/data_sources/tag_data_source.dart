@@ -7,7 +7,7 @@ class TagDataSource extends LocalDataSource<CustomTagDto> {
   TagDataSource(LocalDatabaseManager dbManager) : super(dbManager, LocalDatabaseManager.customTagBox);
 
   List<CustomTag> getCustomTags() {
-    return values.map((dto) => dto.sovereignty()).toList();
+    return values.map((dto) => dto.toDomain()).toList();
   }
 
   Future<void> addCustomTag(String name) async {

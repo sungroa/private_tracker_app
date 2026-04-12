@@ -5,18 +5,11 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 
 class NotificationService {
-  static NotificationService _instance = NotificationService._internal();
-  static NotificationService get instance => _instance;
-
-  @visibleForTesting
-  static set instance(NotificationService mock) => _instance = mock;
-
   final FlutterLocalNotificationsPlugin _notificationsPlugin;
 
-  NotificationService._internal() : _notificationsPlugin = FlutterLocalNotificationsPlugin();
-
-  @visibleForTesting
-  NotificationService.test(this._notificationsPlugin);
+  NotificationService({
+    FlutterLocalNotificationsPlugin? notificationsPlugin,
+  }) : _notificationsPlugin = notificationsPlugin ?? FlutterLocalNotificationsPlugin();
 
   /// Initializes the notification service.
   Future<void> initialize() async {

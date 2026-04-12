@@ -9,6 +9,8 @@ import 'data_export_service.dart';
 import 'data_sources/cycle_data_source.dart';
 import 'data_sources/symptom_data_source.dart';
 import 'data_sources/tag_data_source.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 class EncryptedStorageService {
   final SecureKeyStorage _keyStorage;

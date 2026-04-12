@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/trends_calculator.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 void main() {
   group('TrendsCalculator Tests', () {
@@ -40,17 +42,17 @@ void main() {
       final logs = [
         SymptomLog(
           date: DateTime.now(), 
-          symptoms: ['Cramps', 'Bloating'], 
+          symptoms: const ['Cramps', 'Bloating'], 
           moodRating: 3,
         ),
         SymptomLog(
           date: DateTime.now().subtract(const Duration(days: 1)), 
-          symptoms: ['Cramps', 'Fatigue'], 
+          symptoms: const ['Cramps', 'Fatigue'], 
           moodRating: 1,
         ),
         SymptomLog(
           date: DateTime.now().subtract(const Duration(days: 2)), 
-          symptoms: ['Cramps'], 
+          symptoms: const ['Cramps'], 
           moodRating: 2,
         ),
       ];
@@ -65,9 +67,9 @@ void main() {
     test('getMoodHistory returns sorted points within 30 days', () {
       final now = DateTime.now();
       final logs = [
-        SymptomLog(date: now, symptoms: [], moodRating: 5),
-        SymptomLog(date: now.subtract(const Duration(days: 10)), symptoms: [], moodRating: 4),
-        SymptomLog(date: now.subtract(const Duration(days: 40)), symptoms: [], moodRating: 1), // Outside range
+        SymptomLog(date: now, symptoms: const [], moodRating: 5),
+        SymptomLog(date: now.subtract(const Duration(days: 10)), symptoms: const [], moodRating: 4),
+        SymptomLog(date: now.subtract(const Duration(days: 40)), symptoms: const [], moodRating: 1), // Outside range
       ];
 
       final trends = TrendsCalculator.calculateTrends([], logs);

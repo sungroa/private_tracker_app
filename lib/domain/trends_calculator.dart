@@ -4,6 +4,9 @@ import 'calculators/cycle_stats_calculator.dart';
 import 'calculators/prediction_engine.dart';
 import 'calculators/symptom_analyzer.dart';
 import 'calculators/bbt_mapper.dart';
+import 'cycle_calculator.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 export 'models/trends.dart';
 
@@ -14,7 +17,8 @@ class TrendsCalculator {
     final avgCycleLength = CycleStatsCalculator.calculateAverageCycleLength(cycleLogs);
     final avgPeriodDuration = CycleStatsCalculator.calculateAveragePeriodDuration(cycleLogs);
     
-    final nextPeriod = PredictionEngine.predictNextPeriod(cycleLogs, avgCycleLength);
+    // Use the sophisticated CycleCalculator which supports BBT-confirmed ovulation
+    final nextPeriod = CycleCalculator.predictNextPeriod(cycleLogs, symptomLogs);
     final fertility = PredictionEngine.predictFertilityWindow(nextPeriod);
 
     return TrendData(

@@ -4,6 +4,8 @@ import 'package:encrypt/encrypt.dart' as enc;
 import '../models/shared_phase_data.dart';
 import '../cycle_calculator.dart';
 import '../models/cycle_log.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 class PartnerSharingService {
   static const String scheme = 'ptapp';
@@ -14,6 +16,10 @@ class PartnerSharingService {
     required List<CycleEvent> cycleLogs,
     List<SymptomLog>? symptomLogs,
   }) {
+    if (cycleLogs.isEmpty) {
+      throw ArgumentError('Cannot generate partner payload: no cycle data recorded yet.');
+    }
+
     // 1. Calculate phase data
     final nextPeriod = CycleCalculator.predictNextPeriod(cycleLogs, symptomLogs);
     
@@ -82,7 +88,7 @@ class PartnerSharingService {
       final digest = hmac.convert(iv.bytes + encryptedBytes);
       final hmacExpected = base64UrlEncode(digest.bytes);
       
-      if (hmacProvided != hmacExpected) {
+      if (!_secureEquals(hmacProvided, hmacExpected)) {
         throw Exception('Authenticity check failed: Payload has been tampered with');
       }
 
@@ -115,5 +121,15 @@ class PartnerSharingService {
       'data': data,
       'key': key,
     };
+  }
+
+  /// Constant-time comparison to prevent timing attacks.
+  static bool _secureEquals(String a, String b) {
+    if (a.length != b.length) return false;
+    int result = 0;
+    for (int i = 0; i < a.length; i++) {
+      result |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+    }
+    return result == 0;
   }
 }

@@ -11,6 +11,7 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:private_tracker_app/main.dart';
 import 'package:private_tracker_app/core/services/auth_service.dart';
+import 'package:private_tracker_app/core/services/preferences_service.dart';
 import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
 import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
@@ -22,13 +23,16 @@ import 'package:app_links/app_links.dart';
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 class MockLocalAuthentication extends Mock implements LocalAuthentication {}
 class MockAppLinks extends Mock implements AppLinks {}
+class MockAuthService extends Mock implements AuthService {}
+class MockPreferencesService extends Mock implements PreferencesService {}
 class MockPathProviderPlatform extends Mock with MockPlatformInterfaceMixin implements PathProviderPlatform {}
 
 void main() {
   late Directory tempDir;
   late MockFlutterSecureStorage mockSecureStorage;
-  late MockLocalAuthentication mockLocalAuth;
   late MockAppLinks mockAppLinks;
+  late MockAuthService mockAuthService;
+  late MockPreferencesService mockPreferencesService;
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('provider_scope_test');
@@ -40,20 +44,18 @@ void main() {
     when(() => mockPathProvider.getApplicationDocumentsPath()).thenAnswer((_) async => tempDir.path);
 
     mockSecureStorage = MockFlutterSecureStorage();
-    mockLocalAuth = MockLocalAuthentication();
     mockAppLinks = MockAppLinks();
+    mockAuthService = MockAuthService();
+    mockPreferencesService = MockPreferencesService();
 
     // Mock AppLinks stream
     when(() => mockAppLinks.uriLinkStream).thenAnswer((_) => const Stream<Uri>.empty());
 
-    // Inject Mocks
-    AuthService.instance = AuthService.test(mockLocalAuth, mockSecureStorage);
+    // Setup MockPreferencesService
+    when(() => mockPreferencesService.isBiometricEnabled()).thenAnswer((_) async => false);
 
     // Open unencrypted box for PartnerModePage
     await Hive.openBox('partner_data');
-
-    // Mock Auth Preferences (Biometric Disabled by default to skip auth screen)
-    when(() => mockSecureStorage.read(key: 'is_biometric_enabled')).thenAnswer((_) async => 'false');
     
     final key = Hive.generateSecureKey();
     when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((_) async => base64UrlEncode(key));
@@ -104,6 +106,8 @@ void main() {
         exportService: DataExportService(),
         appLinks: mockAppLinks,
         storageBasePath: tempDir.path,
+        authService: mockAuthService,
+        preferencesService: mockPreferencesService,
       ));
       
       // Advance beyond the splash/loading screen

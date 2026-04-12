@@ -4,6 +4,8 @@ import 'symptom_logging_sheet.dart';
 import 'cycle_logging_sheet.dart';
 import '../../domain/models/cycle_log.dart';
 import '../theme/app_theme.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 enum LoggingType { daily, cycle }
 

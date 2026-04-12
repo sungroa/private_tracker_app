@@ -25,11 +25,14 @@ class SummaryLineChart extends StatelessWidget {
       );
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themeColor = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
     return SizedBox(
       height: height,
       width: double.infinity,
       child: CustomPaint(
-        painter: _LineChartPainter(data),
+        painter: _LineChartPainter(data, themeColor),
       ),
     );
   }
@@ -37,8 +40,9 @@ class SummaryLineChart extends StatelessWidget {
 
 class _LineChartPainter extends CustomPainter {
   final List<MoodPoint> data;
+  final Color themeColor;
 
-  _LineChartPainter(this.data);
+  _LineChartPainter(this.data, this.themeColor);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -48,7 +52,7 @@ class _LineChartPainter extends CustomPainter {
     }
 
     final paint = Paint()
-      ..color = AppTheme.primaryColor
+      ..color = themeColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
@@ -88,8 +92,8 @@ class _LineChartPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          AppTheme.primaryColor.withValues(alpha: 0.3),
-          AppTheme.primaryColor.withValues(alpha: 0.0),
+          themeColor.withValues(alpha: 0.3),
+          themeColor.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
@@ -97,7 +101,7 @@ class _LineChartPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     // Draw dots at points
-    final dotPaint = Paint()..color = AppTheme.primaryColor;
+    final dotPaint = Paint()..color = themeColor;
     final dotBorderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
@@ -112,5 +116,14 @@ class _LineChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _LineChartPainter oldDelegate) {
+    if (oldDelegate.themeColor != themeColor) return true;
+    if (oldDelegate.data.length != data.length) return true;
+    for (int i = 0; i < data.length; i++) {
+      if (oldDelegate.data[i].rating != data[i].rating || oldDelegate.data[i].date != data[i].date) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
