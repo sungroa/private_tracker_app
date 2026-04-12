@@ -68,6 +68,8 @@ class CustomCalendarGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     // 1. Calculate grid dimensions
     final daysInMonth = DateUtils.getDaysInMonth(focusedDay.year, focusedDay.month);
     
@@ -80,28 +82,30 @@ class CustomCalendarGrid extends StatelessWidget {
     return Column(
       children: [
         // Weekday Headers (S M T W T F S)
-        const Row(
+        Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _WeekdayHeader('S'),
-            _WeekdayHeader('M'),
-            _WeekdayHeader('T'),
-            _WeekdayHeader('W'),
-            _WeekdayHeader('T'),
-            _WeekdayHeader('F'),
-            _WeekdayHeader('S'),
+            _WeekdayHeader('S', isDark: isDark),
+            _WeekdayHeader('M', isDark: isDark),
+            _WeekdayHeader('T', isDark: isDark),
+            _WeekdayHeader('W', isDark: isDark),
+            _WeekdayHeader('T', isDark: isDark),
+            _WeekdayHeader('F', isDark: isDark),
+            _WeekdayHeader('S', isDark: isDark),
           ],
         ),
         const SizedBox(height: 8),
         
         // The Calendar Grid
+        // Spacing of 2px (reduced from 4px) ensures each cell is ~44+dp
+        // on standard screens, meeting Material touch target guidelines.
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(), // Handled by parent ListView
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 4,
+            mainAxisSpacing: 2,
+            crossAxisSpacing: 2,
           ),
           itemCount: totalCells,
           itemBuilder: (context, index) {
@@ -152,9 +156,13 @@ class CustomCalendarGrid extends StatelessWidget {
 }
 
 /// A simple header widget for a single weekday initial.
+///
+/// Adapts text color to the current theme brightness for consistent
+/// legibility against both light and dark glassmorphic backgrounds.
 class _WeekdayHeader extends StatelessWidget {
   final String label;
-  const _WeekdayHeader(this.label);
+  final bool isDark;
+  const _WeekdayHeader(this.label, {this.isDark = false});
 
   @override
   Widget build(BuildContext context) {
@@ -163,9 +171,9 @@ class _WeekdayHeader extends StatelessWidget {
       child: Center(
         child: Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.grey,
+            color: isDark ? Colors.white54 : Colors.grey,
             fontSize: 12,
           ),
         ),

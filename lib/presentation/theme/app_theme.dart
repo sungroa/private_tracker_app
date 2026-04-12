@@ -135,6 +135,29 @@ class AppTheme {
       ),
     );
   }
+
+  /// Glassmorphic decoration for the "Return to Today" mini-FAB.
+  ///
+  /// Uses a semi-transparent primary tint with a subtle white border and
+  /// a soft glow shadow — consistent with the app's glass design language.
+  static BoxDecoration glassFabDecoration({bool isDark = false}) {
+    final primary = isDark ? primaryDarkColor : primaryColor;
+    return BoxDecoration(
+      borderRadius: BorderRadius.circular(14),
+      color: isDark ? primary.withValues(alpha: 0.20) : primary.withValues(alpha: 0.12),
+      border: Border.all(
+        color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.3),
+        width: 1,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: primary.withValues(alpha: 0.2),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+  }
 }
 
 class PremiumGradients {
