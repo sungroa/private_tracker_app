@@ -56,6 +56,30 @@ flutter test --reporter expanded
 Ensure all tests pass and Hive adapters are generated (`flutter pub run build_runner build`) before building.
 
 ### Android
+
+#### 🔐 App Signing Setup (Release Mode)
+
+For production builds, the app must be signed with a secure keystore.
+
+1. **Generate Keystore**: Run the following command from the project root:
+   ```bash
+   keytool -genkey -v -keystore android/app/upload-keystore.jks \
+           -keyalg RSA -keysize 2048 -validity 10000 \
+           -alias upload
+   ```
+
+2. **Configure Credentials**: Edit `android/key.properties` and fill in the passwords you used in the step above:
+   ```properties
+   storePassword=YOUR_STORE_PASSWORD
+   keyPassword=YOUR_KEY_PASSWORD
+   keyAlias=upload
+   storeFile=../app/upload-keystore.jks
+   ```
+
+3. **Security**: Both `upload-keystore.jks` and `key.properties` are excluded from git. **Ensure you back up these files securely.** Loss of these files will prevent you from updating the app on the Play Store.
+
+#### Build Commands
+
 ```bash
 # Build APK (Release)
 flutter build apk --release
