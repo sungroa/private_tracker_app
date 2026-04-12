@@ -21,7 +21,7 @@ class PartnerSharingService {
     }
 
     // 1. Calculate phase data
-    final nextPeriod = CycleCalculator.predictNextPeriod(cycleLogs, symptomLogs);
+    final nextPeriod = CycleCalculator.predictNextPeriod(cycleLogs, symptomLogs)!;
     
     // Standard estimate: Ovulation is ~14 days before next period
     final predictedOvulation = nextPeriod.subtract(const Duration(days: 14));
