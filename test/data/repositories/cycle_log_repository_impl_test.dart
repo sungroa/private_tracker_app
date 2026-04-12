@@ -14,7 +14,7 @@ void main() {
     mockDataSource = MockCycleDataSource();
     repository = CycleLogRepositoryImpl(mockDataSource);
     
-    registerFallbackValue(CycleEvent(startDate: DateTime.now()));
+    registerFallbackValue(CycleLog(startDate: DateTime.now()));
   });
 
   tearDown(() {
@@ -22,42 +22,42 @@ void main() {
   });
 
   group('CycleLogRepositoryImpl', () {
-    test('getCycleEvents returns events from storage', () {
-      final event = CycleEvent(startDate: DateTime.now());
-      when(() => mockDataSource.getCycleEvents()).thenReturn([event]);
+    test('getCycleLogs returns events from storage', () {
+      final event = CycleLog(startDate: DateTime.now());
+      when(() => mockDataSource.getCycleLogs()).thenReturn([event]);
 
-      final result = repository.getCycleEvents();
+      final result = repository.getCycleLogs();
 
       expect(result.length, 1);
       expect(result.first, event);
-      verify(() => mockDataSource.getCycleEvents()).called(1);
+      verify(() => mockDataSource.getCycleLogs()).called(1);
     });
 
-    test('addCycleEvent calls storage', () async {
-      final event = CycleEvent(startDate: DateTime.now());
-      when(() => mockDataSource.saveCycleEvent(any())).thenAnswer((_) async {});
+    test('addCycleLog calls storage', () async {
+      final event = CycleLog(startDate: DateTime.now());
+      when(() => mockDataSource.saveCycleLog(any())).thenAnswer((_) async {});
 
-      await repository.addCycleEvent(event);
+      await repository.addCycleLog(event);
 
-      verify(() => mockDataSource.saveCycleEvent(event)).called(1);
+      verify(() => mockDataSource.saveCycleLog(event)).called(1);
     });
 
-    test('updateCycleEvent calls storage save', () async {
-      final event = CycleEvent(startDate: DateTime.now());
-      when(() => mockDataSource.saveCycleEvent(any())).thenAnswer((_) async {});
+    test('updateCycleLog calls storage save', () async {
+      final event = CycleLog(startDate: DateTime.now());
+      when(() => mockDataSource.saveCycleLog(any())).thenAnswer((_) async {});
 
-      await repository.updateCycleEvent(event);
+      await repository.updateCycleLog(event);
 
-      verify(() => mockDataSource.saveCycleEvent(event)).called(1);
+      verify(() => mockDataSource.saveCycleLog(event)).called(1);
     });
 
-    test('deleteCycleEvent calls storage delete', () async {
+    test('deleteCycleLog calls storage delete', () async {
       const id = 'test-id';
-      when(() => mockDataSource.deleteCycleEvent(any())).thenAnswer((_) async {});
+      when(() => mockDataSource.deleteCycleLog(any())).thenAnswer((_) async {});
 
-      await repository.deleteCycleEvent(id);
+      await repository.deleteCycleLog(id);
 
-      verify(() => mockDataSource.deleteCycleEvent(id)).called(1);
+      verify(() => mockDataSource.deleteCycleLog(id)).called(1);
     });
   });
 }

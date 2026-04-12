@@ -5,11 +5,13 @@ import '../../domain/models/symptom_log.dart';
 import '../theme/app_theme.dart';
 
 class DaySummarySheet extends StatelessWidget {
+  static final DateFormat _fullDateFormatter = DateFormat('EEEE, MMMM d, yyyy');
+
   final DateTime selectedDay;
   final bool isPredictedBleeding;
   final bool isPredictedFertility;
-  final SymptomLog? existingSymptomLog;
-  final CycleEvent? existingCycleLog;
+  final SymptomLog? symptomLog;
+  final CycleLog? cycleLog;
   final VoidCallback onEditDailyLog;
   final VoidCallback onEditPeriodLog;
 
@@ -18,8 +20,8 @@ class DaySummarySheet extends StatelessWidget {
     required this.selectedDay,
     this.isPredictedBleeding = false,
     this.isPredictedFertility = false,
-    this.existingSymptomLog,
-    this.existingCycleLog,
+    this.symptomLog,
+    this.cycleLog,
     required this.onEditDailyLog,
     required this.onEditPeriodLog,
   });
@@ -29,12 +31,12 @@ class DaySummarySheet extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
-    final String formattedDate = DateFormat('EEEE, MMMM d, yyyy').format(selectedDay);
+    final String formattedDate = _fullDateFormatter.format(selectedDay);
 
     final bool hasAnyData = isPredictedBleeding || 
                             isPredictedFertility || 
-                            existingCycleLog != null || 
-                            existingSymptomLog != null;
+                            cycleLog != null || 
+                            symptomLog != null;
 
     return Container(
       decoration: BoxDecoration(
@@ -73,22 +75,25 @@ class DaySummarySheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                physics: const BouncingScrollPhysics(),
+            // Replaced ListView(shrinkWrap: true) with Column + padding for efficiency
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   if (!hasAnyData)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 32),
-                      child: Text(
-                        "No data logged or predicted for this day.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: isDark ? Colors.white54 : Colors.black54,
-                          fontSize: 15,
-                          fontFamily: AppTheme.fontFamily,
+                      child: Center(
+                        child: Text(
+                          "No data logged or predicted for this day.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: isDark ? Colors.white54 : Colors.black54,
+                            fontSize: 15,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
                         ),
                       ),
                     ),
@@ -109,48 +114,48 @@ class DaySummarySheet extends StatelessWidget {
                         title: "Fertile Window",
                         isDark: isDark,
                       ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                   ],
 
-                  if (existingCycleLog != null) ...[
+                  if (cycleLog != null) ...[
                     _SectionHeader(title: "Cycle Data", isDark: isDark),
                     _SummaryItem(
                       icon: Icons.water_drop_rounded,
                       color: Colors.redAccent,
                       title: "Flow Intensity",
-                      subtitle: "${existingCycleLog!.flowIntensity} / 5",
+                      subtitle: cycleLog!.flowIntensityDisplayName,
                       isDark: isDark,
                     ),
-                    if (existingCycleLog!.notes?.isNotEmpty ?? false)
+                    if (cycleLog!.notes?.isNotEmpty ?? false)
                       _SummaryItem(
                         icon: Icons.notes_rounded,
                         color: Colors.grey,
                         title: "Notes",
-                        subtitle: existingCycleLog!.notes,
+                        subtitle: cycleLog!.notes,
                         isDark: isDark,
                       ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                   ],
 
-                  if (existingSymptomLog != null) ...[
+                  if (symptomLog != null) ...[
                     _SectionHeader(title: "Daily Log", isDark: isDark),
-                    if (existingSymptomLog!.symptoms.isNotEmpty)
+                    if (symptomLog!.symptoms.isNotEmpty)
                       _SummaryItem(
                         icon: Icons.accessibility_new_rounded,
                         color: Colors.purpleAccent,
                         title: "Symptoms",
-                        subtitle: existingSymptomLog!.symptoms.join(", "),
+                        subtitle: symptomLog!.symptomsSummary,
                         isDark: isDark,
                       ),
-                    if (existingSymptomLog!.moodRating != 3) // Assuming 3 is neutral
+                    if (symptomLog!.moodRating != SymptomLog.neutralMood)
                       _SummaryItem(
                         icon: Icons.mood_rounded,
                         color: Colors.teal,
                         title: "Mood",
-                        subtitle: _moodToString(existingSymptomLog!.moodRating),
+                        subtitle: symptomLog!.moodDisplayName,
                         isDark: isDark,
                       ),
-                    if (existingSymptomLog!.lhTestPositive == true)
+                    if (symptomLog!.lhTestPositive == true)
                       _SummaryItem(
                         icon: Icons.star_rounded,
                         color: Colors.pinkAccent,
@@ -158,15 +163,15 @@ class DaySummarySheet extends StatelessWidget {
                         subtitle: "Positive",
                         isDark: isDark,
                       ),
-                    if (existingSymptomLog!.basalBodyTemperature != null)
+                    if (symptomLog!.basalBodyTemperature != null)
                       _SummaryItem(
                         icon: Icons.thermostat_rounded,
                         color: Colors.orangeAccent,
                         title: "Temperature",
-                        subtitle: "${existingSymptomLog!.basalBodyTemperature}°",
+                        subtitle: "${symptomLog!.basalBodyTemperature}°",
                         isDark: isDark,
                       ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                   ],
                 ],
               ),
@@ -184,7 +189,7 @@ class DaySummarySheet extends StatelessWidget {
                         onEditPeriodLog();
                       },
                       icon: const Icon(Icons.water_drop_outlined, size: 20),
-                      label: Text(existingCycleLog == null ? "ADD PERIOD" : "EDIT PERIOD"),
+                      label: Text(cycleLog == null ? "ADD PERIOD" : "EDIT PERIOD"),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.redAccent,
                         side: BorderSide(color: Colors.redAccent.withValues(alpha: 0.5)),
@@ -201,7 +206,7 @@ class DaySummarySheet extends StatelessWidget {
                         onEditDailyLog();
                       },
                       icon: const Icon(Icons.edit_note_rounded, size: 20),
-                      label: Text(existingSymptomLog == null ? "ADD LOG" : "EDIT LOG", style: const TextStyle(fontWeight: FontWeight.w700)),
+                      label: Text(symptomLog == null ? "ADD LOG" : "EDIT LOG", style: const TextStyle(fontWeight: FontWeight.w700)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primary,
                         foregroundColor: isDark ? AppTheme.backgroundDarkColor : Colors.white,
@@ -219,14 +224,6 @@ class DaySummarySheet extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _moodToString(int mood) {
-    if (mood <= 1) return "Terrible";
-    if (mood == 2) return "Bad";
-    if (mood == 3) return "Neutral";
-    if (mood == 4) return "Good";
-    return "Excellent";
   }
 }
 

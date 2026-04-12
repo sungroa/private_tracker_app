@@ -4,10 +4,10 @@ import '../models/cycle_log.dart';
 class CycleStatsCalculator {
   static const int defaultCycleLength = 28;
 
-  static double calculateAverageCycleLength(List<CycleEvent> logs) {
+  static double calculateAverageCycleLength(List<CycleLog> logs) {
     if (logs.length < 2) return defaultCycleLength.toDouble();
 
-    final sortedLogs = List<CycleEvent>.from(logs)
+    final sortedLogs = List<CycleLog>.from(logs)
       ..sort((a, b) => b.startDate.compareTo(a.startDate));
 
     final lengths = <int>[];
@@ -21,7 +21,7 @@ class CycleStatsCalculator {
     return calculateWeightedAverage(filteredLengths).toDouble();
   }
 
-  static double calculateAveragePeriodDuration(List<CycleEvent> logs) {
+  static double calculateAveragePeriodDuration(List<CycleLog> logs) {
     final completedLogs = logs.where((l) => l.endDate != null).toList();
     if (completedLogs.isEmpty) return 5.0; // Default
 

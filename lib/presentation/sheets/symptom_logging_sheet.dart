@@ -10,14 +10,14 @@ import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
 class SymptomLoggingSheet extends StatefulWidget {
   final DateTime selectedDay;
-  final SymptomLog? existingLog;
+  final SymptomLog? symptomLog;
 
   final bool isEmbedded;
   
   const SymptomLoggingSheet({
     super.key,
     required this.selectedDay,
-    this.existingLog,
+    this.symptomLog,
     this.isEmbedded = false,
   });
 
@@ -54,14 +54,14 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
   @override
   void initState() {
     super.initState();
-    _moodRating = widget.existingLog?.moodRating ?? 3;
-    _selectedSymptoms = List.from(widget.existingLog?.symptoms ?? []);
-    _notesController = TextEditingController(text: widget.existingLog?.notes ?? '');
+    _moodRating = widget.symptomLog?.moodRating ?? SymptomLog.neutralMood;
+    _selectedSymptoms = List.from(widget.symptomLog?.symptoms ?? []);
+    _notesController = TextEditingController(text: widget.symptomLog?.notes ?? '');
     _tempController = TextEditingController(
-      text: widget.existingLog?.basalBodyTemperature?.toString() ?? "",
+      text: widget.symptomLog?.basalBodyTemperature?.toString() ?? "",
     );
-    _selectedFluid = widget.existingLog?.cervicalFluidType;
-    _lhPositive = widget.existingLog?.lhTestPositive;
+    _selectedFluid = widget.symptomLog?.cervicalFluidType;
+    _lhPositive = widget.symptomLog?.lhTestPositive;
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -84,7 +84,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     try {
       final bbt = double.tryParse(_tempController.text);
       final log = SymptomLog(
-        id: widget.existingLog?.id,
+        id: widget.symptomLog?.id,
         date: widget.selectedDay,
         symptoms: _selectedSymptoms,
         moodRating: _moodRating,
@@ -93,7 +93,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
         cervicalFluidType: _selectedFluid,
         lhTestPositive: _lhPositive,
       );
-      if (widget.existingLog != null) {
+      if (widget.symptomLog != null) {
         await context.read<SymptomProvider>().updateSymptomLog(log);
       } else {
         await context.read<SymptomProvider>().addSymptomLog(log);
@@ -105,7 +105,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
   }
 
   void _onDelete() async {
-    if (widget.existingLog == null) return;
+    if (widget.symptomLog == null) return;
     HapticFeedback.heavyImpact();
     final symptomProvider = context.read<SymptomProvider>();
     
@@ -135,7 +135,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
 
     setState(() => _isDeleting = true);
     try {
-      await symptomProvider.deleteSymptomLog(widget.existingLog!.id);
+      await symptomProvider.deleteSymptomLog(widget.symptomLog!.id);
       if (mounted) Navigator.pop(context, true);
     } finally {
       if (mounted) setState(() => _isDeleting = false);
@@ -571,13 +571,13 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                           ),
                         )
                       : Text(
-                          widget.existingLog != null ? "Save Changes" : "Add Log",
+                          widget.symptomLog != null ? "Save Changes" : "Add Log",
                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18, fontFamily: AppTheme.fontFamily),
                         ),
                 ),
               ),
             ),
-            if (widget.existingLog != null) ...[
+            if (widget.symptomLog != null) ...[
               const SizedBox(height: 12),
               Center(
                 child: TextButton(
@@ -609,4 +609,3 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     );
   }
 }
-

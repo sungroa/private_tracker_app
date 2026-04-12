@@ -1,47 +1,80 @@
-# Development Guide
+# Engineering & Development Guide
 
-This document outlines the architectural patterns, development workflows, and standards for the Private Tracker App.
+This guide provides a deep dive into the technical standards and architectural patterns of the Private Tracker App.
 
-## Architecture
+## 🏛 Clean Architecture Standards
 
-The app follows a clean, decoupled architecture:
+We adhere to a strict 3-tier Clean Architecture to ensure business logic is isolated, testable, and reusable.
 
-- **Domain Layer**: Contains plain Dart models and pure logic (e.g., `CycleCalculator`). It has zero dependencies on persistence or UI frameworks.
-- **Data Layer**: Implements persistence using Hive. Services (like `EncryptedStorageService`) manage the bridge between Hive DTOs and Domain Models.
-- **Presentation Layer**: Built with Flutter and Provider for state management. Uses a "Glassmorphism" design system defined in `AppTheme`.
+### 1. Domain Layer (`lib/domain/`)
+- **Content**: Pure Dart models, Repository interfaces, and specialized Calculators.
+- **Constraints**: **ZERO** dependencies on Flutter, Hive, or any external framework.
+- **Key Files**: 
+  - `models/`: Immutable business entities.
+  - `calculators/`: Logic for predictions and trends analysis.
 
-## Storage Architecture
+### 2. Data Layer (`lib/data/`)
+- **Content**: Persistence implementations, DTOs, and External Service clients.
+- **Pattern**: The **Repository Pattern** is used to abstract storage details from the domain. DataSources handle low-level Hive ops.
+- **Key Files**:
+  - `storage/hive_dtos.dart`: The disk-serialized schema.
+  - `storage/encrypted_storage_service.dart`: The security orchestration layer.
 
-We use a layered storage approach for security and reliability:
+### 3. Presentation Layer (`lib/presentation/`)
+- **Content**: Flutter widgets, UI-only theme logic, and Providers.
+- **State Management**: [Provider](https://pub.dev/packages/provider).
+- **Standards**:
+  - Use `Selector` or `Consumer` for granular rebuilds.
+  - No business logic in Widgets; delegate to Providers or Domain Extensions.
+  - Design tokens must be pulled from `AppTheme`.
 
-1.  **SecureKeyStorage**: Uses `flutter_secure_storage` for storing encryption keys and sensitive preferences.
-2.  **LocalDatabaseManager**: Orchestrates Hive box lifecycles and provides a Future-based initialization guard to prevent race conditions.
-3.  **DataSources**: Repositories interact with specific DataSources (e.g., `CycleDataSource`) which handle the Hive operations.
+---
 
-## Testing
+## 🛡 Security & Encryption Protocols
 
-Stability is a priority. All major logic and UI flows must have tests.
+Private Tracker uses a Multi-Layered Encryption approach:
 
-- **Unit Tests**: Found in `test/domain/`. Focus on logic and model transformations.
-- **Widget Tests**: Found in `test/presentation/`. Verify UI components and Provider integrations.
-- **Mocking**: Use `mocktail` for dependency isolation.
+1.  **Encryption at Rest**:
+    - Algorithm: AES-256-SIC (Streaming mode for efficiency).
+    - Provider: `hive_flutter` with encrypted boxes.
+2.  **Key Management**:
+    - The 256-bit AES master key is generated on first launch.
+    - Stored in **Platform Secure Storage** (KeyChain on iOS, KeyStore on Android).
+3.  **Authenticated Backup**:
+    - Password-based key derivation using PBKDF2 (10,000+ iterations).
+    - Encrypted payload with HMAC-SHA256 integrity verification.
 
-### Running Tests
+---
+
+## 🧪 Testing Protocol
+
+A feature is considered **Incomplete** if it lacks associated tests.
+
+- **Unit Tests (`test/domain/`)**: Test all calculators and model transformations.
+- **Data Tests (`test/data/`)**: verify storage serialization and encryption/backup flows.
+- **UI Tests (`test/presentation/`)**: Smoke tests for navigation and critical logging flows.
+
+### Verification Command
 ```bash
-flutter test
+# Verify the entire codebase in one go
+flutter test --reporter expanded
 ```
 
-## Security
+---
 
-- **Encryption**: All personal health data is stored in encrypted Hive boxes.
-- **Partner Sharing**: Uses AES-CTR + HMAC-SHA256 authenticated encryption. Keys are shared via secure deep links.
-- **Biometrics**: Integrated via `local_auth` and managed by `AuthService`.
+## 📜 Coding Standards & Linting
 
-## Build System
+1.  **Immutability**: Maintain `@immutable` domain models. Use `copyWith` for state transitions.
+2.  **Documentation**: All public APIs in `domain` and `data` MUST have `///` docstrings.
+3.  **Haptics**: Standardized tactile feedback must be used for all primary user actions:
+    - `HapticFeedback.lightImpact()`: Navigation/Selecting.
+    - `HapticFeedback.mediumImpact()`: Saving/Logging.
+    - `HapticFeedback.heavyImpact()`: Deleting/Critical actions.
 
-The project is configured for Android 12+ (SDK 31+). Ensure all activities and services in `AndroidManifest.xml` have `android:exported` explicitly set.
+---
 
-### Release Build
-```bash
-flutter build apk --release
-```
+## 🛠 Build & Environment
+
+- **Flutter**: 3.x+ (Stable)
+- **Min SDK**: Android 21 / iOS 12.0
+- **Android 12+ Compliance**: All intent-filters must have `android:exported` set.

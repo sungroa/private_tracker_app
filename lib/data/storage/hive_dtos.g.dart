@@ -6,17 +6,17 @@ part of 'hive_dtos.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
-class CycleEventDtoAdapter extends TypeAdapter<CycleEventDto> {
+class CycleEventDtoAdapter extends TypeAdapter<CycleLogDto> {
   @override
   final int typeId = 10;
 
   @override
-  CycleEventDto read(BinaryReader reader) {
+  CycleLogDto read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return CycleEventDto(
+    return CycleLogDto(
       id: fields[0] as String,
       startDate: fields[1] as DateTime,
       endDate: fields[2] as DateTime?,
@@ -26,7 +26,7 @@ class CycleEventDtoAdapter extends TypeAdapter<CycleEventDto> {
   }
 
   @override
-  void write(BinaryWriter writer, CycleEventDto obj) {
+  void write(BinaryWriter writer, CycleLogDto obj) {
     writer
       ..writeByte(5)
       ..writeByte(0)

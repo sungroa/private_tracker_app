@@ -11,7 +11,7 @@ class CycleCalculator {
   /// If [symptomLogs] are provided, it attempts to mathematically confirm ovulation
   /// using the 3-over-6 rule and overrides the average prediction.
   static DateTime predictNextPeriod(
-    List<CycleEvent> cycleLogs, [
+    List<CycleLog> cycleLogs, [
     List<SymptomLog>? symptomLogs,
     double threshold = 0.2,
   ]) {
@@ -20,7 +20,7 @@ class CycleCalculator {
     }
 
     // Sort newest first
-    final sortedCycleEvents = List<CycleEvent>.from(cycleLogs)
+    final sortedCycleEvents = List<CycleLog>.from(cycleLogs)
       ..sort((a, b) => b.startDate.compareTo(a.startDate));
 
     // 1. Try to confirm ovulation for the current cycle if symptom logs are available
@@ -111,9 +111,9 @@ class CycleCalculator {
   }
 
   /// Checks if the user is currently in their period.
-  static bool isCurrentlyInPeriod(List<CycleEvent> logs) {
+  static bool isCurrentlyInPeriod(List<CycleLog> logs) {
     if (logs.isEmpty) return false;
-    final sortedLogs = List<CycleEvent>.from(logs)
+    final sortedLogs = List<CycleLog>.from(logs)
       ..sort((a, b) => b.startDate.compareTo(a.startDate));
     final latest = sortedLogs.first;
 

@@ -13,7 +13,7 @@ class PartnerSharingService {
 
   /// Generates an encrypted payload and its corresponding decryption key.
   static Map<String, String> generateEncryptedPayload({
-    required List<CycleEvent> cycleLogs,
+    required List<CycleLog> cycleLogs,
     List<SymptomLog>? symptomLogs,
   }) {
     if (cycleLogs.isEmpty) {
@@ -61,7 +61,7 @@ class PartnerSharingService {
   }
 
   /// Convenience method to generate the full deep link in one go.
-  static String generateShareableLink(List<CycleEvent> cycleLogs, List<SymptomLog>? symptomLogs) {
+  static String generateShareableLink(List<CycleLog> cycleLogs, List<SymptomLog>? symptomLogs) {
     final result = generateEncryptedPayload(cycleLogs: cycleLogs, symptomLogs: symptomLogs);
     return generateDeepLink(result['data']!, result['key']!);
   }

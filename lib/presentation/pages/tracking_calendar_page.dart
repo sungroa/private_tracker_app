@@ -10,6 +10,10 @@ import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
 import '../providers/symptom_provider.dart';
 
+/// The primary view for the application, featuring an interactive health calendar.
+/// 
+/// [TrackingCalendarPage] manages the high-level state of the calendar view,
+/// including month navigation, day selection, and the triggering of logging sheets.
 class TrackingCalendarPage extends StatefulWidget {
   const TrackingCalendarPage({super.key});
 
@@ -18,17 +22,27 @@ class TrackingCalendarPage extends StatefulWidget {
 }
 
 class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
+  /// The month currently being viewed in the calendar.
   DateTime _focusedDay = DateTime.now();
+
+  /// The day currently selected by the user.
   DateTime? _selectedDay;
+
+  /// Prevents multiple sheets from opening simultaneously.
   bool _isSheetOpen = false;
 
-   void _showUnifiedSheet(DateTime day, {LoggingType type = LoggingType.daily}) async {
+  /// Opens the [UnifiedLoggingSheet] for a specific [day].
+  /// 
+  /// [type] determines whether to default to Daily symptoms or Cycle logging.
+  /// This method performs O(1) lookups to pass existing logs to the sheet,
+  /// ensuring a smooth transition without redundant loading states.
+  void _showUnifiedSheet(DateTime day, {LoggingType type = LoggingType.daily}) async {
     if (_isSheetOpen) return;
     
     final symptomProvider = context.read<SymptomProvider>();
     final cycleProvider = context.read<CycleProvider>();
 
-    // O(1) Lookups using pre-indexed maps
+    // O(1) Lookups using pre-indexed maps from providers.
     final existingSymptom = symptomProvider.getSymptomByDate(day);
     final existingCycle = cycleProvider.getEventByDate(day);
 
@@ -40,16 +54,18 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
         backgroundColor: Colors.transparent,
         builder: (context) => UnifiedLoggingSheet(
           selectedDay: day,
-          existingSymptomLog: existingSymptom,
-          existingCycleLog: existingCycle,
+          symptomLog: existingSymptom,
+          cycleLog: existingCycle,
           initialType: type,
         ),
       );
     } finally {
+      // Ensure the guard is reset even if the sheet is dismissed via gesture.
       _isSheetOpen = false;
     }
   }
 
+  /// Navigates to the next month with haptic feedback.
   void _onNextMonth() {
     HapticFeedback.lightImpact();
     setState(() {
@@ -57,6 +73,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
     });
   }
 
+  /// Navigates to the previous month with haptic feedback.
   void _onPrevMonth() {
     HapticFeedback.lightImpact();
     setState(() {
@@ -64,19 +81,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
     });
   }
 
-  bool _isPredictedBleeding(DateTime day, DateTime? predictedNextPeriod) {
-    if (predictedNextPeriod == null) return false;
-    final dateOnly = DateUtils.dateOnly(day);
-    final start = DateUtils.dateOnly(predictedNextPeriod);
-    final end = start.add(const Duration(days: 4));
-    return (dateOnly.isAtSameMomentAs(start) || (dateOnly.isAfter(start) && dateOnly.isBefore(end.add(const Duration(days: 1)))));
-  }
-
-  bool _isPredictedFertility(DateTime day, List<DateTime> predictedFertilityDates) {
-    final dateOnly = DateUtils.dateOnly(day);
-    return predictedFertilityDates.any((d) => DateUtils.isSameDay(d, dateOnly));
-  }
-
+  /// Displays the calendar legend sheet to explain icons and colors.
   void _showLegend() {
     HapticFeedback.mediumImpact();
     showModalBottomSheet(
@@ -87,14 +92,20 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
     );
   }
 
+  /// Displays a summary of data for the selected [day].
+  /// 
+  /// This summary acts as a mid-level navigation point between the calendar
+  /// and the detailed logging sheets.
   void _showDaySummary(DateTime day) async {
     final symptomProvider = context.read<SymptomProvider>();
     final cycleProvider = context.read<CycleProvider>();
 
     final existingSymptom = symptomProvider.getSymptomByDate(day);
     final existingCycle = cycleProvider.getEventByDate(day);
-    final isPredBleeding = _isPredictedBleeding(day, cycleProvider.predictedNextPeriod);
-    final isPredFertility = _isPredictedFertility(day, cycleProvider.predictedFertilityDates);
+    
+    // Predictions are retrieved directly from the Provider's centralized logic.
+    final isPredBleeding = cycleProvider.isPredictedBleeding(day);
+    final isPredFertility = cycleProvider.isPredictedFertility(day);
 
     await showModalBottomSheet(
       context: context,
@@ -104,8 +115,8 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
         selectedDay: day,
         isPredictedBleeding: isPredBleeding,
         isPredictedFertility: isPredFertility,
-        existingSymptomLog: existingSymptom,
-        existingCycleLog: existingCycle,
+        symptomLog: existingSymptom,
+        cycleLog: existingCycle,
         onEditDailyLog: () => _showUnifiedSheet(day, type: LoggingType.daily),
         onEditPeriodLog: () => _showUnifiedSheet(day, type: LoggingType.cycle),
       ),
@@ -116,13 +127,6 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
-
-    final cycleProvider = context.watch<CycleProvider>();
-    final calendarEventMap = cycleProvider.calendarEventMap;
-    final predictedNextPeriod = cycleProvider.predictedNextPeriod;
-    final predictedFertilityDates = cycleProvider.predictedFertilityDates;
-    
-    final symptomMap = context.watch<SymptomProvider>().symptomMap;
 
     return ListView(
       physics: const BouncingScrollPhysics(),
@@ -144,7 +148,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                // Custom Month Header
+                // Custom Month Header with Navigation Controls
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -181,20 +185,28 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                CustomCalendarGrid(
-                  focusedDay: _focusedDay,
-                  selectedDay: _selectedDay,
-                  calendarEventMap: calendarEventMap,
-                  symptomMap: symptomMap,
-                  predictedNextPeriod: predictedNextPeriod,
-                  predictedFertilityDates: predictedFertilityDates,
-                  onDaySelected: (selectedDay) {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _selectedDay = selectedDay;
-                      _focusedDay = selectedDay; 
-                    });
-                    _showDaySummary(selectedDay);
+                
+                // PERFORMANCE OPTIMIZATION: Consumer2 ensures that only the grid 
+                // rebuilds when health or cycle data changes, keeping the rest of 
+                // the page static and snappy.
+                Consumer2<CycleProvider, SymptomProvider>(
+                  builder: (context, cycleProvider, symptomProvider, _) {
+                    return CustomCalendarGrid(
+                      focusedDay: _focusedDay,
+                      selectedDay: _selectedDay,
+                      calendarEventMap: cycleProvider.calendarEventMap,
+                      symptomMap: symptomProvider.symptomMap,
+                      predictedNextPeriod: cycleProvider.predictedNextPeriod,
+                      predictedFertilityDates: cycleProvider.predictedFertilityDates,
+                      onDaySelected: (selectedDay) {
+                        HapticFeedback.selectionClick();
+                        setState(() {
+                          _selectedDay = selectedDay;
+                          _focusedDay = selectedDay; 
+                        });
+                        _showDaySummary(selectedDay);
+                      },
+                    );
                   },
                 ),
               ],
@@ -202,7 +214,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
           ),
         ),
         const SizedBox(height: 24),
-        // Action Buttons
+        // Primary Quick-Action Logging Buttons
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Row(

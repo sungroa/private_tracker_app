@@ -4,10 +4,10 @@ import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
 
 class BbtMapper {
-  static List<BbtPoint> getBbtHistoryForCurrentCycle(List<CycleEvent> cycleLogs, List<SymptomLog> symptomLogs) {
+  static List<BbtPoint> getBbtHistoryForCurrentCycle(List<CycleLog> cycleLogs, List<SymptomLog> symptomLogs) {
     if (cycleLogs.isEmpty) return [];
 
-    final sortedCycles = List<CycleEvent>.from(cycleLogs)
+    final sortedCycles = List<CycleLog>.from(cycleLogs)
       ..sort((a, b) => b.startDate.compareTo(a.startDate));
     
     final latestCycleStart = sortedCycles.first.startDate;
