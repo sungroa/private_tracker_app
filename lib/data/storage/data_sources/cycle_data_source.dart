@@ -13,7 +13,8 @@ class CycleDataSource extends LocalDataSource<CycleLogDto> {
   }
 
   Future<void> saveCycleLog(CycleLog event) {
-    return put(event.id, CycleLogDto.fromDomain(event));
+    final updatedEvent = event.copyWith(updatedAt: DateTime.now());
+    return put(updatedEvent.id, CycleLogDto.fromDomain(updatedEvent));
   }
 
   Future<void> deleteCycleLog(String id) {

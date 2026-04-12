@@ -6,22 +6,27 @@ class CustomTag {
   final String id;
   final String name;
   final bool isDefault;
+  final DateTime updatedAt;
 
   CustomTag({
     String? id,
     required this.name,
     this.isDefault = false,
-  }) : id = id ?? const Uuid().v4();
+    DateTime? updatedAt,
+  }) : id = id ?? const Uuid().v4(),
+       updatedAt = updatedAt ?? DateTime(1970);
 
   CustomTag copyWith({
     String? id,
     String? name,
     bool? isDefault,
+    DateTime? updatedAt,
   }) {
     return CustomTag(
       id: id ?? this.id,
       name: name ?? this.name,
       isDefault: isDefault ?? this.isDefault,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -30,6 +35,7 @@ class CustomTag {
       'id': id,
       'name': name,
       'isDefault': isDefault,
+      'updatedAt': updatedAt.toUtc().toIso8601String(),
     };
   }
 
@@ -38,6 +44,7 @@ class CustomTag {
       id: map['id'],
       name: map['name'],
       isDefault: map['isDefault'] ?? false,
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
     );
   }
 

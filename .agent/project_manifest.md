@@ -1,13 +1,13 @@
 # 🧭 Project Manifest: Private Tracker
 
 ## 📊 Session Data
-- **Last Updated:** 2026-04-12T10:29:05
-- **Session ID:** `e6dbb862-814f-46f9-9a06-840313a60e8a`
+- **Last Updated:** 2026-04-12T12:25:00
+- **Session ID:** `b852f79d-2256-4c87-8816-bfa6ec731715`
 - **Session Health:** STABLE
-- **Context Budget:** ~10% (Turn 1)
+- **Context Budget:** ~35% (Turn 8)
 
 ## 🎯 Objectives & Constraints
-- **Primary Objective:** Fix UI rendering issues and refine prediction logic.
+- **Primary Objective:** Implement Bring Your Own Storage (BYOS) sync feature using Clean Architecture.
 - **STRICT_CONSTRAINTS:**
   1. Use Effective Dart style (`///`) for docstrings.
   2. Maintain Clean Architecture boundaries.
@@ -17,12 +17,12 @@
 - **fast_validation_command:** `flutter analyze`
 - **full_validation_command:** `flutter test --reporter expanded`
 - **Best Known State:**
-  - **Logic Refactored:** `CycleCalculator` now returns `null` for empty logs.
-  - **UI Polished:** Logo updated to foreground asset; manual refresh button added.
-  - **UX Sprint Complete:** "Return to Today" FAB added; touch targets enlarged; tap micro-animations implemented; contrast improved.
-  - **Security Hardened**: Android build system handles custom keystores; release APK verified. `partner_data` Hive box is now fully AES encrypted.
-  - **Tests passing:** 77/78 health checks pass. (UI test throws `SliverFillRemaining` null-check due to flutter test environment).
-- **Verification Token:** Pass: `flutter test` completes logic tests. Hive box opens with AES Cipher.
+  - **BYOS Core**: `CloudSyncInterface` and `GoogleDriveSyncRepository` fully operational.
+  - **Orchestration**: `CloudSyncCoordinator` handles checksum-based auto-sync.
+  - **Security**: Cloud backups are encrypted with a dedicated persistent secret in Secure Storage.
+  - **UI**: Settings page integrated with `CloudSyncProvider` for toggle and manual sync.
+  - **Auto-Sync**: Triggered automatically in `main.dart` after storage initialization.
+- **Verification Token:** Pass: `flutter test test/domain/services/cloud_sync_coordinator_test.dart` and `google_drive_sync_repository_test.dart` pass. `flutter analyze` clean.
 
 ## 📋 Action Plan
 - [x] **Bug Fix**: Logo rendering on top-left.
@@ -34,6 +34,11 @@
 - [ ] **Documentation**: Comprehensive class and method level documentation.
 - [x] **Documentation**: Added build instructions for all platforms to README.md.
 - [x] **Bug Fix**: Resolved all `use_build_context_synchronously` lint warnings in `settings_page.dart`.
+- [x] **Feature**: Define Bring Your Own Storage (BYOS) sync abstractions (`CloudSyncInterface`).
+- [x] **Feature**: Implement `GoogleDriveSyncRepository` with `appDataFolder` and post-upload cleanup.
+- [x] **Feature**: Orbit sync orchestration with `CloudSyncCoordinator` and `CloudSyncProvider`.
+- [x] **UX**: Implemented **Auto-Sync** on application launch.
+- [x] **Testing**: Comprehensive mock tests for both repository and coordinator layers.
 
 ## 🚫 Dead Ends
 - **Flutter Test Output**: `flutter test` sometimes finishes without producing visible output in the terminal monitor. Workaround: Use `--reporter expanded` for better visibility and assume completion if process terminates. NEVER remove this note.

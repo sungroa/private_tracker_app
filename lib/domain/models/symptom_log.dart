@@ -32,6 +32,9 @@ class SymptomLog {
   /// Result of a Luteinizing Hormone (LH) ovulation test.
   final bool? lhTestPositive;
 
+  /// The last time this record was modified.
+  final DateTime updatedAt;
+
   /// Creates a [SymptomLog] with validation.
   /// 
   /// [moodRating] Defaults to 3 (Neutral). Must be between 1 and 5.
@@ -45,7 +48,9 @@ class SymptomLog {
     this.basalBodyTemperature,
     this.cervicalFluidType,
     this.lhTestPositive,
+    DateTime? updatedAt,
   })  : id = id ?? const Uuid().v4(),
+        updatedAt = updatedAt ?? DateTime(1970),
         symptoms = UnmodifiableListView(List.from(symptoms)),
         assert(moodRating >= 1 && moodRating <= 5, 'Mood rating must be between 1 and 5'),
         assert(basalBodyTemperature == null || (basalBodyTemperature >= 35.0 && basalBodyTemperature <= 110.0), 'BBT must be a physiologically valid temperature');
@@ -60,6 +65,7 @@ class SymptomLog {
     double? basalBodyTemperature,
     String? cervicalFluidType,
     bool? lhTestPositive,
+    DateTime? updatedAt,
   }) {
     return SymptomLog(
       id: id ?? this.id,
@@ -70,6 +76,7 @@ class SymptomLog {
       basalBodyTemperature: basalBodyTemperature ?? this.basalBodyTemperature,
       cervicalFluidType: cervicalFluidType ?? this.cervicalFluidType,
       lhTestPositive: lhTestPositive ?? this.lhTestPositive,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -84,6 +91,7 @@ class SymptomLog {
       'basalBodyTemperature': basalBodyTemperature,
       'cervicalFluidType': cervicalFluidType,
       'lhTestPositive': lhTestPositive,
+      'updatedAt': updatedAt.toUtc().toIso8601String(),
     };
   }
 
@@ -98,6 +106,7 @@ class SymptomLog {
       basalBodyTemperature: map['basalBodyTemperature']?.toDouble(),
       cervicalFluidType: map['cervicalFluidType'],
       lhTestPositive: map['lhTestPositive'],
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
     );
   }
 
@@ -137,13 +146,11 @@ class SymptomLog {
 extension SymptomLogX on SymptomLog {
   /// Returns a human-readable string for the [moodRating].
   String get moodDisplayName {
-    return switch (moodRating) {
-      <= 1 => "Terrible",
-      2 => "Bad",
-      3 => "Neutral",
-      4 => "Good",
-      _ => "Excellent",
-    };
+    if (moodRating <= 1) return "Terrible";
+    if (moodRating == 2) return "Bad";
+    if (moodRating == 3) return "Neutral";
+    if (moodRating == 4) return "Good";
+    return "Excellent";
   }
 
   /// Returns a comma-separated summary of all symptoms.

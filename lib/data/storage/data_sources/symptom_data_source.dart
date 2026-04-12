@@ -18,7 +18,8 @@ class SymptomDataSource extends LocalDataSource<SymptomLogDto> {
   }
 
   Future<void> saveSymptomLog(SymptomLog log) {
-    return put(log.id, SymptomLogDto.fromDomain(log));
+    final updatedLog = log.copyWith(updatedAt: DateTime.now());
+    return put(updatedLog.id, SymptomLogDto.fromDomain(updatedLog));
   }
 
   Future<void> deleteSymptomLog(String id) {

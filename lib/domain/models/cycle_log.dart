@@ -23,6 +23,9 @@ class CycleLog {
   /// Subjective measure of menstruation flow, typically on a scale of 1-5.
   final int flowIntensity;
 
+  /// The last time this record was modified.
+  final DateTime updatedAt;
+
   /// Creates a [CycleLog] with validation.
   /// 
   /// [id] If null, a new v4 UUID will be generated.
@@ -34,7 +37,9 @@ class CycleLog {
     this.endDate,
     this.notes,
     this.flowIntensity = 3,
+    DateTime? updatedAt,
   })  : id = id ?? const Uuid().v4(),
+        updatedAt = updatedAt ?? DateTime(1970),
         assert(flowIntensity >= 1 && flowIntensity <= 5, 'Flow intensity must be between 1 and 5'),
         assert(endDate == null || !endDate.isBefore(startDate), 'End date cannot be before start date');
 
@@ -45,6 +50,7 @@ class CycleLog {
     DateTime? endDate,
     String? notes,
     int? flowIntensity,
+    DateTime? updatedAt,
   }) {
     return CycleLog(
       id: id ?? this.id,
@@ -54,6 +60,7 @@ class CycleLog {
       endDate: endDate ?? this.endDate, 
       notes: notes ?? this.notes,
       flowIntensity: flowIntensity ?? this.flowIntensity,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -66,6 +73,7 @@ class CycleLog {
       endDate: null,
       notes: notes,
       flowIntensity: flowIntensity,
+      updatedAt: updatedAt,
     );
   }
 
@@ -77,6 +85,7 @@ class CycleLog {
       'endDate': endDate?.toIso8601String(),
       'notes': notes,
       'flowIntensity': flowIntensity,
+      'updatedAt': updatedAt.toUtc().toIso8601String(),
     };
   }
 
@@ -88,6 +97,7 @@ class CycleLog {
       endDate: map['endDate'] != null ? DateTime.parse(map['endDate']) : null,
       notes: map['notes'],
       flowIntensity: map['flowIntensity'] ?? 3,
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
     );
   }
 

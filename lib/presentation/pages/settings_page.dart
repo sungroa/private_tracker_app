@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
+import '../providers/cloud_sync_provider.dart';
 import '../../data/storage/encrypted_storage_service.dart';
 import '../../data/services/export_service.dart';
 import '../../core/services/auth_service.dart';
@@ -390,6 +391,46 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Widget _buildCloudProviderCard({
+    required BuildContext context,
+    required bool isDark,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool enabled,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+    return Container(
+      decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
+      child: _buildSettingsItem(
+        icon: icon,
+        iconColor: primary,
+        title: title,
+        subtitle: subtitle,
+        isDark: isDark,
+        trailing: Switch.adaptive(
+          value: enabled,
+          onChanged: (val) {
+            HapticFeedback.selectionClick();
+            onChanged(val);
+          },
+          activeThumbColor: primary,
+          activeTrackColor: primary.withValues(alpha: 0.5),
+        ),
+      ),
+    );
+  }
+
+  String _formatRelativeTime(DateTime? time) {
+    if (time == null) return "Never";
+    final diff = DateTime.now().difference(time);
+    if (diff.inSeconds < 60) return "Just now";
+    if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
+    if (diff.inHours < 24) return "${diff.inHours}h ago";
+    return "${diff.inDays}d ago";
+  }
+
   Widget _buildSectionHeader(String title, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(left: 4.0, bottom: 12.0, top: 4.0),
@@ -529,6 +570,131 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           const SizedBox(height: 32),
+
+          _buildSectionHeader("Cloud Synchronization", isDark),
+          Consumer<CloudSyncProvider>(
+            builder: (context, syncProvider, _) {
+              // Automatically show error snackbar if one occurs
+              if (syncProvider.lastError != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Sync Error: ${syncProvider.lastError}'),
+                        backgroundColor: Colors.redAccent,
+                        behavior: SnackBarBehavior.floating,
+                        action: SnackBarAction(
+                          label: 'DISMISS',
+                          textColor: Colors.white,
+                          onPressed: () => syncProvider.clearError(),
+                        ),
+                      ),
+                    );
+                    syncProvider.clearError();
+                  }
+                });
+              }
+
+              return Column(
+                children: [
+                  _buildCloudProviderCard(
+                    context: context,
+                    isDark: isDark,
+                    title: "Google Drive",
+                    subtitle: "Personal hidden storage",
+                    icon: Icons.add_to_drive_rounded,
+                    enabled: syncProvider.isGoogleDriveEnabled,
+                    onChanged: (val) => syncProvider.toggleGoogleDrive(val),
+                  ),
+                  if (Platform.isIOS) ...[
+                    const SizedBox(height: 12),
+                    _buildCloudProviderCard(
+                      context: context,
+                      isDark: isDark,
+                      title: "iCloud",
+                      subtitle: "Native Apple sync",
+                      icon: Icons.cloud_queue_rounded,
+                      enabled: syncProvider.isiCloudEnabled,
+                      onChanged: (val) => syncProvider.toggleICloud(val),
+                    ),
+                  ],
+                  if (syncProvider.isCloudEnabled) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Cloud Status",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 16,
+                                      color: isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    syncProvider.isSyncing 
+                                        ? "Syncing in background..." 
+                                        : "Last sync: ${_formatRelativeTime(syncProvider.lastSyncTime)}",
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: isDark ? Colors.white60 : Colors.black54,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (syncProvider.isSyncing)
+                                const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(strokeWidth: 3),
+                                )
+                              else
+                                Icon(Icons.check_circle_rounded, color: primary, size: 28),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton.icon(
+                              onPressed: syncProvider.isSyncing ? null : () => syncProvider.sync(),
+                              icon: syncProvider.isSyncing 
+                                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : Icon(syncProvider.lastError != null ? Icons.refresh_rounded : Icons.sync_rounded),
+                              label: Text(
+                                syncProvider.isSyncing 
+                                    ? "SYNCING..." 
+                                    : (syncProvider.lastError != null ? "RETRY SYNC" : "SYNC NOW"),
+                                style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primary,
+                                foregroundColor: isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 32),
+
 
           _buildSectionHeader("Data Management", isDark),
           Container(

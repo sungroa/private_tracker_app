@@ -8,6 +8,9 @@ class LocalDatabaseManager {
   static const String customTagBox = 'custom_tags';
   static const String metaBox = 'meta';
   static const String partnerDataBox = 'partner_data';
+  
+  static const String lastLocalModifiedKey = 'last_local_modified';
+  static const String lastSyncChecksumKey = 'last_sync_checksum';
 
   bool _isInitialized = false;
   Future<void>? _initializeFuture;
@@ -40,7 +43,7 @@ class LocalDatabaseManager {
     }
 
     // Register Adapters
-    if (!Hive.isAdapterRegistered(10)) Hive.registerAdapter(CycleEventDtoAdapter());
+    if (!Hive.isAdapterRegistered(10)) Hive.registerAdapter(CycleLogDtoAdapter());
     if (!Hive.isAdapterRegistered(11)) Hive.registerAdapter(SymptomLogDtoAdapter());
     if (!Hive.isAdapterRegistered(12)) Hive.registerAdapter(CustomTagDtoAdapter());
 
@@ -107,6 +110,12 @@ class LocalDatabaseManager {
   }
 
   Box<T> getBox<T>(String name) => Hive.box<T>(name);
+
+  /// Updates the global creation/modification timestamp in the meta box.
+  Future<void> updateLastModified() async {
+    final box = Hive.box<String>(metaBox);
+    await box.put(lastLocalModifiedKey, DateTime.now().toIso8601String());
+  }
   
   /// Closes all managed boxes and resets the initialization state.
   Future<void> close() async {

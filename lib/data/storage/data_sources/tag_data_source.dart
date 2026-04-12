@@ -14,7 +14,7 @@ class TagDataSource extends LocalDataSource<CustomTagDto> {
     if (values.any((dto) => dto.name.toLowerCase() == name.toLowerCase())) {
       return;
     }
-    final newTag = CustomTag(name: name);
+    final newTag = CustomTag(name: name, updatedAt: DateTime.now());
     await put(newTag.id, CustomTagDto.fromDomain(newTag));
   }
 

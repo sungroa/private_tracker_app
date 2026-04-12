@@ -29,6 +29,12 @@ import 'presentation/pages/partner_mode_page.dart';
 import 'data/storage/data_sources/cycle_data_source.dart';
 import 'data/storage/data_sources/symptom_data_source.dart';
 import 'data/storage/data_sources/tag_data_source.dart';
+import 'domain/services/cloud_sync_interface.dart';
+import 'domain/services/cloud_sync_coordinator.dart';
+import 'data/storage/google_drive_sync_repository.dart';
+import 'presentation/providers/cloud_sync_provider.dart';
+import 'domain/usecases/sync_data_use_case.dart';
+
 class StorageConfig {
   final String? storageBasePath;
   StorageConfig({this.storageBasePath});
@@ -164,6 +170,30 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
         ChangeNotifierProvider(
           create: (context) => TagProvider(context.read<TagRepository>()),
         ),
+        Provider<CloudSyncInterface>(
+          create: (_) => GoogleDriveSyncRepository(),
+        ),
+        Provider<SyncDataUseCase>(
+          create: (context) => SyncDataUseCase(
+            cloudSync: context.read<CloudSyncInterface>(),
+            storage: context.read<EncryptedStorageService>(),
+            keyStorage: context.read<SecureKeyStorage>(),
+            backupService: context.read<BackupRestoreService>(),
+            dbManager: context.read<LocalDatabaseManager>(),
+          ),
+        ),
+        Provider<CloudSyncCoordinator>(
+          create: (context) => CloudSyncCoordinator(
+            cloudSync: context.read<CloudSyncInterface>(),
+            syncUseCase: context.read<SyncDataUseCase>(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => CloudSyncProvider(
+            coordinator: context.read<CloudSyncCoordinator>(),
+            prefs: context.read<PreferencesService>(),
+          ),
+        ),
       ],
       child: MaterialApp(
         title: 'Private Tracker',
@@ -245,6 +275,18 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
     } else if (state == AppLifecycleState.resumed) {
       if (_useBiometric && !_isAuthenticated) {
         _triggerAuth();
+      } else if (_isAuthenticated) {
+        // Trigger background sync on resume
+        _triggerAutoSync();
+      }
+    }
+  }
+
+  void _triggerAutoSync() {
+    if (mounted) {
+      final syncProvider = context.read<CloudSyncProvider>();
+      if (syncProvider.isCloudEnabled) {
+        syncProvider.sync();
       }
     }
   }
@@ -296,6 +338,11 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
           .initialize(basePath: basePath);
           
       _storageInitialized = true;
+
+      // Trigger auto-sync if enabled
+      if (mounted) {
+        _triggerAutoSync();
+      }
     } catch (e) {
       debugPrint("Failed to initialize encrypted storage: $e");
       if (mounted) {

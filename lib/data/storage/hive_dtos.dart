@@ -25,6 +25,8 @@ class CycleLogDto extends HiveObject {
   final String? notes;
   @HiveField(4)
   final int flowIntensity;
+  @HiveField(5)
+  final DateTime updatedAt;
 
   CycleLogDto({
     required this.id,
@@ -32,6 +34,7 @@ class CycleLogDto extends HiveObject {
     this.endDate,
     this.notes,
     required this.flowIntensity,
+    required this.updatedAt,
   });
 
   /// Maps a pure domain [CycleLog] into a [CycleLogDto] for persistence.
@@ -42,6 +45,7 @@ class CycleLogDto extends HiveObject {
       endDate: domain.endDate,
       notes: domain.notes,
       flowIntensity: domain.flowIntensity,
+      updatedAt: domain.updatedAt,
     );
   }
 
@@ -53,6 +57,7 @@ class CycleLogDto extends HiveObject {
       endDate: endDate,
       notes: notes,
       flowIntensity: flowIntensity,
+      updatedAt: updatedAt,
     );
   }
 }
@@ -76,6 +81,8 @@ class SymptomLogDto extends HiveObject {
   final String? cervicalFluidType;
   @HiveField(7)
   final bool? lhTestPositive;
+  @HiveField(8)
+  final DateTime updatedAt;
 
   SymptomLogDto({
     required this.id,
@@ -86,6 +93,7 @@ class SymptomLogDto extends HiveObject {
     this.basalBodyTemperature,
     this.cervicalFluidType,
     this.lhTestPositive,
+    required this.updatedAt,
   });
 
   /// Maps a pure domain [SymptomLog] into a [SymptomLogDto] for persistence.
@@ -99,6 +107,7 @@ class SymptomLogDto extends HiveObject {
       basalBodyTemperature: domain.basalBodyTemperature,
       cervicalFluidType: domain.cervicalFluidType,
       lhTestPositive: domain.lhTestPositive,
+      updatedAt: domain.updatedAt,
     );
   }
 
@@ -113,6 +122,7 @@ class SymptomLogDto extends HiveObject {
       basalBodyTemperature: basalBodyTemperature,
       cervicalFluidType: cervicalFluidType,
       lhTestPositive: lhTestPositive,
+      updatedAt: updatedAt,
     );
   }
 }
@@ -126,11 +136,14 @@ class CustomTagDto extends HiveObject {
   final String name;
   @HiveField(2)
   final bool isDefault;
+  @HiveField(3)
+  final DateTime updatedAt;
 
   CustomTagDto({
     required this.id,
     required this.name,
     required this.isDefault,
+    required this.updatedAt,
   });
 
   /// Maps a pure domain [CustomTag] into a [CustomTagDto] for persistence.
@@ -139,6 +152,7 @@ class CustomTagDto extends HiveObject {
       id: domain.id,
       name: domain.name,
       isDefault: domain.isDefault,
+      updatedAt: domain.updatedAt,
     );
   }
 
@@ -148,6 +162,7 @@ class CustomTagDto extends HiveObject {
       id: id,
       name: name,
       isDefault: isDefault,
+      updatedAt: updatedAt,
     );
   }
 }

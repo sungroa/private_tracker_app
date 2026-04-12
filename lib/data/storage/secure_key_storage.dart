@@ -58,4 +58,25 @@ class SecureKeyStorage {
     
     return base64Url.decode(keyString);
   }
+
+  /// Securely retrieves the dedicated cloud sync encryption key or generates a new one.
+  Future<List<int>> getOrCreateCloudSyncKey() async {
+    const String cloudKeyName = 'cloud_sync_encryption_key_v1';
+    String? keyString;
+    
+    try {
+      keyString = await _secureStorage.read(key: cloudKeyName)
+          .timeout(const Duration(seconds: 3));
+    } catch (_) {}
+    
+    if (keyString == null) {
+      final key = Hive.generateSecureKey();
+      final encoded = base64UrlEncode(key);
+      await _secureStorage.write(key: cloudKeyName, value: encoded)
+          .timeout(const Duration(seconds: 3));
+      keyString = encoded;
+    }
+    
+    return base64Url.decode(keyString);
+  }
 }
