@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/symptom_provider.dart';
 import '../providers/tag_provider.dart';
-import '../../domain/models/cycle_log.dart';
 import '../../domain/models/custom_tag.dart';
 import '../theme/app_theme.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 class SymptomLoggingSheet extends StatefulWidget {
   final DateTime selectedDay;

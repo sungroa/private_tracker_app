@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'calendar_day_cell.dart';
 import '../../../domain/models/cycle_log.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 class CustomCalendarGrid extends StatelessWidget {
   final DateTime focusedDay;

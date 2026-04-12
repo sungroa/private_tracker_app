@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:private_tracker_app/main.dart';
 import 'package:private_tracker_app/core/services/auth_service.dart';
+import 'package:private_tracker_app/core/services/preferences_service.dart';
 import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
 import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
@@ -13,6 +14,7 @@ import 'package:private_tracker_app/presentation/pages/home_page.dart';
 import 'package:app_links/app_links.dart';
 
 class MockAuthService extends Mock implements AuthService {}
+class MockPreferencesService extends Mock implements PreferencesService {}
 class MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 class MockAppLinks extends Mock implements AppLinks {}
 
@@ -20,6 +22,7 @@ void main() {
   group('App smoke tests', () {
     late Directory tempDir;
     late MockAuthService mockAuthService;
+    late MockPreferencesService mockPreferencesService;
     late MockSecureKeyStorage mockKeyStorage;
     late MockAppLinks mockAppLinks;
     late LocalDatabaseManager dbManager;
@@ -29,7 +32,7 @@ void main() {
       Hive.init(tempDir.path);
 
       mockAuthService = MockAuthService();
-      AuthService.instance = mockAuthService;
+      mockPreferencesService = MockPreferencesService();
       
       mockKeyStorage = MockSecureKeyStorage();
       mockAppLinks = MockAppLinks();
@@ -40,7 +43,7 @@ void main() {
       when(() => mockAppLinks.uriLinkStream).thenAnswer((_) => const Stream<Uri>.empty());
 
       // Default behavior for smoke test: no biometric lock
-      when(() => mockAuthService.isBiometricEnabled()).thenAnswer((_) async => false);
+      when(() => mockPreferencesService.isBiometricEnabled()).thenAnswer((_) async => false);
       when(() => mockAuthService.isHardwareSupported()).thenAnswer((_) async => false);
     });
 
@@ -61,6 +64,8 @@ void main() {
           exportService: DataExportService(),
           appLinks: mockAppLinks,
           storageBasePath: tempDir.path,
+          authService: mockAuthService,
+          preferencesService: mockPreferencesService,
         ));
 
         // Initial pump to start initialization

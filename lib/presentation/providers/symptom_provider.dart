@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
-import '../../domain/models/cycle_log.dart';
 import '../../domain/repositories/symptom_log_repository.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 class SymptomProvider extends ChangeNotifier {
   final SymptomLogRepository _repository;

@@ -15,6 +15,8 @@ import 'package:private_tracker_app/data/storage/data_sources/symptom_data_sourc
 import 'package:private_tracker_app/data/storage/data_sources/tag_data_source.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 class MockPathProviderPlatform extends Mock with MockPlatformInterfaceMixin implements PathProviderPlatform {}
@@ -75,7 +77,7 @@ void main() {
       final log = SymptomLog(
         id: 'test-id',
         date: date,
-        symptoms: ['Cramps', 'Headache'],
+        symptoms: const ['Cramps', 'Headache'],
         moodRating: 4,
       );
 
@@ -90,13 +92,13 @@ void main() {
       await symptomDataSource.saveSymptomLog(SymptomLog(
         id: 'id1',
         date: DateTime(2026, 3, 28),
-        symptoms: ['Cramps'],
+        symptoms: const ['Cramps'],
         moodRating: 3,
       ));
       await symptomDataSource.saveSymptomLog(SymptomLog(
         id: 'id2',
         date: DateTime(2026, 4, 1),
-        symptoms: ['Bloating'],
+        symptoms: const ['Bloating'],
         moodRating: 2,
       ));
 
@@ -125,7 +127,7 @@ void main() {
       await symptomDataSource.saveSymptomLog(SymptomLog(
         id: 's1',
         date: DateTime(2026, 3, 5),
-        symptoms: ['Cramps', 'Fatigue'],
+        symptoms: const ['Cramps', 'Fatigue'],
         moodRating: 3,
         notes: 'Symptom note',
       ));
@@ -162,7 +164,7 @@ void main() {
       await symptomDataSource.saveSymptomLog(SymptomLog(
         id: 's1',
         date: DateTime(2026, 3, 5),
-        symptoms: ['Cramps'],
+        symptoms: const ['Cramps'],
         moodRating: 5,
       ));
       await tagDataSource.addCustomTag('Backup Tag');

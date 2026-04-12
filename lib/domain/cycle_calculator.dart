@@ -1,5 +1,7 @@
 import 'models/cycle_log.dart';
 import 'calculators/cycle_stats_calculator.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 class CycleCalculator {
   // Average cycle length (default 28 days)
@@ -111,8 +113,9 @@ class CycleCalculator {
   /// Checks if the user is currently in their period.
   static bool isCurrentlyInPeriod(List<CycleEvent> logs) {
     if (logs.isEmpty) return false;
-    logs.sort((a, b) => b.startDate.compareTo(a.startDate));
-    final latest = logs.first;
+    final sortedLogs = List<CycleEvent>.from(logs)
+      ..sort((a, b) => b.startDate.compareTo(a.startDate));
+    final latest = sortedLogs.first;
 
     // Period usually lasts 3-7 days if not ended yet
     if (latest.endDate == null) {

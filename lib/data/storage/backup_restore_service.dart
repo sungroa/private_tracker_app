@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pointycastle/export.dart' as pc;
 import '../../domain/models/cycle_log.dart';
 import '../../domain/models/custom_tag.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 class BackupRestoreService {
   static const int currentVersion = 2;

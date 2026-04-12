@@ -1,3 +1,4 @@
+import 'dart:math';
 import '../models/cycle_log.dart';
 
 class CycleStatsCalculator {
@@ -48,16 +49,20 @@ class CycleStatsCalculator {
     return lengths.where((l) => l >= lowerBound && l <= upperBound).toList();
   }
 
-  static int calculateWeightedAverage(List<int> lengths) {
+  /// Calculates a weighted average using exponential decay.
+  /// More recent values (lower index) receive higher weight.
+  /// Uses a decay factor of 0.85 so all data contributes,
+  /// but recent cycles dominate the prediction.
+  static int calculateWeightedAverage(List<int> lengths, {double decayFactor = 0.85}) {
     if (lengths.isEmpty) return defaultCycleLength;
 
-    final weights = [0.5, 0.3, 0.2];
     double weightedSum = 0;
     double totalWeight = 0;
 
-    for (int i = 0; i < lengths.length && i < weights.length; i++) {
-      weightedSum += lengths[i] * weights[i];
-      totalWeight += weights[i];
+    for (int i = 0; i < lengths.length; i++) {
+      final weight = pow(decayFactor, i);
+      weightedSum += lengths[i] * weight;
+      totalWeight += weight;
     }
 
     if (totalWeight == 0) return defaultCycleLength;

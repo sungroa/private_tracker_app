@@ -9,12 +9,12 @@ class SymptomDataSource extends LocalDataSource<SymptomLogDto> {
   List<SymptomLog> getSymptomLogsForMonth(DateTime month) {
     return values
         .where((dto) => dto.date.year == month.year && dto.date.month == month.month)
-        .map((dto) => dto.sovereignty())
+        .map((dto) => dto.toDomain())
         .toList();
   }
 
   List<SymptomLog> getAllSymptomLogs() {
-    return values.map((dto) => dto.sovereignty()).toList();
+    return values.map((dto) => dto.toDomain()).toList();
   }
 
   Future<void> saveSymptomLog(SymptomLog log) {

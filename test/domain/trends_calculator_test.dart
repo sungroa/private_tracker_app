@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/trends_calculator.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 void main() {
   group('TrendsCalculator BBT Mapping', () {
@@ -13,20 +15,20 @@ void main() {
     final symptomLogs = [
       SymptomLog(
         date: now.subtract(const Duration(days: 4)),
-        symptoms: ['Cramps'],
+        symptoms: const ['Cramps'],
         moodRating: 3,
         basalBodyTemperature: 36.5,
       ),
       SymptomLog(
         date: now.subtract(const Duration(days: 3)),
-        symptoms: [],
+        symptoms: const [],
         moodRating: 4,
         basalBodyTemperature: 36.6,
         lhTestPositive: true,
       ),
       SymptomLog(
         date: now.subtract(const Duration(days: 2)),
-        symptoms: ['Headache'],
+        symptoms: const ['Headache'],
         moodRating: 2,
         basalBodyTemperature: 36.4,
       ),
@@ -55,7 +57,7 @@ void main() {
         ...symptomLogs,
         SymptomLog(
           date: now.subtract(const Duration(days: 1)),
-          symptoms: [],
+          symptoms: const [],
           moodRating: 5,
         ), // No BBT
       ];
@@ -73,7 +75,7 @@ void main() {
       final oldLogs = [
         SymptomLog(
           date: now.subtract(const Duration(days: 34)),
-          symptoms: [],
+          symptoms: const [],
           moodRating: 3,
           basalBodyTemperature: 36.8,
         ),

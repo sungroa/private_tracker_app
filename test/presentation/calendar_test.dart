@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/presentation/widgets/custom_calendar/calendar_grid.dart';
 import 'package:private_tracker_app/presentation/widgets/custom_calendar/calendar_day_cell.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 void main() {
   group('CustomCalendar Widget Tests', () {
@@ -103,7 +104,7 @@ void main() {
       final symptomMap = {
         formatKey(symptomDay): SymptomLog(
           date: symptomDay,
-          symptoms: ['Cramps'],
+          symptoms: const ['Cramps'],
           moodRating: 3,
         ),
       };

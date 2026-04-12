@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
-import '../../../domain/models/cycle_log.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 class CalendarDayCell extends StatelessWidget {
   final DateTime date;

@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'core/services/auth_service.dart';
+import 'core/services/preferences_service.dart';
 import 'core/services/notification_service.dart';
 import 'data/storage/encrypted_storage_service.dart';
 import 'data/storage/secure_key_storage.dart';
@@ -34,7 +36,9 @@ class StorageConfig {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.instance.initialize();
+  // NotificationService is no longer initialized here globally.
+  // It will be initialized once inside a Provider or App state.
+  
   runApp(const PrivacyTrackerApp());
 }
 
@@ -43,6 +47,9 @@ class PrivacyTrackerApp extends StatefulWidget {
   final LocalDatabaseManager? dbManager;
   final BackupRestoreService? backupService;
   final DataExportService? exportService;
+  final AuthService? authService;
+  final PreferencesService? preferencesService;
+  final NotificationService? notificationService;
   final AppLinks? appLinks;
   final String? storageBasePath;
   final CycleDataSource? cycleDataSource;
@@ -55,6 +62,9 @@ class PrivacyTrackerApp extends StatefulWidget {
     this.dbManager,
     this.backupService,
     this.exportService,
+    this.authService,
+    this.preferencesService,
+    this.notificationService,
     this.appLinks,
     this.storageBasePath,
     this.cycleDataSource,
@@ -69,6 +79,7 @@ class PrivacyTrackerApp extends StatefulWidget {
 class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
   late AppLinks _appLinks;
+  StreamSubscription? _linkSubscription;
 
   @override
   void initState() {
@@ -76,10 +87,16 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
     _initDeepLinks();
   }
 
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
+
   void _initDeepLinks() {
     try {
       _appLinks = widget.appLinks ?? AppLinks();
-      _appLinks.uriLinkStream.listen((uri) {
+      _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
         if (!mounted) return;
         _handleDeepLink(uri);
       });
@@ -106,6 +123,9 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<AuthService>(create: (_) => widget.authService ?? AuthService()),
+        Provider<PreferencesService>(create: (_) => widget.preferencesService ?? PreferencesService()),
+        Provider<NotificationService>(create: (_) => widget.notificationService ?? (NotificationService()..initialize())),
         Provider<StorageConfig>(create: (_) => StorageConfig(storageBasePath: widget.storageBasePath)),
         Provider<SecureKeyStorage>(create: (_) => widget.keyStorage ?? SecureKeyStorage(const FlutterSecureStorage())),
         Provider<LocalDatabaseManager>(create: (_) => widget.dbManager ?? LocalDatabaseManager()),
@@ -230,17 +250,17 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
   }
 
   Future<void> _checkInitialAuth() async {
-    _useBiometric = await AuthService.instance.isBiometricEnabled();
+    final prefs = context.read<PreferencesService>();
+    _useBiometric = await prefs.isBiometricEnabled();
     
     if (!_useBiometric) {
       try {
         await _initializeStorage();
-      } catch (e) {
-        debugPrint("Initial storage initialization failed: $e");
       } finally {
         if (mounted) {
           setState(() {
-            _isAuthenticated = true;
+            // Only authenticate if storage initialized successfully
+            _isAuthenticated = _storageInitialized;
             _isInitializing = false;
           });
         }
@@ -254,10 +274,11 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
   }
 
   Future<void> _triggerAuth() async {
-    final success = await AuthService.instance.authenticate();
+    final authService = context.read<AuthService>();
+    final success = await authService.authenticate();
     if (success) {
       await _initializeStorage();
-      if (mounted) {
+      if (mounted && _storageInitialized) {
         context.read<CycleProvider>().refresh();
         context.read<SymptomProvider>().refresh();
         setState(() => _isAuthenticated = true);
@@ -271,10 +292,8 @@ class _AppLockWrapperState extends State<AppLockWrapper> with WidgetsBindingObse
       final config = context.read<StorageConfig>();
       final basePath = config.storageBasePath;
       
-      // Implement 10-second timeout to prevent environmental hangs
       await context.read<EncryptedStorageService>()
-          .initialize(basePath: basePath)
-          .timeout(const Duration(seconds: 10));
+          .initialize(basePath: basePath);
           
       _storageInitialized = true;
     } catch (e) {

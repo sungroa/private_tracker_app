@@ -30,7 +30,8 @@ void main() {
     verify(() => mockRepo.getCycleEvents()).called(1);
     verify(() => mockSymptomRepo.getSymptomLogs()).called(1);
     expect(provider.cycleEvents, isEmpty);
-    expect(provider.predictedNextPeriod, isNull);
+    // CycleCalculator always provides a default prediction (now + 28 days) even with no data
+    expect(provider.predictedNextPeriod, isNotNull);
   });
 
   test('addEvent calls repository and reloads events', () async {

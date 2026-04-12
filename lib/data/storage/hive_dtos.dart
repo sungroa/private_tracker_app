@@ -1,6 +1,8 @@
 import 'package:hive/hive.dart';
 import '../../domain/models/cycle_log.dart';
 import '../../domain/models/custom_tag.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 
 part 'hive_dtos.g.dart';
 
@@ -35,7 +37,7 @@ class CycleEventDto extends HiveObject {
     );
   }
 
-  CycleEvent sovereignty() {
+  CycleEvent toDomain() {
     return CycleEvent(
       id: id,
       startDate: startDate,
@@ -89,7 +91,7 @@ class SymptomLogDto extends HiveObject {
     );
   }
 
-  SymptomLog sovereignty() {
+  SymptomLog toDomain() {
     return SymptomLog(
       id: id,
       date: date,
@@ -126,7 +128,7 @@ class CustomTagDto extends HiveObject {
     );
   }
 
-  CustomTag sovereignty() {
+  CustomTag toDomain() {
     return CustomTag(
       id: id,
       name: name,
