@@ -44,7 +44,7 @@ class LocalDatabaseManager {
     if (!Hive.isAdapterRegistered(11)) Hive.registerAdapter(SymptomLogDtoAdapter());
     if (!Hive.isAdapterRegistered(12)) Hive.registerAdapter(CustomTagDtoAdapter());
 
-    await Hive.openBox<CycleEventDto>(
+    await Hive.openBox<CycleLogDto>(
       cycleLogBox,
       encryptionCipher: HiveAesCipher(encryptionKey),
     );
@@ -98,7 +98,7 @@ class LocalDatabaseManager {
     if (!_isInitialized) return;
     
     // Use type-safe box retrieval to avoid "Box already open with different type" errors
-    if (Hive.isBoxOpen(cycleLogBox)) await Hive.box<CycleEventDto>(cycleLogBox).close();
+    if (Hive.isBoxOpen(cycleLogBox)) await Hive.box<CycleLogDto>(cycleLogBox).close();
     if (Hive.isBoxOpen(symptomLogBox)) await Hive.box<SymptomLogDto>(symptomLogBox).close();
     if (Hive.isBoxOpen(customTagBox)) await Hive.box<CustomTagDto>(customTagBox).close();
     if (Hive.isBoxOpen(metaBox)) await Hive.box<String>(metaBox).close();

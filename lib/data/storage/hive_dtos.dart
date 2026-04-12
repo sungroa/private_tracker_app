@@ -6,8 +6,15 @@ import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
 part 'hive_dtos.g.dart';
 
+/// Data Transfer Object (DTO) for [CycleLog].
+/// 
+/// DTOs serve as the storage-specific representation of our domain models.
+/// This layer is necessary to:
+/// 1. Decouple domain logic from Hive annotations.
+/// 2. Provide a stable schema for persistence that can be versioned independently.
+/// 3. Safely handle JSON/binary transformations without polluting business logic.
 @HiveType(typeId: 10)
-class CycleEventDto extends HiveObject {
+class CycleLogDto extends HiveObject {
   @HiveField(0)
   final String id;
   @HiveField(1)
@@ -19,7 +26,7 @@ class CycleEventDto extends HiveObject {
   @HiveField(4)
   final int flowIntensity;
 
-  CycleEventDto({
+  CycleLogDto({
     required this.id,
     required this.startDate,
     this.endDate,
@@ -27,8 +34,9 @@ class CycleEventDto extends HiveObject {
     required this.flowIntensity,
   });
 
-  factory CycleEventDto.fromDomain(CycleEvent domain) {
-    return CycleEventDto(
+  /// Maps a pure domain [CycleLog] into a [CycleLogDto] for persistence.
+  factory CycleLogDto.fromDomain(CycleLog domain) {
+    return CycleLogDto(
       id: domain.id,
       startDate: domain.startDate,
       endDate: domain.endDate,
@@ -37,8 +45,9 @@ class CycleEventDto extends HiveObject {
     );
   }
 
-  CycleEvent toDomain() {
-    return CycleEvent(
+  /// Maps this [CycleLogDto] back into a pure domain [CycleLog].
+  CycleLog toDomain() {
+    return CycleLog(
       id: id,
       startDate: startDate,
       endDate: endDate,
@@ -48,6 +57,7 @@ class CycleEventDto extends HiveObject {
   }
 }
 
+/// Data Transfer Object (DTO) for [SymptomLog].
 @HiveType(typeId: 11)
 class SymptomLogDto extends HiveObject {
   @HiveField(0)
@@ -78,6 +88,7 @@ class SymptomLogDto extends HiveObject {
     this.lhTestPositive,
   });
 
+  /// Maps a pure domain [SymptomLog] into a [SymptomLogDto] for persistence.
   factory SymptomLogDto.fromDomain(SymptomLog domain) {
     return SymptomLogDto(
       id: domain.id,
@@ -91,6 +102,7 @@ class SymptomLogDto extends HiveObject {
     );
   }
 
+  /// Maps this [SymptomLogDto] back into a pure domain [SymptomLog].
   SymptomLog toDomain() {
     return SymptomLog(
       id: id,
@@ -105,6 +117,7 @@ class SymptomLogDto extends HiveObject {
   }
 }
 
+/// Data Transfer Object (DTO) for [CustomTag].
 @HiveType(typeId: 12)
 class CustomTagDto extends HiveObject {
   @HiveField(0)
@@ -120,6 +133,7 @@ class CustomTagDto extends HiveObject {
     required this.isDefault,
   });
 
+  /// Maps a pure domain [CustomTag] into a [CustomTagDto] for persistence.
   factory CustomTagDto.fromDomain(CustomTag domain) {
     return CustomTagDto(
       id: domain.id,
@@ -128,6 +142,7 @@ class CustomTagDto extends HiveObject {
     );
   }
 
+  /// Maps this [CustomTagDto] back into a pure domain [CustomTag].
   CustomTag toDomain() {
     return CustomTag(
       id: id,

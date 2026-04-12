@@ -9,7 +9,7 @@ void main() {
     final now = DateTime(2026, 4, 1);
     
     final cycleLogs = [
-      CycleEvent(startDate: now.subtract(const Duration(days: 5))), // Cycle started 5 days ago
+      CycleLog(startDate: now.subtract(const Duration(days: 5))), // Cycle started 5 days ago
     ];
 
     final symptomLogs = [
@@ -68,8 +68,8 @@ void main() {
 
     test('should only include logs from the current cycle', () {
       final multipleCycles = [
-        CycleEvent(startDate: now.subtract(const Duration(days: 5))), // Current
-        CycleEvent(startDate: now.subtract(const Duration(days: 35))), // Previous
+        CycleLog(startDate: now.subtract(const Duration(days: 5))), // Current
+        CycleLog(startDate: now.subtract(const Duration(days: 35))), // Previous
       ];
       
       final oldLogs = [

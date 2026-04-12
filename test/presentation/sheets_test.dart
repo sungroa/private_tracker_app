@@ -206,7 +206,7 @@ void main() {
       
       await safePump(tester);
 
-      final logs = cycleDataSource.getCycleEvents();
+      final logs = cycleDataSource.getCycleLogs();
       expect(logs.length, 1, reason: 'Cycle log should be saved');
     });
   });

@@ -11,15 +11,15 @@ enum LoggingType { daily, cycle }
 
 class UnifiedLoggingSheet extends StatefulWidget {
   final DateTime selectedDay;
-  final SymptomLog? existingSymptomLog;
-  final CycleEvent? existingCycleLog;
+  final SymptomLog? symptomLog;
+  final CycleLog? cycleLog;
   final LoggingType initialType;
 
   const UnifiedLoggingSheet({
     super.key,
     required this.selectedDay,
-    this.existingSymptomLog,
-    this.existingCycleLog,
+    this.symptomLog,
+    this.cycleLog,
     this.initialType = LoggingType.daily,
   });
 
@@ -128,13 +128,13 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
                   ? SymptomLoggingSheet(
                       key: const ValueKey('daily_sheet'),
                       selectedDay: widget.selectedDay,
-                      existingLog: widget.existingSymptomLog,
+                      symptomLog: widget.symptomLog,
                       isEmbedded: true,
                     )
                   : CycleLoggingSheet(
                       key: const ValueKey('cycle_sheet'),
                       selectedDay: widget.selectedDay,
-                      existingEvent: widget.existingCycleLog,
+                      cycleLog: widget.cycleLog,
                       isEmbedded: true,
                     ),
             ),

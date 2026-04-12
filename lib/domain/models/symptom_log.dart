@@ -2,17 +2,40 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
+/// Represents a daily health log entry containing symptoms, mood, and FAM metrics.
+/// 
+/// This model encapsulates all daily data points except for primary cycle information.
+/// It uses [UnmodifiableListView] for [symptoms] to ensure domain model immutability.
 @immutable
 class SymptomLog {
+  /// Unique identifier for the log entry.
   final String id;
+
+  /// The date this log entry corresponds to.
   final DateTime date;
+
+  /// A list of symptoms experienced on this day.
   final UnmodifiableListView<String> symptoms;
-  final int moodRating; // 1-5
+
+  /// Subjective mood rating from 1 (Terrible) to 5 (Excellent).
+  final int moodRating;
+
+  /// Optional personal notes for the day.
   final String? notes;
+
+  /// Basal Body Temperature (BBT) in degrees F/C.
   final double? basalBodyTemperature;
+
+  /// Categorical type of cervical fluid (e.g., 'Sticky', 'Eggwhite').
   final String? cervicalFluidType;
+
+  /// Result of a Luteinizing Hormone (LH) ovulation test.
   final bool? lhTestPositive;
 
+  /// Creates a [SymptomLog] with validation.
+  /// 
+  /// [moodRating] Defaults to 3 (Neutral). Must be between 1 and 5.
+  /// [basalBodyTemperature] If provided, must be within a physiologically valid range.
   SymptomLog({
     String? id,
     required this.date,
@@ -27,6 +50,7 @@ class SymptomLog {
         assert(moodRating >= 1 && moodRating <= 5, 'Mood rating must be between 1 and 5'),
         assert(basalBodyTemperature == null || (basalBodyTemperature >= 35.0 && basalBodyTemperature <= 110.0), 'BBT must be a physiologically valid temperature');
 
+  /// Creates a copy of this object with potentially changed values.
   SymptomLog copyWith({
     String? id,
     DateTime? date,
@@ -49,6 +73,7 @@ class SymptomLog {
     );
   }
 
+  /// Converts this domain model into a Map for serialization.
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -62,6 +87,7 @@ class SymptomLog {
     };
   }
 
+  /// Creates a [SymptomLog] from a [Map].
   factory SymptomLog.fromMap(Map<String, dynamic> map) {
     return SymptomLog(
       id: map['id'],
@@ -100,4 +126,26 @@ class SymptomLog {
         cervicalFluidType.hashCode ^
         lhTestPositive.hashCode;
   }
+
+  /// --- Domain Constants ---
+  
+  /// The standard neutral mood rating.
+  static const int neutralMood = 3;
+}
+
+/// Extensions on [SymptomLog] to provide presentation-friendly utility getters.
+extension SymptomLogX on SymptomLog {
+  /// Returns a human-readable string for the [moodRating].
+  String get moodDisplayName {
+    return switch (moodRating) {
+      <= 1 => "Terrible",
+      2 => "Bad",
+      3 => "Neutral",
+      4 => "Good",
+      _ => "Excellent",
+    };
+  }
+
+  /// Returns a comma-separated summary of all symptoms.
+  String get symptomsSummary => symptoms.join(", ");
 }

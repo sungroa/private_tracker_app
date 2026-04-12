@@ -19,7 +19,7 @@ class BackupRestoreService {
   /// Exports all data to an encrypted and compressed (.enc) file using Authenticated Encryption.
   Future<File> exportEncryptedBackup({
     required String userPassword,
-    required List<CycleEvent> cycleEvents,
+    required List<CycleLog> cycleEvents,
     required List<SymptomLog> symptomLogs,
     required List<CustomTag> customTags,
   }) async {

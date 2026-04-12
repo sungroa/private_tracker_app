@@ -107,14 +107,14 @@ void main() {
       expect(marchLogs.first.symptoms, contains('Cramps'));
     });
 
-    test('saveCycleEvent and getCycleEvents should work', () async {
-      final log1 = CycleEvent(id: 'c1', startDate: DateTime(2026, 2, 1));
-      final log2 = CycleEvent(id: 'c2', startDate: DateTime(2026, 3, 1));
+    test('saveCycleLog and getCycleLogs should work', () async {
+      final log1 = CycleLog(id: 'c1', startDate: DateTime(2026, 2, 1));
+      final log2 = CycleLog(id: 'c2', startDate: DateTime(2026, 3, 1));
 
-      await cycleDataSource.saveCycleEvent(log1);
-      await cycleDataSource.saveCycleEvent(log2);
+      await cycleDataSource.saveCycleLog(log1);
+      await cycleDataSource.saveCycleLog(log2);
 
-      final allLogs = cycleDataSource.getCycleEvents();
+      final allLogs = cycleDataSource.getCycleLogs();
       expect(allLogs.length, 2);
       expect(allLogs.first.startDate, DateTime(2026, 3, 1)); // Sorted newest first
     });
@@ -123,7 +123,7 @@ void main() {
       await cycleDataSource.clear();
       await symptomDataSource.clear();
 
-      await cycleDataSource.saveCycleEvent(CycleEvent(id: 'c1', startDate: DateTime(2026, 3, 1), notes: 'Cycle note'));
+      await cycleDataSource.saveCycleLog(CycleLog(id: 'c1', startDate: DateTime(2026, 3, 1), notes: 'Cycle note'));
       await symptomDataSource.saveSymptomLog(SymptomLog(
         id: 's1',
         date: DateTime(2026, 3, 5),
@@ -160,7 +160,7 @@ void main() {
       await symptomDataSource.clear();
       await tagDataSource.clear();
 
-      await cycleDataSource.saveCycleEvent(CycleEvent(id: 'c1', startDate: DateTime(2026, 3, 1), notes: 'Backup test'));
+      await cycleDataSource.saveCycleLog(CycleLog(id: 'c1', startDate: DateTime(2026, 3, 1), notes: 'Backup test'));
       await symptomDataSource.saveSymptomLog(SymptomLog(
         id: 's1',
         date: DateTime(2026, 3, 5),
@@ -178,13 +178,13 @@ void main() {
       await cycleDataSource.clear();
       await symptomDataSource.clear();
       await tagDataSource.clear();
-      expect(cycleDataSource.getCycleEvents(), isEmpty);
+      expect(cycleDataSource.getCycleLogs(), isEmpty);
 
       // 4. Restore
       await storageService.importEncryptedBackup(backupFile, password);
 
       // 5. Verify
-      final cycles = cycleDataSource.getCycleEvents();
+      final cycles = cycleDataSource.getCycleLogs();
       final symptoms = symptomDataSource.getAllSymptomLogs();
       final tags = tagDataSource.getCustomTags();
 

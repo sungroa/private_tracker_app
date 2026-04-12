@@ -8,14 +8,14 @@ import '../theme/app_theme.dart';
 
 class CycleLoggingSheet extends StatefulWidget {
   final DateTime selectedDay;
-  final CycleEvent? existingEvent;
+  final CycleLog? cycleLog;
 
   final bool isEmbedded;
 
   const CycleLoggingSheet({
     super.key,
     required this.selectedDay,
-    this.existingEvent,
+    this.cycleLog,
     this.isEmbedded = false,
   });
 
@@ -33,10 +33,10 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
   @override
   void initState() {
     super.initState();
-    _startDate = widget.existingEvent?.startDate ?? widget.selectedDay;
-    _endDate = widget.existingEvent?.endDate;
-    _flowIntensity = widget.existingEvent?.flowIntensity ?? 3;
-    _notesController = TextEditingController(text: widget.existingEvent?.notes ?? "");
+    _startDate = widget.cycleLog?.startDate ?? widget.selectedDay;
+    _endDate = widget.cycleLog?.endDate;
+    _flowIntensity = widget.cycleLog?.flowIntensity ?? 3;
+    _notesController = TextEditingController(text: widget.cycleLog?.notes ?? "");
   }
 
   @override
@@ -94,15 +94,15 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     final navigator = Navigator.of(context);
     setState(() => _isSaving = true);
     try {
-      final event = CycleEvent(
-        id: widget.existingEvent?.id,
+      final event = CycleLog(
+        id: widget.cycleLog?.id,
         startDate: _startDate,
         endDate: _endDate,
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         flowIntensity: _flowIntensity,
       );
       final provider = context.read<CycleProvider>();
-      if (widget.existingEvent != null) {
+      if (widget.cycleLog != null) {
         await provider.updateEvent(event);
       } else {
         await provider.addEvent(event);
@@ -114,7 +114,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
   }
 
   void _onDelete() async {
-    if (widget.existingEvent == null) return;
+    if (widget.cycleLog == null) return;
     HapticFeedback.heavyImpact();
     
     final navigator = Navigator.of(context);
@@ -142,7 +142,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
 
     setState(() => _isSaving = true);
     try {
-      await provider.deleteEvent(widget.existingEvent!.id);
+      await provider.deleteEvent(widget.cycleLog!.id);
       if (mounted) navigator.pop(true);
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -185,7 +185,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
             const SizedBox(height: 24),
           ],
             Text(
-              widget.existingEvent != null ? "Edit Cycle Log" : "Log Your Cycle",
+              widget.cycleLog != null ? "Edit Cycle Log" : "Log Your Cycle",
               style: TextStyle(
                 color: primary,
                 fontSize: 24,
@@ -338,7 +338,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                           ),
                         )
                       : Text(
-                          widget.existingEvent != null ? "Save Changes" : "Add Cycle Log",
+                          widget.cycleLog != null ? "Save Changes" : "Add Cycle Log",
                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18, fontFamily: AppTheme.fontFamily),
                         ),
                 ),
@@ -356,7 +356,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                 ),
               ),
             ],
-            if (widget.existingEvent != null) ...[
+            if (widget.cycleLog != null) ...[
               const SizedBox(height: 8),
               Center(
                 child: TextButton(

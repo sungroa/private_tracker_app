@@ -3,20 +3,20 @@ import '../local_database_manager.dart';
 import '../hive_dtos.dart';
 import 'local_data_source.dart';
 
-class CycleDataSource extends LocalDataSource<CycleEventDto> {
+class CycleDataSource extends LocalDataSource<CycleLogDto> {
   CycleDataSource(LocalDatabaseManager dbManager) : super(dbManager, LocalDatabaseManager.cycleLogBox);
 
-  List<CycleEvent> getCycleEvents() {
+  List<CycleLog> getCycleLogs() {
     final dtos = getAll();
     dtos.sort((a, b) => b.startDate.compareTo(a.startDate)); // Newest first
     return dtos.map((dto) => dto.toDomain()).toList();
   }
 
-  Future<void> saveCycleEvent(CycleEvent event) {
-    return put(event.id, CycleEventDto.fromDomain(event));
+  Future<void> saveCycleLog(CycleLog event) {
+    return put(event.id, CycleLogDto.fromDomain(event));
   }
 
-  Future<void> deleteCycleEvent(String id) {
+  Future<void> deleteCycleLog(String id) {
     return delete(id);
   }
 }

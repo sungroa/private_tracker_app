@@ -7,7 +7,7 @@ import 'package:private_tracker_app/domain/models/symptom_log.dart';
 void main() {
   group('CycleCalculator Tests', () {
     test('predictNextPeriod with empty logs should return today + 28 days', () {
-      final logs = <CycleEvent>[];
+      final logs = <CycleLog>[];
       final prediction = CycleCalculator.predictNextPeriod(logs);
       
       final expected = DateTime.now().add(const Duration(days: 28));
@@ -18,7 +18,7 @@ void main() {
 
     test('predictNextPeriod with one log should return startDate + 28 days', () {
       final start = DateTime.utc(2026, 3, 1);
-      final logs = [CycleEvent(startDate: start)];
+      final logs = [CycleLog(startDate: start)];
       
       final prediction = CycleCalculator.predictNextPeriod(logs);
       expect(prediction, start.add(const Duration(days: 28)));
@@ -29,9 +29,9 @@ void main() {
       // Cycle 2: Mar 29 to Apr 28 (30 days) - Newest
       // Weighted: (30 * 0.5 + 28 * 0.3) / (0.5 + 0.3) = 23.4 / 0.8 = 29.25 -> 29 days
       final logs = [
-        CycleEvent(startDate: DateTime(2026, 4, 28)),
-        CycleEvent(startDate: DateTime.utc(2026, 3, 29)),
-        CycleEvent(startDate: DateTime.utc(2026, 3, 1)),
+        CycleLog(startDate: DateTime(2026, 4, 28)),
+        CycleLog(startDate: DateTime.utc(2026, 3, 29)),
+        CycleLog(startDate: DateTime.utc(2026, 3, 1)),
       ];
       
       final prediction = CycleCalculator.predictNextPeriod(logs);
@@ -45,12 +45,12 @@ void main() {
       // 45 is a significant outlier that should be rejected by IQR
       final base = DateTime(2026, 1, 1);
       final logs = [
-        CycleEvent(startDate: base.add(const Duration(days: 157))), // Day 157
-        CycleEvent(startDate: base.add(const Duration(days: 129))), // Day 129 (Interval: 28)
-        CycleEvent(startDate: base.add(const Duration(days: 101))), // Day 101 (Interval: 28)
-        CycleEvent(startDate: base.add(const Duration(days: 56))),  // Day 56  (Interval: 45) -> Outlier
-        CycleEvent(startDate: base.add(const Duration(days: 28))),  // Day 28  (Interval: 28)
-        CycleEvent(startDate: base),                                // Day 0   (Interval: 28)
+        CycleLog(startDate: base.add(const Duration(days: 157))), // Day 157
+        CycleLog(startDate: base.add(const Duration(days: 129))), // Day 129 (Interval: 28)
+        CycleLog(startDate: base.add(const Duration(days: 101))), // Day 101 (Interval: 28)
+        CycleLog(startDate: base.add(const Duration(days: 56))),  // Day 56  (Interval: 45) -> Outlier
+        CycleLog(startDate: base.add(const Duration(days: 28))),  // Day 28  (Interval: 28)
+        CycleLog(startDate: base),                                // Day 0   (Interval: 28)
       ];
       
       final prediction = CycleCalculator.predictNextPeriod(logs);
@@ -65,10 +65,10 @@ void main() {
       // Exponential decay (0.85^i): (32*1.0 + 28*0.85 + 24*0.7225) / 2.5725 ≈ 28.43 -> 28
       final base = DateTime(2026, 1, 1);
       final logs = [
-        CycleEvent(startDate: base.add(const Duration(days: 84))), // Day 84
-        CycleEvent(startDate: base.add(const Duration(days: 52))), // Day 52 (Interval: 32)
-        CycleEvent(startDate: base.add(const Duration(days: 24))), // Day 24 (Interval: 28)
-        CycleEvent(startDate: base),                               // Day 0  (Interval: 24)
+        CycleLog(startDate: base.add(const Duration(days: 84))), // Day 84
+        CycleLog(startDate: base.add(const Duration(days: 52))), // Day 52 (Interval: 32)
+        CycleLog(startDate: base.add(const Duration(days: 24))), // Day 24 (Interval: 28)
+        CycleLog(startDate: base),                               // Day 0  (Interval: 24)
       ];
       
       final prediction = CycleCalculator.predictNextPeriod(logs);
@@ -78,12 +78,12 @@ void main() {
     });
 
     test('isCurrentlyInPeriod should detect active period if no endDate', () {
-      final logs = [CycleEvent(startDate: DateTime.now())];
+      final logs = [CycleLog(startDate: DateTime.now())];
       expect(CycleCalculator.isCurrentlyInPeriod(logs), isTrue);
     });
 
     test('isCurrentlyInPeriod should expire after 7 days if no endDate', () {
-      final logs = [CycleEvent(startDate: DateTime.now().subtract(const Duration(days: 8)))];
+      final logs = [CycleLog(startDate: DateTime.now().subtract(const Duration(days: 8)))];
       expect(CycleCalculator.isCurrentlyInPeriod(logs), isFalse);
     });
 
@@ -93,10 +93,10 @@ void main() {
       // Exponential decay: (30*1.0 + 28*0.85 + 26*0.7225) / 2.5725 ≈ 28.22 -> 28
       final base = DateTime(2026, 1, 1);
       final logs = [
-        CycleEvent(startDate: base.add(const Duration(days: 84))), // Day 84
-        CycleEvent(startDate: base.add(const Duration(days: 54))), // Day 54 (Interval: 30)
-        CycleEvent(startDate: base.add(const Duration(days: 26))), // Day 26 (Interval: 28)
-        CycleEvent(startDate: base),                               // Day 0  (Interval: 26)
+        CycleLog(startDate: base.add(const Duration(days: 84))), // Day 84
+        CycleLog(startDate: base.add(const Duration(days: 54))), // Day 54 (Interval: 30)
+        CycleLog(startDate: base.add(const Duration(days: 26))), // Day 26 (Interval: 28)
+        CycleLog(startDate: base),                               // Day 0  (Interval: 26)
       ];
       
       final prediction = CycleCalculator.predictNextPeriod(logs);
@@ -109,12 +109,12 @@ void main() {
       // 5 identical intervals of 28 days — IQR = 0, all pass filter
       final base = DateTime(2026, 1, 1);
       final logs = [
-        CycleEvent(startDate: base.add(const Duration(days: 168))),
-        CycleEvent(startDate: base.add(const Duration(days: 140))),
-        CycleEvent(startDate: base.add(const Duration(days: 112))),
-        CycleEvent(startDate: base.add(const Duration(days: 84))),
-        CycleEvent(startDate: base.add(const Duration(days: 56))),
-        CycleEvent(startDate: base.add(const Duration(days: 28))),
+        CycleLog(startDate: base.add(const Duration(days: 168))),
+        CycleLog(startDate: base.add(const Duration(days: 140))),
+        CycleLog(startDate: base.add(const Duration(days: 112))),
+        CycleLog(startDate: base.add(const Duration(days: 84))),
+        CycleLog(startDate: base.add(const Duration(days: 56))),
+        CycleLog(startDate: base.add(const Duration(days: 28))),
       ];
       
       final prediction = CycleCalculator.predictNextPeriod(logs);
@@ -208,7 +208,7 @@ void main() {
 
     group('Prediction Override Tests', () {
       test('predictNextPeriod overrides using confirmed ovulation', () {
-        final cycleLogs = [CycleEvent(startDate: DateTime.utc(2026, 3, 1))];
+        final cycleLogs = [CycleLog(startDate: DateTime.utc(2026, 3, 1))];
         
         // Create symptoms with a shift
         final symptoms = <SymptomLog>[];
@@ -227,7 +227,7 @@ void main() {
       });
 
       test('predictNextPeriod uses default if no ovulation confirmed', () {
-        final cycleLogs = [CycleEvent(startDate: DateTime.utc(2026, 3, 1))];
+        final cycleLogs = [CycleLog(startDate: DateTime.utc(2026, 3, 1))];
         final symptoms = [
           SymptomLog(date: DateTime.utc(2026, 3, 1), symptoms: const [], moodRating: 3, basalBodyTemperature: 97.0),
         ];

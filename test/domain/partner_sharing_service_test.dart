@@ -7,8 +7,8 @@ void main() {
   group('PartnerSharingService Tests', () {
     test('generateEncryptedPayload should produce a valid payload and key', () {
       final cycleLogs = [
-        CycleEvent(startDate: DateTime(2026, 3, 1), endDate: DateTime(2026, 3, 5)),
-        CycleEvent(startDate: DateTime(2026, 2, 1), endDate: DateTime(2026, 2, 5)),
+        CycleLog(startDate: DateTime(2026, 3, 1), endDate: DateTime(2026, 3, 5)),
+        CycleLog(startDate: DateTime(2026, 2, 1), endDate: DateTime(2026, 2, 5)),
       ];
 
       final result = PartnerSharingService.generateEncryptedPayload(cycleLogs: cycleLogs);
@@ -21,8 +21,8 @@ void main() {
     test('Encryption/Decryption cycle should preserve data integrity', () {
       final now = DateTime.now();
       final cycleLogs = [
-        CycleEvent(startDate: now.subtract(const Duration(days: 30))),
-        CycleEvent(startDate: now.subtract(const Duration(days: 60))),
+        CycleLog(startDate: now.subtract(const Duration(days: 30))),
+        CycleLog(startDate: now.subtract(const Duration(days: 60))),
       ];
 
       final result = PartnerSharingService.generateEncryptedPayload(cycleLogs: cycleLogs);

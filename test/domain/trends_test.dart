@@ -9,9 +9,9 @@ void main() {
     test('calculateAverageCycleLength calculates correctly from multiple logs', () {
       final now = DateTime.now();
       final logs = [
-        CycleEvent(startDate: now), // Today
-        CycleEvent(startDate: now.subtract(const Duration(days: 30))), // 30 days ago
-        CycleEvent(startDate: now.subtract(const Duration(days: 58))), // 28 days ago
+        CycleLog(startDate: now), // Today
+        CycleLog(startDate: now.subtract(const Duration(days: 30))), // 30 days ago
+        CycleLog(startDate: now.subtract(const Duration(days: 58))), // 28 days ago
       ];
 
       final trends = TrendsCalculator.calculateTrends(logs, []);
@@ -22,12 +22,12 @@ void main() {
     test('calculateAveragePeriodDuration calculates correctly from completed logs', () {
       final now = DateTime.now();
       final logs = [
-        CycleEvent(
+        CycleLog(
           startDate: now.subtract(const Duration(days: 30)), 
           endDate: now.subtract(const Duration(days: 25)),
         ), // 6 days duration (25, 26, 27, 28, 29, 30? Wait, subtraction days)
         // Duration: difference + 1. (30 - 25) + 1 = 6.
-        CycleEvent(
+        CycleLog(
           startDate: now.subtract(const Duration(days: 60)),
           endDate: now.subtract(const Duration(days: 56)),
         ), // 5 days duration (60-56)+1

@@ -6,7 +6,7 @@ import 'package:private_tracker_app/domain/models/symptom_log.dart';
 class DataExportService {
   /// Exports all data to a CSV string.
   Future<String> exportDataToCsv({
-    required List<CycleEvent> cycleEvents,
+    required List<CycleLog> cycleEvents,
     required List<SymptomLog> symptomLogs,
   }) async {
     final List<List<dynamic>> rows = [];

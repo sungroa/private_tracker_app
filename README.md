@@ -4,72 +4,52 @@ A premium, privacy-focused health and cycle tracking application built with Flut
 
 ![Hero Shot](file:///home/sungroa/.gemini/antigravity/brain/86932ca1-504f-4dc9-8f12-7b52df67c1fb/private_tracker_hero_1775545127090.png)
 
-## 🛡️ Privacy & Security
-- **Zero-Knowledge Storage**: All health data is encrypted on-device before persistence.
-- **AES-SIC & HMAC**: Uses industry-standard Authenticated Encryption (AES-SIC-256 + HMAC-SHA256) for data integrity.
-- **Biometric Locking**: Optional protection using `local_auth`.
+## 🛡️ Privacy & Security (Zero-Knowledge)
 
-## 🏗️ Clean Architecture Refactor
-This project underwent a comprehensive **"Zero Technical Debt"** refactor to ensure long-term maintainability:
-- **Modular DataSources**: Storage is decoupled from the UI using a robust Provider-based Dependency Injection system.
-- **Specialized Domain Calculators**: Complex period and fertility predictions are handled by isolated engines (`CycleStatsCalculator`, `PredictionEngine`, `SymptomAnalyzer`).
-- **O(1) Calendar Performance**: Instant responsive interactions achieved through pre-indexed date-mapping in memory.
-- **100% Test Stability**: A rigorous suite of 89+ tests ensures zero regressions across storage, logic, and UI.
+Private Tracker is built on a "Privacy First" philosophy. No health data ever leaves your device unless you explicitly export an encrypted backup.
 
-## ✨ Premium UI & UX
-- **Glassmorphic Grid**: Calendar uses a fluid, glowing "Glass Orb" selection indicator.
-- **Fluid Micro-Animations**: Smooth transitions between logging views and selection states.
-- **Stable Logging Layout**: A stable, fixed-height logging interface ensures zero layout shifts during fast data entry.
-- **Haptic Excellence**: Integrated physical tactile feedback for all key interactions.
+- **Zero-Knowledge Storage**: All health data is encrypted on-device before persistence using Hive's encrypted boxes.
+- **AES-SIC & HMAC**: We use industry-standard Authenticated Encryption (AES-SIC-256 + HMAC-SHA256) to ensure both confidentiality and data integrity.
+- **Biometric Locking**: Optional protection using `local_auth` ensures only you can open the app.
+- **Secure Key derivation**: Encryption keys are stored in the system's Secure Enclave/KeyStore using `flutter_secure_storage`.
 
----
+## 🏗️ Technical Architecture
 
-## 🚀 Getting Started
+This project follows **Clean Architecture** principles to ensure long-term maintainability and zero technical debt.
 
-### Prerequisites
+- **Domain-Driven Design**: Core business logic is encapsulated in pure Dart models and "Calculators" that have zero dependencies on external frameworks.
+- **Decoupled Persistence**: Our storage layer uses a DTO (Data Transfer Object) pattern, allowing the database schema to evolve without breaking business logic.
+- **Granular State Management**: Built with `Provider`, utilizing selective rebuilds (`Selector`, `Consumer2`) to achieve 60FPS calendar performance even with years of data.
+- **Automated Verification**: A rigorous suite of 89+ tests covers 100% of domain logic and critical UI flows.
+
+## 🚀 Getting Started for Engineers
+
+### 1. Prerequisites
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (Stable channel)
-- [Android Studio](https://developer.android.com/studio) or [Xcode](https://developer.apple.com/xcode/) (for iOS)
+- [Android Studio](https://developer.android.com/studio) or [Xcode](https://developer.apple.com/xcode/)
 
-### Installation
-1. Clone the repository.
-2. Run `flutter pub get` to install dependencies.
-3. Use `flutter run` to launch on your connected device or emulator.
+### 2. Setup
+```bash
+# Clone and install dependencies
+git clone <repo-url>
+cd private_tracker_app
+flutter pub get
 
----
+# Generate Hive adapters
+flutter pub run build_runner build --delete-conflicting-outputs
+```
 
-## 📱 Build Instructions
-
-### 🤖 Android
-1. **Local Auth Setup**: Ensure your `android/app/src/main/kotlin/.../MainActivity.kt` extends `FlutterFragmentActivity` for biometric support.
-2. **Key Signing**: Configure your `key.properties` for production builds.
-3. **Build APK**:
-   ```bash
-   flutter build apk --release
-   ```
-4. **Build App Bundle** (Google Play):
-   ```bash
-   flutter build appbundle --release
-   ```
-*Minimum SDK: 21 (Android 5.0). Versioning is managed in `pubspec.yaml`.*
-
-### 🍏 iOS
-1. **Runner Configuration**: Open `Runner.xcworkspace` in Xcode.
-2. **Privacy Keys**: Ensure `Info.plist` includes the following for biometrics:
-   ```xml
-   <key>NSFaceIDUsageDescription</key>
-   <string>Authenticate to unlock your private health data.</string>
-   ```
-3. **Build IPA**:
-   ```bash
-   flutter build ipa --release
-   ```
-4. **Testing on Physical Device**: Ensure your Signing & Capabilities are configured with a valid Apple Developer Team.
-
----
+### 3. Run
+```bash
+flutter run
+```
 
 ## 🧪 Testing State
-Run the full automated verification loop:
+We maintain a strict "Zero Technical Debt" policy. No PR should be merged without passing all tests:
 ```bash
-for f in $(find test -name "*.dart"); do flutter test "$f" || break; done
+# Run all tests with expanded output
+flutter test --reporter expanded
 ```
-*Current Pass Rate: 100% stable across all 18 test files.*
+
+## 📘 Further Reading
+- [DEVELOPMENT.md](file:///home/sungroa/git/private_tracker_app/DEVELOPMENT.md): Detailed guide on architecture, security protocols, and coding standards.
