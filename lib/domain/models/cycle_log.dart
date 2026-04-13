@@ -39,67 +39,37 @@ class CycleLog {
     this.flowIntensity = 3,
     DateTime? updatedAt,
   })  : id = id ?? const Uuid().v4(),
-        updatedAt = updatedAt ?? DateTime(1970),
+        updatedAt = updatedAt ?? DateTime.now(),
         assert(flowIntensity >= 1 && flowIntensity <= 5, 'Flow intensity must be between 1 and 5'),
         assert(endDate == null || !endDate.isBefore(startDate), 'End date cannot be before start date');
 
   /// Creates a copy of this object with potentially changed values.
+  /// (W5) Uses Sentinel pattern to distinguish between null (no change) and 
+  /// explicitly providing a null value for nullable fields.
   CycleLog copyWith({
     String? id,
     DateTime? startDate,
-    DateTime? endDate,
-    String? notes,
+    Object? endDate = _sentinel,
+    Object? notes = _sentinel,
     int? flowIntensity,
     DateTime? updatedAt,
   }) {
     return CycleLog(
       id: id ?? this.id,
       startDate: startDate ?? this.startDate,
-      // Note: This pattern doesn't allow setting endDate back to null if it was already set.
-      // Use [clearEndDate] for that specific transformation.
-      endDate: endDate ?? this.endDate, 
-      notes: notes ?? this.notes,
+      endDate: endDate == _sentinel ? this.endDate : (endDate as DateTime?),
+      notes: notes == _sentinel ? this.notes : (notes as String?),
       flowIntensity: flowIntensity ?? this.flowIntensity,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
+  static const _sentinel = Object();
+
   /// Returns a new instance of [CycleLog] with the [endDate] explicitly set to null.
-  /// Useful for marking a period as "still in progress".
-  CycleLog clearEndDate() {
-    return CycleLog(
-      id: id,
-      startDate: startDate,
-      endDate: null,
-      notes: notes,
-      flowIntensity: flowIntensity,
-      updatedAt: updatedAt,
-    );
-  }
+  /// (Maintenance: prefer copyWith(endDate: null) now that it supports it).
+  CycleLog clearEndDate() => copyWith(endDate: null);
 
-  /// Converts this domain model into a Map for serialization.
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'startDate': startDate.toIso8601String(),
-      'endDate': endDate?.toIso8601String(),
-      'notes': notes,
-      'flowIntensity': flowIntensity,
-      'updatedAt': updatedAt.toUtc().toIso8601String(),
-    };
-  }
-
-  /// Creates a [CycleLog] from a [Map].
-  factory CycleLog.fromMap(Map<String, dynamic> map) {
-    return CycleLog(
-      id: map['id'],
-      startDate: DateTime.parse(map['startDate']),
-      endDate: map['endDate'] != null ? DateTime.parse(map['endDate']) : null,
-      notes: map['notes'],
-      flowIntensity: map['flowIntensity'] ?? 3,
-      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
-    );
-  }
 
   @override
   bool operator ==(Object other) {
@@ -109,16 +79,20 @@ class CycleLog {
         other.startDate.isAtSameMomentAs(startDate) &&
         (other.endDate == null ? endDate == null : endDate != null && other.endDate!.isAtSameMomentAs(endDate!)) &&
         other.notes == notes &&
-        other.flowIntensity == flowIntensity;
+        other.flowIntensity == flowIntensity &&
+        other.updatedAt.isAtSameMomentAs(updatedAt);
   }
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        startDate.hashCode ^
-        endDate.hashCode ^
-        notes.hashCode ^
-        flowIntensity.hashCode;
+    return Object.hash(
+      id,
+      startDate,
+      endDate,
+      notes,
+      flowIntensity,
+      updatedAt,
+    );
   }
 }
 

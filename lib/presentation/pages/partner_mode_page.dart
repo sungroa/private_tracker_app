@@ -55,7 +55,7 @@ class _PartnerModePageState extends State<PartnerModePage> {
 
   void _processPayload(String payload, String key) {
     try {
-      final decrypted = PartnerSharingService.decryptPayload(payload, key);
+      final decrypted = context.read<PartnerSharingService>().decryptPayload(payload, key);
       context.read<PartnerStorageService>().savePartnerData(decrypted, key);
       setState(() {
         _data = decrypted;
@@ -263,7 +263,7 @@ class _PartnerModePageState extends State<PartnerModePage> {
                           if (rawValue != null) {
                             final uri = Uri.tryParse(rawValue);
                             if (uri != null) {
-                              final result = PartnerSharingService.parseDeepLink(uri);
+                              final result = context.read<PartnerSharingService>().parseDeepLink(uri);
                               if (result != null) {
                                 _processPayload(result['data']!, result['key']!);
                                 break;

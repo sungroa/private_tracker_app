@@ -18,8 +18,20 @@ abstract class LocalDataSource<T> {
     await _dbManager.updateLastModified();
   }
 
+  /// (W9) Batch put without triggering redundant metadata updates until completion.
+  Future<void> putAll(Map<String, T> entries) async {
+    await _box.putAll(entries);
+    await _dbManager.updateLastModified();
+  }
+
   Future<void> delete(String id) async {
     await _box.delete(id);
+    await _dbManager.updateLastModified();
+  }
+
+  /// Batch delete.
+  Future<void> deleteAll(Iterable<String> ids) async {
+    await _box.deleteAll(ids);
     await _dbManager.updateLastModified();
   }
 

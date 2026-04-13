@@ -50,21 +50,23 @@ class SymptomLog {
     this.lhTestPositive,
     DateTime? updatedAt,
   })  : id = id ?? const Uuid().v4(),
-        updatedAt = updatedAt ?? DateTime(1970),
+        updatedAt = updatedAt ?? DateTime.now(),
         symptoms = UnmodifiableListView(List.from(symptoms)),
         assert(moodRating >= 1 && moodRating <= 5, 'Mood rating must be between 1 and 5'),
         assert(basalBodyTemperature == null || (basalBodyTemperature >= 35.0 && basalBodyTemperature <= 110.0), 'BBT must be a physiologically valid temperature');
 
   /// Creates a copy of this object with potentially changed values.
+  /// (W5) Uses Sentinel pattern to distinguish between null (no change) and 
+  /// explicitly providing a null value for nullable fields.
   SymptomLog copyWith({
     String? id,
     DateTime? date,
     List<String>? symptoms,
     int? moodRating,
-    String? notes,
-    double? basalBodyTemperature,
-    String? cervicalFluidType,
-    bool? lhTestPositive,
+    Object? notes = _sentinel,
+    Object? basalBodyTemperature = _sentinel,
+    Object? cervicalFluidType = _sentinel,
+    Object? lhTestPositive = _sentinel,
     DateTime? updatedAt,
   }) {
     return SymptomLog(
@@ -72,43 +74,16 @@ class SymptomLog {
       date: date ?? this.date,
       symptoms: symptoms ?? this.symptoms,
       moodRating: moodRating ?? this.moodRating,
-      notes: notes ?? this.notes,
-      basalBodyTemperature: basalBodyTemperature ?? this.basalBodyTemperature,
-      cervicalFluidType: cervicalFluidType ?? this.cervicalFluidType,
-      lhTestPositive: lhTestPositive ?? this.lhTestPositive,
+      notes: notes == _sentinel ? this.notes : (notes as String?),
+      basalBodyTemperature: basalBodyTemperature == _sentinel ? this.basalBodyTemperature : (basalBodyTemperature as double?),
+      cervicalFluidType: cervicalFluidType == _sentinel ? this.cervicalFluidType : (cervicalFluidType as String?),
+      lhTestPositive: lhTestPositive == _sentinel ? this.lhTestPositive : (lhTestPositive as bool?),
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  /// Converts this domain model into a Map for serialization.
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'date': date.toIso8601String(),
-      'symptoms': symptoms.toList(),
-      'moodRating': moodRating,
-      'notes': notes,
-      'basalBodyTemperature': basalBodyTemperature,
-      'cervicalFluidType': cervicalFluidType,
-      'lhTestPositive': lhTestPositive,
-      'updatedAt': updatedAt.toUtc().toIso8601String(),
-    };
-  }
+  static const _sentinel = Object();
 
-  /// Creates a [SymptomLog] from a [Map].
-  factory SymptomLog.fromMap(Map<String, dynamic> map) {
-    return SymptomLog(
-      id: map['id'],
-      date: DateTime.parse(map['date']),
-      symptoms: List<String>.from(map['symptoms']),
-      moodRating: map['moodRating'],
-      notes: map['notes'],
-      basalBodyTemperature: map['basalBodyTemperature']?.toDouble(),
-      cervicalFluidType: map['cervicalFluidType'],
-      lhTestPositive: map['lhTestPositive'],
-      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
-    );
-  }
 
   @override
   bool operator ==(Object other) {
@@ -121,19 +96,23 @@ class SymptomLog {
         other.notes == notes &&
         other.basalBodyTemperature == basalBodyTemperature &&
         other.cervicalFluidType == cervicalFluidType &&
-        other.lhTestPositive == lhTestPositive;
+        other.lhTestPositive == lhTestPositive &&
+        other.updatedAt.isAtSameMomentAs(updatedAt);
   }
 
   @override
   int get hashCode {
-    return id.hashCode ^
-        date.hashCode ^
-        symptoms.hashCode ^
-        moodRating.hashCode ^
-        notes.hashCode ^
-        basalBodyTemperature.hashCode ^
-        cervicalFluidType.hashCode ^
-        lhTestPositive.hashCode;
+    return Object.hash(
+      id,
+      date,
+      Object.hashAll(symptoms),
+      moodRating,
+      notes,
+      basalBodyTemperature,
+      cervicalFluidType,
+      lhTestPositive,
+      updatedAt,
+    );
   }
 
   /// --- Domain Constants ---

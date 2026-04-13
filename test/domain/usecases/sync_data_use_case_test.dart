@@ -1,64 +1,51 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:private_tracker_app/domain/usecases/sync_data_use_case.dart';
 import 'package:private_tracker_app/domain/services/cloud_sync_interface.dart';
-import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
-import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
-import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
-import 'package:private_tracker_app/data/storage/local_database_manager.dart';
+import 'package:private_tracker_app/domain/repositories/data_source_repository.dart';
+import 'package:private_tracker_app/domain/repositories/sync_metadata_repository.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
-import 'package:hive/hive.dart';
 
 class MockCloudSync extends Mock implements CloudSyncInterface {}
-class MockStorageService extends Mock implements EncryptedStorageService {}
-class MockKeyStorage extends Mock implements SecureKeyStorage {}
-class MockBackupService extends Mock implements BackupRestoreService {}
-class MockDbManager extends Mock implements LocalDatabaseManager {}
-class MockBox extends Mock implements Box<String> {}
+class MockDataSourceRepository extends Mock implements IDataSourceRepository {}
+class MockSyncMetadataRepository extends Mock implements ISyncMetadataRepository {}
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(File(''));
+    registerFallbackValue(Uint8List(0));
   });
 
   late SyncDataUseCase useCase;
   late MockCloudSync mockCloudSync;
-  late MockStorageService mockStorage;
-  late MockKeyStorage mockKeyStorage;
-  late MockBackupService mockBackupService;
-  late MockDbManager mockDbManager;
-  late MockBox mockMetaBox;
+  late MockDataSourceRepository mockDataSource;
+  late MockSyncMetadataRepository mockMetadata;
 
   setUp(() {
     mockCloudSync = MockCloudSync();
-    mockStorage = MockStorageService();
-    mockKeyStorage = MockKeyStorage();
-    mockBackupService = MockBackupService();
-    mockDbManager = MockDbManager();
-    mockMetaBox = MockBox();
+    mockDataSource = MockDataSourceRepository();
+    mockMetadata = MockSyncMetadataRepository();
 
     useCase = SyncDataUseCase(
       cloudSync: mockCloudSync,
-      storage: mockStorage,
-      keyStorage: mockKeyStorage,
-      backupService: mockBackupService,
-      dbManager: mockDbManager,
+      dataSource: mockDataSource,
+      metadata: mockMetadata,
+      keyProvider: () async => [1, 2, 3],
     );
 
-    when(() => mockDbManager.getBox<String>(any())).thenReturn(mockMetaBox);
     when(() => mockCloudSync.authenticate()).thenAnswer((_) async {});
   });
 
   group('SyncDataUseCase Tests', () {
     test('execute should perform initial upload if cloud is empty', () async {
       when(() => mockCloudSync.fetchLatestCloudChecksum()).thenAnswer((_) async => null);
-      when(() => mockMetaBox.get(any())).thenReturn(null);
-      when(() => mockKeyStorage.getOrCreateCloudSyncKey()).thenAnswer((_) async => [1, 2, 3]);
-      when(() => mockStorage.exportCloudBackup(any())).thenAnswer((_) async => File('dummy'));
+      when(() => mockMetadata.getLastSyncChecksum()).thenAnswer((_) async => null);
+      when(() => mockMetadata.getLastLocalModified()).thenAnswer((_) async => 'some_date');
+      
+      when(() => mockDataSource.exportCloudBackup(any())).thenAnswer((_) async => Uint8List.fromList([4, 5, 6]));
       when(() => mockCloudSync.uploadEncryptedBackup(any(), any())).thenAnswer((_) async {});
-      when(() => mockMetaBox.put(any(), any())).thenAnswer((_) async {});
-      when(() => mockMetaBox.delete(any())).thenAnswer((_) async {});
+      when(() => mockMetadata.setLastSyncChecksum(any())).thenAnswer((_) async {});
+      when(() => mockMetadata.clearLocalModifiedFlag()).thenAnswer((_) async {});
 
       final result = await useCase.execute();
 
@@ -68,8 +55,8 @@ void main() {
 
     test('execute should skip if checksums match and no local modifications', () async {
       when(() => mockCloudSync.fetchLatestCloudChecksum()).thenAnswer((_) async => 'checksum123');
-      when(() => mockMetaBox.get(LocalDatabaseManager.lastSyncChecksumKey)).thenReturn('checksum123');
-      when(() => mockMetaBox.get(LocalDatabaseManager.lastLocalModifiedKey)).thenReturn(null);
+      when(() => mockMetadata.getLastSyncChecksum()).thenAnswer((_) async => 'checksum123');
+      when(() => mockMetadata.getLastLocalModified()).thenAnswer((_) async => null);
 
       final result = await useCase.execute();
 
@@ -82,43 +69,40 @@ void main() {
       final localLog = CycleLog(id: '1', startDate: now, updatedAt: now);
       final cloudLog = CycleLog(id: '1', startDate: now, updatedAt: now.add(const Duration(minutes: 5)));
 
-      when(() => mockCloudSync.fetchLatestCloudChecksum()).thenAnswer((_) async => 'cloud_new');
-      when(() => mockMetaBox.get(LocalDatabaseManager.lastSyncChecksumKey)).thenReturn('local_old');
-      when(() => mockMetaBox.get(LocalDatabaseManager.lastLocalModifiedKey)).thenReturn(null);
+      when(() => mockCloudSync.fetchLatestCloudChecksum()).thenAnswer((_) async => '787c798e39a5bc1910355bae6d0cd87a36b2e10fd0202a83e3bb6b005da83472'); // Correct sha256 of [4,5,6]
+      when(() => mockMetadata.getLastSyncChecksum()).thenAnswer((_) async => 'local_old');
+      when(() => mockMetadata.getLastLocalModified()).thenAnswer((_) async => null);
 
-      when(() => mockKeyStorage.getOrCreateCloudSyncKey()).thenAnswer((_) async => [1, 2, 3]);
-      when(() => mockCloudSync.downloadEncryptedBackup()).thenAnswer((_) async => File('cloud'));
+      when(() => mockCloudSync.downloadEncryptedBackup()).thenAnswer((_) async => Uint8List.fromList([4, 5, 6]));
       
-      when(() => mockBackupService.importBackupWithKey(any(), any())).thenAnswer((_) async => {
+      when(() => mockDataSource.parseCloudBackup(any(), any())).thenAnswer((_) async => {
         'cycleLogs': [cloudLog.toMap()],
         'symptomLogs': [],
         'customTags': [],
       });
 
-      when(() => mockStorage.getAllDataAsMap()).thenReturn({
+      when(() => mockDataSource.getAllDataAsMap()).thenReturn({
         'cycleLogs': [localLog.toMap()],
         'symptomLogs': [],
         'customTags': [],
       });
 
-      // Mocking persistMergedData and subsequent upload
-      when(() => mockStorage.persistMergedData(
+      when(() => mockDataSource.persistMergedData(
         cycleLogs: any(named: 'cycleLogs'),
         symptomLogs: any(named: 'symptomLogs'),
         customTags: any(named: 'customTags'),
       )).thenAnswer((_) async {});
       
-      when(() => mockStorage.exportCloudBackup(any())).thenAnswer((_) async => File('merged'));
+      when(() => mockDataSource.exportCloudBackup(any())).thenAnswer((_) async => Uint8List.fromList([7, 8, 9]));
       when(() => mockCloudSync.uploadEncryptedBackup(any(), any())).thenAnswer((_) async {});
-      when(() => mockMetaBox.put(any(), any())).thenAnswer((_) async {});
-      when(() => mockMetaBox.delete(any())).thenAnswer((_) async {});
+      when(() => mockMetadata.setLastSyncChecksum(any())).thenAnswer((_) async {});
+      when(() => mockMetadata.clearLocalModifiedFlag()).thenAnswer((_) async {});
 
       final result = await useCase.execute();
 
       expect(result, isTrue);
       
-      // Verify merge logic: cloud had newer updatedAt for the same ID
-      final captured = verify(() => mockStorage.persistMergedData(
+      final captured = verify(() => mockDataSource.persistMergedData(
         cycleLogs: captureAny(named: 'cycleLogs'),
         symptomLogs: any(named: 'symptomLogs'),
         customTags: any(named: 'customTags'),

@@ -53,6 +53,8 @@ void main() {
 
     // Setup MockPreferencesService
     when(() => mockPreferencesService.isBiometricEnabled()).thenAnswer((_) async => false);
+    when(() => mockPreferencesService.isCloudSyncEnabled()).thenAnswer((_) async => false);
+    when(() => mockPreferencesService.getLastSyncTime()).thenAnswer((_) async => null);
 
     // Open unencrypted box for PartnerModePage
     await Hive.openBox('partner_data');

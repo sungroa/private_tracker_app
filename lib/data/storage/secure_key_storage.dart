@@ -67,14 +67,30 @@ class SecureKeyStorage {
     try {
       keyString = await _secureStorage.read(key: cloudKeyName)
           .timeout(const Duration(seconds: 3));
-    } catch (_) {}
+    } catch (e) {
+      debugPrint("SecureKeyStorage: Cloud key read error/timeout: $e");
+    }
     
     if (keyString == null) {
       final key = Hive.generateSecureKey();
       final encoded = base64UrlEncode(key);
-      await _secureStorage.write(key: cloudKeyName, value: encoded)
-          .timeout(const Duration(seconds: 3));
-      keyString = encoded;
+      try {
+        await _secureStorage.write(key: cloudKeyName, value: encoded)
+            .timeout(const Duration(seconds: 3));
+        
+        // (C5) Re-read to confirm the write succeeded
+        keyString = await _secureStorage.read(key: cloudKeyName)
+            .timeout(const Duration(seconds: 3));
+      } catch (e) {
+        debugPrint("SecureKeyStorage: Cloud key write/re-read error: $e");
+      }
+      
+      if (keyString == null) {
+        throw StateError(
+          'Failed to persist cloud sync key to secure storage. '
+          'Cloud backups will be unrecoverable if not persisted.',
+        );
+      }
     }
     
     return base64Url.decode(keyString);

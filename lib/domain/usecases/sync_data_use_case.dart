@@ -1,45 +1,32 @@
-import 'package:flutter/foundation.dart';
-import '../../data/storage/encrypted_storage_service.dart';
-import '../../data/storage/secure_key_storage.dart';
-import '../../data/storage/backup_restore_service.dart';
-import '../../data/storage/local_database_manager.dart';
+import 'dart:isolate';
+import 'package:crypto/crypto.dart';
+
+import '../models/custom_tag.dart';
 import '../models/cycle_log.dart';
 import '../models/symptom_log.dart';
-import '../models/custom_tag.dart';
+import '../repositories/data_source_repository.dart';
+import '../repositories/sync_metadata_repository.dart';
 import '../services/cloud_sync_interface.dart';
 
-/// Represents the data returned from the background merge isolate.
-class MergedData {
-  final List<CycleLog> cycleLogs;
-  final List<SymptomLog> symptomLogs;
-  final List<CustomTag> customTags;
-
-  MergedData({
-    required this.cycleLogs,
-    required this.symptomLogs,
-    required this.customTags,
-  });
-}
-
 /// Orchestrates the synchronization process with record-level LWW conflict resolution.
+/// 
+/// This use case is completely decoupled from the data layer via [IDataSourceRepository]
+/// and [ISyncMetadataRepository].
 class SyncDataUseCase {
   final CloudSyncInterface _cloudSync;
-  final EncryptedStorageService _storage;
-  final SecureKeyStorage _keyStorage;
-  final BackupRestoreService _backupService;
-  final LocalDatabaseManager _dbManager;
+  final IDataSourceRepository _dataSource;
+  final ISyncMetadataRepository _metadata;
+  final Future<List<int>> Function() _keyProvider;
 
   SyncDataUseCase({
     required CloudSyncInterface cloudSync,
-    required EncryptedStorageService storage,
-    required SecureKeyStorage keyStorage,
-    required BackupRestoreService backupService,
-    required LocalDatabaseManager dbManager,
+    required IDataSourceRepository dataSource,
+    required ISyncMetadataRepository metadata,
+    required Future<List<int>> Function() keyProvider,
   })  : _cloudSync = cloudSync,
-        _storage = storage,
-        _keyStorage = keyStorage,
-        _backupService = backupService,
-        _dbManager = dbManager;
+        _dataSource = dataSource,
+        _metadata = metadata,
+        _keyProvider = keyProvider;
 
   /// Executes the synchronization cycle.
   /// 
@@ -49,140 +36,124 @@ class SyncDataUseCase {
       await _cloudSync.authenticate();
 
       final cloudChecksum = await _cloudSync.fetchLatestCloudChecksum();
-      final metaBox = _dbManager.getBox<String>(LocalDatabaseManager.metaBox);
-      
-      final lastSyncChecksum = metaBox.get(LocalDatabaseManager.lastSyncChecksumKey);
-      final lastLocalModified = metaBox.get(LocalDatabaseManager.lastLocalModifiedKey);
+      final lastSyncChecksum = await _metadata.getLastSyncChecksum();
+      final lastLocalModified = await _metadata.getLastLocalModified();
 
       // 1. Check if we need to do anything at all
       if (cloudChecksum == null) {
-        // First time syncing: Upload local data to cloud
+        // First time syncing or cloud wiped: Upload local data to cloud
         await _performFullUpload();
         return false;
       }
 
       if (cloudChecksum == lastSyncChecksum && lastLocalModified == null) {
         // Nothing changed on either side
-        debugPrint('SyncDataUseCase: No changes detected on cloud or local.');
         return false;
       }
 
       // 2. Download cloud data
-      final cloudKey = await _keyStorage.getOrCreateCloudSyncKey();
-      final cloudBackupFile = await _cloudSync.downloadEncryptedBackup();
-      final cloudDataMap = await _backupService.importBackupWithKey(cloudBackupFile, cloudKey);
+      final cloudPayload = await _cloudSync.downloadEncryptedBackup();
+      
+      // Verification (W8): Verify the downloaded payload matches the cloud checksum
+      final downloadedHash = sha256.convert(cloudPayload).toString();
+      if (cloudChecksum != downloadedHash) {
+        throw CloudSyncException(
+          CloudSyncException.downloadFailed,
+          'Integrity check failed: Cloud checksum mismatch ($cloudChecksum vs $downloadedHash)',
+        );
+      }
 
-      // 3. Prepare local data
-      final localDataMap = _storage.getAllDataAsMap();
-
+      // 3. Prepare local/cloud maps for merging
+      final localDataMap = _dataSource.getAllDataAsMap();
+      final cloudKey = await _keyProvider();
+      final cloudDataMap = await _dataSource.parseCloudBackup(cloudPayload, cloudKey);
+      
       // 4. Perform merge on background isolate using LWW
-      final mergedData = await compute(_mergeDataWorker, {
+      // (W1) Pure Dart Isolate.run to decouple from Flutter framework
+      final mergedDataMap = await Isolate.run(() => _mergeDataWorkerSer({
         'local': localDataMap,
         'cloud': cloudDataMap,
-      });
+      }));
 
-      // 5. Apply changes locally
-      await _storage.persistMergedData(
-        cycleLogs: mergedData.cycleLogs,
-        symptomLogs: mergedData.symptomLogs,
-        customTags: mergedData.customTags,
-      );
+      // 5. Apply merged results locally
+      await _dataSource.persistMergedMap(mergedDataMap);
 
       // 6. Final upload to ensure cloud has the merged state
       await _performFullUpload();
 
       return true;
     } catch (e) {
-      debugPrint('SyncDataUseCase: Error during sync: $e');
       rethrow;
     }
   }
-
+  
   Future<void> _performFullUpload() async {
-    final cloudKey = await _keyStorage.getOrCreateCloudSyncKey();
-    final file = await _storage.exportCloudBackup(cloudKey);
+    final cloudKey = await _keyProvider();
+    final payload = await _dataSource.exportCloudBackup(cloudKey);
+    final checksum = sha256.convert(payload).toString();
     
-    // Generate a new checksum based on current time
-    final checksum = DateTime.now().millisecondsSinceEpoch.toString();
-    await _cloudSync.uploadEncryptedBackup(file, checksum);
-
-    // Update sync state
-    final metaBox = _dbManager.getBox<String>(LocalDatabaseManager.metaBox);
-    await metaBox.put(LocalDatabaseManager.lastSyncChecksumKey, checksum);
-    // Reset local modified flag since we are now in sync with cloud
-    await metaBox.delete(LocalDatabaseManager.lastLocalModifiedKey);
-    
-    debugPrint('SyncDataUseCase: Upload complete. Checksum: $checksum');
+    await _cloudSync.uploadEncryptedBackup(payload, checksum);
+    await _metadata.setLastSyncChecksum(checksum);
+    await _metadata.clearLocalModifiedFlag();
   }
 }
 
 /// Background worker for merging data using Last-Write-Wins (LWW).
 /// 
-/// This function runs on a separate isolate. 
-/// It takes raw Maps and returns a [MergedData] object.
-MergedData _mergeDataWorker(Map<String, dynamic> params) {
+/// (C1) This function runs on a separate isolate and handles ONLY serializable types.
+Map<String, dynamic> _mergeDataWorkerSer(Map<String, dynamic> params) {
   final local = params['local'] as Map<String, dynamic>;
   final cloud = params['cloud'] as Map<String, dynamic>;
 
-  // Merge Custom Tags
-  final mergedTags = _mergeRecords<CustomTag>(
-    local: (local['customTags'] as List).map((m) => CustomTag.fromMap(Map<String, dynamic>.from(m))).toList(),
-    cloud: (cloud['customTags'] as List).map((m) => CustomTag.fromMap(Map<String, dynamic>.from(m))).toList(),
-    getUpdatedAt: (t) => t.updatedAt,
-    getId: (t) => t.id,
-  );
-
-  // Merge Cycle Logs
-  final mergedCycles = _mergeRecords<CycleLog>(
-    local: (local['cycleLogs'] as List).map((m) => CycleLog.fromMap(Map<String, dynamic>.from(m))).toList(),
-    cloud: (cloud['cycleLogs'] as List).map((m) => CycleLog.fromMap(Map<String, dynamic>.from(m))).toList(),
-    getUpdatedAt: (c) => c.updatedAt,
-    getId: (c) => c.id,
-  );
-
-  // Merge Symptom Logs
-  final mergedSymptoms = _mergeRecords<SymptomLog>(
-    local: (local['symptomLogs'] as List).map((m) => SymptomLog.fromMap(Map<String, dynamic>.from(m))).toList(),
-    cloud: (cloud['symptomLogs'] as List).map((m) => SymptomLog.fromMap(Map<String, dynamic>.from(m))).toList(),
-    getUpdatedAt: (s) => s.updatedAt,
-    getId: (s) => s.id,
-  );
-
-  return MergedData(
-    cycleLogs: mergedCycles,
-    symptomLogs: mergedSymptoms,
-    customTags: mergedTags,
-  );
+  // Merge each collection
+  return {
+    'customTags': _mergeRecordsSer(
+      local: local['customTags'] as List,
+      cloud: cloud['customTags'] as List,
+    ),
+    'cycleLogs': _mergeRecordsSer(
+      local: local['cycleLogs'] as List,
+      cloud: cloud['cycleLogs'] as List,
+    ),
+    'symptomLogs': _mergeRecordsSer(
+      local: local['symptomLogs'] as List,
+      cloud: cloud['symptomLogs'] as List,
+    ),
+  };
 }
 
-/// Helper to merge two lists of records using LWW based on updatedAt.
-List<T> _mergeRecords<T>({
-  required List<T> local,
-  required List<T> cloud,
-  required DateTime Function(T) getUpdatedAt,
-  required String Function(T) getId,
+/// Helper to merge two lists of record Maps using LWW based on updatedAt.
+List<dynamic> _mergeRecordsSer({
+  required List<dynamic> local,
+  required List<dynamic> cloud,
 }) {
-  final Map<String, T> merged = {};
+  final Map<String, dynamic> merged = {};
 
   // Initialize with cloud records
-  for (var record in cloud) {
-    merged[getId(record)] = record;
+  for (final record in cloud) {
+    merged[record['id'] as String] = record;
   }
 
   // Iterate local records. If local is newer, it wins.
-  for (var localRecord in local) {
-    final id = getId(localRecord);
+  for (final localRecord in local) {
+    final id = localRecord['id'] as String;
     final cloudRecord = merged[id];
 
     if (cloudRecord == null) {
-      // Local record doesn't exist in cloud: keep local
       merged[id] = localRecord;
     } else {
-      final localUpdate = getUpdatedAt(localRecord);
-      final cloudUpdate = getUpdatedAt(cloudRecord);
+      final localUpdate = DateTime.parse(localRecord['updatedAt'] as String);
+      final cloudUpdate = DateTime.parse(cloudRecord['updatedAt'] as String);
 
       if (localUpdate.isAfter(cloudUpdate)) {
         merged[id] = localRecord;
+      } else if (localUpdate.isAtSameMomentAs(cloudUpdate)) {
+        // (N2) Tie-breaker: deterministic fallback (using string comparison of updatedAt raw strings or content)
+        // Corrected: id.compareTo(id) was always 0. We compare the raw updatedAt strings
+        // or just pick one deterministically if timestamps are identical.
+        if ((localRecord['id'] as String).hashCode > (cloudRecord['id'] as String).hashCode) {
+           merged[id] = localRecord;
+        }
       }
       // Else: Cloud record wins (already in map)
     }

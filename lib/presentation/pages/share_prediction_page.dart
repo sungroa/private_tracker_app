@@ -28,7 +28,8 @@ class _SharePredictionPageState extends State<SharePredictionPage> {
     final cycleEvents = context.read<CycleProvider>().cycleEvents;
     final symptomLogs = context.read<SymptomProvider>().symptomLogs;
 
-    final link = PartnerSharingService.generateShareableLink(
+    final partnerService = context.read<PartnerSharingService>();
+    final link = partnerService.generateShareableLink(
       cycleEvents,
       symptomLogs,
     );
