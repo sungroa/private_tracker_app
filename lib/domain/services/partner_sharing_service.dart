@@ -6,13 +6,15 @@ import '../cycle_calculator.dart';
 import '../models/cycle_log.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
-
+/// Service responsible for encrypting and decrypting data for partner sharing.
+/// 
+/// Refactored from static to instance methods to support dependency injection and testability.
 class PartnerSharingService {
   static const String scheme = 'ptapp';
   static const String host = 'share';
 
   /// Generates an encrypted payload and its corresponding decryption key.
-  static Map<String, String> generateEncryptedPayload({
+  Map<String, String> generateEncryptedPayload({
     required List<CycleLog> cycleLogs,
     List<SymptomLog>? symptomLogs,
   }) {
@@ -21,7 +23,10 @@ class PartnerSharingService {
     }
 
     // 1. Calculate phase data
-    final nextPeriod = CycleCalculator.predictNextPeriod(cycleLogs, symptomLogs)!;
+    final nextPeriod = CycleCalculator.predictNextPeriod(cycleLogs, symptomLogs);
+    if (nextPeriod == null) {
+      throw StateError('Cannot predict next period with current data.');
+    }
     
     // Standard estimate: Ovulation is ~14 days before next period
     final predictedOvulation = nextPeriod.subtract(const Duration(days: 14));
@@ -44,7 +49,7 @@ class PartnerSharingService {
     final encrypter = enc.Encrypter(enc.AES(encryptionKey, mode: enc.AESMode.sic));
     final encrypted = encrypter.encrypt(data.toJson(), iv: iv);
     
-    // 3. Authenticate (MAC-then-Cipher or Encrypt-then-MAC — we use Encrypt-then-MAC)
+    // 3. Authenticate (Encrypt-then-MAC)
     final hmac = Hmac(sha256, hmacKey.bytes);
     final digest = hmac.convert(iv.bytes + encrypted.bytes);
     
@@ -61,13 +66,13 @@ class PartnerSharingService {
   }
 
   /// Convenience method to generate the full deep link in one go.
-  static String generateShareableLink(List<CycleLog> cycleLogs, List<SymptomLog>? symptomLogs) {
+  String generateShareableLink(List<CycleLog> cycleLogs, List<SymptomLog>? symptomLogs) {
     final result = generateEncryptedPayload(cycleLogs: cycleLogs, symptomLogs: symptomLogs);
     return generateDeepLink(result['data']!, result['key']!);
   }
 
   /// Decrypts a payload using the provided key.
-  static SharedPhaseData decryptPayload(String payload, String keyCombined) {
+  SharedPhaseData decryptPayload(String payload, String keyCombined) {
     try {
       final keyParts = keyCombined.split(':');
       if (keyParts.length != 2) throw Exception('Invalid key format');
@@ -102,14 +107,14 @@ class PartnerSharingService {
   }
 
   /// Generates a deep link URI.
-  static String generateDeepLink(String payload, String key) {
+  String generateDeepLink(String payload, String key) {
     final encodedData = Uri.encodeComponent(payload);
     final encodedKey = Uri.encodeComponent(key);
     return '$scheme://$host?data=$encodedData&key=$encodedKey';
   }
 
   /// Parses a deep link URI.
-  static Map<String, String>? parseDeepLink(Uri uri) {
+  Map<String, String>? parseDeepLink(Uri uri) {
     if (uri.scheme != scheme || uri.host != host) return null;
     
     final data = uri.queryParameters['data'];
@@ -124,9 +129,28 @@ class PartnerSharingService {
   }
 
   /// Constant-time comparison to prevent timing attacks.
-  static bool _secureEquals(String a, String b) {
-    if (a.length != b.length) return false;
+  /// 
+  /// Fix C4: Ensures that even if lengths differ, we perform a deterministic amount of work
+  /// (relative to the expected length) before returning.
+  bool _secureEquals(String a, String b) {
+    // We always compare against the expected length of 'b' (the known good value)
+    if (b.isEmpty) return a.isEmpty;
+    
+    // In our case, 'b' is always a base64Url enc-HMAC (43 chars)
+    // but we generalize to b.length.
     int result = 0;
+    
+    // If lengths differ, we still iterate through 'b' and XOR with a dummy char 
+    // to maintain a similar timing profile to a failed check on identical lengths.
+    if (a.length != b.length) {
+      result = 1; 
+      // Compare b with itself to stay busy for b.length time
+      for (int i = 0; i < b.length; i++) {
+        result |= b.codeUnitAt(i) ^ b.codeUnitAt(i); 
+      }
+      return false;
+    }
+
     for (int i = 0; i < a.length; i++) {
       result |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
     }

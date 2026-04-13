@@ -42,8 +42,10 @@ void main() {
       when(() => mockKeyStorage.getOrCreateEncryptionKey()).thenAnswer((_) async => List<int>.filled(32, 0));
       when(() => mockAppLinks.uriLinkStream).thenAnswer((_) => const Stream<Uri>.empty());
 
-      // Default behavior for smoke test: no biometric lock
+      // Default behavior for smoke test: no biometric lock and no cloud sync
       when(() => mockPreferencesService.isBiometricEnabled()).thenAnswer((_) async => false);
+      when(() => mockPreferencesService.isCloudSyncEnabled()).thenAnswer((_) async => false);
+      when(() => mockPreferencesService.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockAuthService.isHardwareSupported()).thenAnswer((_) async => false);
     });
 

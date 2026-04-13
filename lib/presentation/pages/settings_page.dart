@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import '../providers/cloud_sync_provider.dart';
 import '../../data/storage/encrypted_storage_service.dart';
+import '../../data/storage/backup_orchestrator.dart';
 import '../../data/services/export_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/notification_service.dart';
@@ -27,11 +28,58 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _hardwareSupported = false;
   bool _notificationsEnabled = false;
   TimeOfDay _reminderTime = const TimeOfDay(hour: 20, minute: 0);
+  CloudSyncProvider? _syncProvider;
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+    
+    // (C6) Listen to sync errors outside of the build method
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncProvider = context.read<CloudSyncProvider>();
+      _syncProvider?.addListener(_syncErrorListener);
+    });
+  }
+
+  @override
+  void dispose() {
+    _syncProvider?.removeListener(_syncErrorListener);
+    super.dispose();
+  }
+
+  void _syncErrorListener() {
+    if (!mounted || _syncProvider == null) return;
+    if (_syncProvider!.lastError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sync Error: ${_sanitizeError(_syncProvider!.lastError!)}'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'DISMISS',
+            textColor: Colors.white,
+            onPressed: () => _syncProvider?.clearError(),
+          ),
+        ),
+      );
+      _syncProvider?.clearError();
+    }
+  }
+
+  String _sanitizeError(dynamic error) {
+    // (W10) Error Sanitization: Prevent information leakage in UI
+    final errorStr = error.toString().toLowerCase();
+    if (errorStr.contains('password') || errorStr.contains('key')) {
+      return 'Authentication failed. Please verify your credentials.';
+    }
+    if (errorStr.contains('notfound') || errorStr.contains('404')) {
+      return 'Backup not found on cloud.';
+    }
+    if (errorStr.contains('network') || errorStr.contains('socket') || errorStr.contains('timeout')) {
+      return 'Connection timed out. Please check your internet.';
+    }
+    return 'An unexpected error occurred. Please try again later.';
   }
 
   Future<void> _loadSettings() async {
@@ -163,7 +211,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _handleCreateBackup() async {
     HapticFeedback.mediumImpact();
-    final storage = context.read<EncryptedStorageService>();
+    final backupOrchestrator = context.read<BackupOrchestrator>();
     final password = await _showPasswordDialog(
       title: 'Create Backup',
       message: 'Enter a password to encrypt your backup. You will need this password to restore your data later.',
@@ -174,7 +222,7 @@ class _SettingsPageState extends State<SettingsPage> {
       if (!mounted) return;
       setState(() => _isExporting = true);
       try {
-        final file = await storage.exportEncryptedBackup(password);
+        final file = await backupOrchestrator.exportEncryptedBackup(password);
         final xFile = XFile(file.path);
         await SharePlus.instance.share(
           ShareParams(
@@ -243,7 +291,7 @@ class _SettingsPageState extends State<SettingsPage> {
         return;
       }
 
-      final storage = context.read<EncryptedStorageService>();
+      final backupOrchestrator = context.read<BackupOrchestrator>();
       final file = File(path);
       
       final confirm = await showDialog<bool>(
@@ -274,7 +322,7 @@ class _SettingsPageState extends State<SettingsPage> {
         if (password != null && password.isNotEmpty) {
           setState(() => _isExporting = true);
           try {
-            await storage.importEncryptedBackup(file, password);
+            await backupOrchestrator.importEncryptedBackup(file, password);
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -574,27 +622,6 @@ class _SettingsPageState extends State<SettingsPage> {
           _buildSectionHeader("Cloud Synchronization", isDark),
           Consumer<CloudSyncProvider>(
             builder: (context, syncProvider, _) {
-              // Automatically show error snackbar if one occurs
-              if (syncProvider.lastError != null) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Sync Error: ${syncProvider.lastError}'),
-                        backgroundColor: Colors.redAccent,
-                        behavior: SnackBarBehavior.floating,
-                        action: SnackBarAction(
-                          label: 'DISMISS',
-                          textColor: Colors.white,
-                          onPressed: () => syncProvider.clearError(),
-                        ),
-                      ),
-                    );
-                    syncProvider.clearError();
-                  }
-                });
-              }
-
               return Column(
                 children: [
                   _buildCloudProviderCard(

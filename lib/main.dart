@@ -8,6 +8,7 @@ import 'data/storage/secure_key_storage.dart';
 import 'data/storage/local_database_manager.dart';
 import 'data/storage/backup_restore_service.dart';
 import 'data/storage/data_export_service.dart';
+import 'data/storage/backup_orchestrator.dart';
 import 'data/storage/partner_storage_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'presentation/pages/home_page.dart';
@@ -29,11 +30,14 @@ import 'presentation/pages/partner_mode_page.dart';
 import 'data/storage/data_sources/cycle_data_source.dart';
 import 'data/storage/data_sources/symptom_data_source.dart';
 import 'data/storage/data_sources/tag_data_source.dart';
-import 'domain/services/cloud_sync_interface.dart';
-import 'domain/services/cloud_sync_coordinator.dart';
 import 'data/storage/google_drive_sync_repository.dart';
+import 'data/repositories/sync_metadata_repository_impl.dart';
+import 'data/repositories/data_source_repository_impl.dart';
+import 'domain/repositories/sync_metadata_repository.dart';
+import 'domain/repositories/data_source_repository.dart';
 import 'presentation/providers/cloud_sync_provider.dart';
 import 'domain/usecases/sync_data_use_case.dart';
+import 'domain/services/cloud_sync_interface.dart';
 
 class StorageConfig {
   final String? storageBasePath;
@@ -112,7 +116,8 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
   }
 
   void _handleDeepLink(Uri uri) {
-    final params = PartnerSharingService.parseDeepLink(uri);
+    final partnerService = context.read<PartnerSharingService>();
+    final params = partnerService.parseDeepLink(uri);
     if (params != null) {
       _navigatorKey.currentState?.push(
         MaterialPageRoute(
@@ -129,6 +134,7 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<PartnerSharingService>(create: (_) => PartnerSharingService()),
         Provider<AuthService>(create: (_) => widget.authService ?? AuthService()),
         Provider<PreferencesService>(create: (_) => widget.preferencesService ?? PreferencesService()),
         Provider<NotificationService>(create: (_) => widget.notificationService ?? (NotificationService()..initialize())),
@@ -145,8 +151,16 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
           create: (context) => EncryptedStorageService(
             keyStorage: context.read<SecureKeyStorage>(),
             dbManager: context.read<LocalDatabaseManager>(),
-            backupService: context.read<BackupRestoreService>(),
             exportService: context.read<DataExportService>(),
+            cycleDataSource: context.read<CycleDataSource>(),
+            symptomDataSource: context.read<SymptomDataSource>(),
+            tagDataSource: context.read<TagDataSource>(),
+          ),
+        ),
+        Provider<BackupOrchestrator>(
+          create: (context) => BackupOrchestrator(
+            backupService: context.read<BackupRestoreService>(),
+            dbManager: context.read<LocalDatabaseManager>(),
             cycleDataSource: context.read<CycleDataSource>(),
             symptomDataSource: context.read<SymptomDataSource>(),
             tagDataSource: context.read<TagDataSource>(),
@@ -158,6 +172,13 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
             create: (context) => SymptomLogRepositoryImpl(context.read<SymptomDataSource>())),
         Provider<TagRepository>(
             create: (context) => TagRepositoryImpl(context.read<TagDataSource>())),
+        Provider<ISyncMetadataRepository>(
+            create: (context) => SyncMetadataRepositoryImpl(context.read<LocalDatabaseManager>())),
+        Provider<IDataSourceRepository>(
+            create: (context) => DataSourceRepositoryImpl(
+              context.read<EncryptedStorageService>(),
+              context.read<BackupOrchestrator>(),
+            )),
         ChangeNotifierProvider(
           create: (context) => CycleProvider(
             context.read<CycleLogRepository>(),
@@ -176,23 +197,16 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
         Provider<SyncDataUseCase>(
           create: (context) => SyncDataUseCase(
             cloudSync: context.read<CloudSyncInterface>(),
-            storage: context.read<EncryptedStorageService>(),
-            keyStorage: context.read<SecureKeyStorage>(),
-            backupService: context.read<BackupRestoreService>(),
-            dbManager: context.read<LocalDatabaseManager>(),
-          ),
-        ),
-        Provider<CloudSyncCoordinator>(
-          create: (context) => CloudSyncCoordinator(
-            cloudSync: context.read<CloudSyncInterface>(),
-            syncUseCase: context.read<SyncDataUseCase>(),
+            dataSource: context.read<IDataSourceRepository>(),
+            metadata: context.read<ISyncMetadataRepository>(),
+            keyProvider: () => context.read<SecureKeyStorage>().getOrCreateCloudSyncKey(),
           ),
         ),
         ChangeNotifierProvider(
           create: (context) => CloudSyncProvider(
-            coordinator: context.read<CloudSyncCoordinator>(),
+            syncUseCase: context.read<SyncDataUseCase>(),
             prefs: context.read<PreferencesService>(),
-          ),
+          )..init(),
         ),
       ],
       child: MaterialApp(

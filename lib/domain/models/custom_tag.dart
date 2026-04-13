@@ -14,7 +14,7 @@ class CustomTag {
     this.isDefault = false,
     DateTime? updatedAt,
   }) : id = id ?? const Uuid().v4(),
-       updatedAt = updatedAt ?? DateTime(1970);
+       updatedAt = updatedAt ?? DateTime.now();
 
   CustomTag copyWith({
     String? id,
@@ -30,23 +30,6 @@ class CustomTag {
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'isDefault': isDefault,
-      'updatedAt': updatedAt.toUtc().toIso8601String(),
-    };
-  }
-
-  factory CustomTag.fromMap(Map<String, dynamic> map) {
-    return CustomTag(
-      id: map['id'],
-      name: map['name'],
-      isDefault: map['isDefault'] ?? false,
-      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
-    );
-  }
 
   @override
   bool operator ==(Object other) {
@@ -54,11 +37,17 @@ class CustomTag {
     return other is CustomTag &&
         other.id == id &&
         other.name == name &&
-        other.isDefault == isDefault;
+        other.isDefault == isDefault &&
+        other.updatedAt.isAtSameMomentAs(updatedAt);
   }
 
   @override
   int get hashCode {
-    return id.hashCode ^ name.hashCode ^ isDefault.hashCode;
+    return Object.hash(
+      id,
+      name,
+      isDefault,
+      updatedAt,
+    );
   }
 }

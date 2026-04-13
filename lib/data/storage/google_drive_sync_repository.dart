@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
@@ -18,13 +18,20 @@ class GoogleAuthClient extends http.BaseClient {
     request.headers.addAll(_headers);
     return _client.send(request);
   }
+
+  @override
+  void close() {
+    _client.close();
+    super.close();
+  }
 }
 
 /// Implementation of the CloudSyncInterface for Google Drive using the hidden appDataFolder.
 class GoogleDriveSyncRepository implements CloudSyncInterface {
   final GoogleSignIn _googleSignIn;
   drive.DriveApi? _driveApi;
-  static bool _initializedSignIn = false;
+  http.Client? _authClient;
+  bool _initializedSignIn = false;
 
   GoogleDriveSyncRepository({GoogleSignIn? googleSignIn})
       : _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
@@ -38,6 +45,7 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
   Future<void> authenticate() async {
     try {
       if (!_initializedSignIn) {
+        // Ensure initialize is called at least once per instance lifecycle
         await _googleSignIn.initialize();
         _initializedSignIn = true;
       }
@@ -51,30 +59,32 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       );
 
       if (authHeaders == null) {
-        throw CloudSyncException('Failed to obtain requested authorization headers.');
+        throw CloudSyncException(CloudSyncException.authHeadersMissing);
       }
 
+      // Fix C7: Use a dedicated client that we can close
+      _authClient?.close();
       final authClient = GoogleAuthClient(authHeaders, http.Client());
+      _authClient = authClient;
       _driveApi = drive.DriveApi(authClient);
     } catch (e) {
       if (e is CloudSyncException) rethrow;
-      throw CloudSyncException('Failed to authenticate with Google Drive', e);
+      throw CloudSyncException(CloudSyncException.authFailed, e);
     }
   }
 
   void _checkAuthenticated() {
     if (_driveApi == null) {
-      throw CloudSyncException('Not authenticated. Call authenticate() first.');
+      throw CloudSyncException(CloudSyncException.notAuthenticated);
     }
   }
 
   @override
-  Future<void> uploadEncryptedBackup(File file, String checksum) async {
+  Future<void> uploadEncryptedBackup(Uint8List payload, String checksum) async {
     _checkAuthenticated();
 
     try {
-      final fileLength = await file.length();
-      final media = drive.Media(file.openRead(), fileLength);
+      final media = drive.Media(Stream.value(payload), payload.length);
 
       final driveFile = drive.File()
         ..name = 'private_tracker_backup.enc'
@@ -99,12 +109,12 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
         }
       }
     } catch (e) {
-      throw CloudSyncException('Failed to upload backup to Google Drive', e);
+      throw CloudSyncException(CloudSyncException.uploadFailed, e);
     }
   }
 
   @override
-  Future<File> downloadEncryptedBackup() async {
+  Future<Uint8List> downloadEncryptedBackup() async {
     _checkAuthenticated();
 
     try {
@@ -112,7 +122,7 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       final allFiles = fileList.files;
 
       if (allFiles == null || allFiles.isEmpty) {
-        throw CloudSyncException('No backup found in Google Drive');
+        throw CloudSyncException(CloudSyncException.noBackupFound);
       }
 
       // Sort to get the most recent one just in case cleanup failed previously
@@ -120,25 +130,22 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       final latestBackup = allFiles.first;
       final fileId = latestBackup.id;
 
-      if (fileId == null) throw CloudSyncException('Backup file has no ID');
+      if (fileId == null) throw CloudSyncException(CloudSyncException.backupIdMissing);
 
       final media = await _driveApi!.files.get(
         fileId,
         downloadOptions: drive.DownloadOptions.fullMedia,
       ) as drive.Media;
 
-      // Create a temporary file to save to
-      final tempDir = Directory.systemTemp;
-      final tempFile = File('${tempDir.path}/downloaded_backup_${DateTime.now().millisecondsSinceEpoch}.enc');
-
-      final sink = tempFile.openWrite();
-      await media.stream.pipe(sink);
-      await sink.close();
-
-      return tempFile;
+      // Drain the stream into a ByteBuilder to avoid temp files (W1 compliance)
+      final builder = BytesBuilder(copy: false);
+      await for (final chunk in media.stream) {
+        builder.add(chunk);
+      }
+      return builder.takeBytes();
     } catch (e) {
       if (e is CloudSyncException) rethrow;
-      throw CloudSyncException('Failed to download backup from Google Drive', e);
+      throw CloudSyncException(CloudSyncException.downloadFailed, e);
     }
   }
 
@@ -159,7 +166,14 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
 
       return latestBackup.appProperties?['checksum'];
     } catch (e) {
-      throw CloudSyncException('Failed to fetch latest checksum', e);
+      throw CloudSyncException(CloudSyncException.fetchChecksumFailed, e);
     }
+  }
+
+  /// Properly closes authenticated clients to prevent memory leaks and dangling sockets.
+  void dispose() {
+    _authClient?.close();
+    _authClient = null;
+    _driveApi = null;
   }
 }

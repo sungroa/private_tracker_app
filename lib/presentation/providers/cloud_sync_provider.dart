@@ -1,35 +1,38 @@
 import 'package:flutter/material.dart';
-import '../../domain/services/cloud_sync_coordinator.dart';
+import '../../domain/usecases/sync_data_use_case.dart';
 import '../../core/services/preferences_service.dart';
 
 class CloudSyncProvider with ChangeNotifier {
-  final CloudSyncCoordinator _coordinator;
+  final SyncDataUseCase _syncUseCase;
   final PreferencesService _prefs;
 
   bool _isSyncing = false;
+  bool _isInitialized = false;
   bool _isGoogleDriveEnabled = false;
   bool _isiCloudEnabled = false;
   String? _lastError;
   DateTime? _lastSyncTime;
 
   CloudSyncProvider({
-    required CloudSyncCoordinator coordinator,
+    required SyncDataUseCase syncUseCase,
     required PreferencesService prefs,
-  }) : _coordinator = coordinator,
-       _prefs = prefs {
-    _loadState();
-  }
+  }) : _syncUseCase = syncUseCase,
+       _prefs = prefs;
 
   bool get isSyncing => _isSyncing;
+  bool get isInitialized => _isInitialized;
   bool get isGoogleDriveEnabled => _isGoogleDriveEnabled;
   bool get isiCloudEnabled => _isiCloudEnabled;
-  bool get isCloudEnabled => _isGoogleDriveEnabled || _isiCloudEnabled;
+  bool get isCloudEnabled => (_isGoogleDriveEnabled || _isiCloudEnabled) && _isInitialized;
   String? get lastError => _lastError;
   DateTime? get lastSyncTime => _lastSyncTime;
 
-  Future<void> _loadState() async {
+  /// (W2) Explicit initialization to avoid async work in constructor.
+  Future<void> init() async {
+    if (_isInitialized) return;
     _isGoogleDriveEnabled = await _prefs.isCloudSyncEnabled();
     _lastSyncTime = await _prefs.getLastSyncTime();
+    _isInitialized = true;
     notifyListeners();
   }
 
@@ -58,6 +61,7 @@ class CloudSyncProvider with ChangeNotifier {
   }
 
   Future<void> sync() async {
+    if (!_isInitialized) await init();
     if (_isSyncing || !isCloudEnabled) return;
 
     _isSyncing = true;
@@ -65,7 +69,7 @@ class CloudSyncProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _coordinator.sync();
+      await _syncUseCase.execute();
       final now = DateTime.now();
       _lastSyncTime = now;
       await _prefs.setLastSyncTime(now);

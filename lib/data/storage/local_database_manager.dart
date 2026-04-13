@@ -30,17 +30,17 @@ class LocalDatabaseManager {
   Future<void> _performInitialization(String? basePath, List<int> encryptionKey) async {
     try {
       if (basePath != null) {
-      // In tests or custom environments
-      Hive.init(basePath);
-    } else {
-      // Standard mobile initialization
-      try {
-        await Hive.initFlutter();
-      } catch (e) {
-        // Fallback for tests if initFlutter fails
-        Hive.init('.');
+        // In tests or custom environments
+        Hive.init(basePath);
+      } else {
+        // Standard mobile initialization
+        try {
+          await Hive.initFlutter();
+        } catch (e) {
+          // Fallback for tests if initFlutter fails
+          Hive.init('.');
+        }
       }
-    }
 
     // Register Adapters
     if (!Hive.isAdapterRegistered(10)) Hive.registerAdapter(CycleLogDtoAdapter());
@@ -102,10 +102,12 @@ class LocalDatabaseManager {
         'Mood Swings',
         'Fatigue',
       ];
+      final Map<String, CustomTagDto> tagsToPut = {};
       for (var name in defaults) {
         final tag = CustomTag(name: name, isDefault: true);
-        await box.put(tag.id, CustomTagDto.fromDomain(tag));
+        tagsToPut[tag.id] = CustomTagDto.fromDomain(tag);
       }
+      await box.putAll(tagsToPut);
     }
   }
 

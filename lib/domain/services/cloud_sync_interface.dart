@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 /// Exception thrown by CloudSyncInterface operations to handle network, auth, or quota errors gracefully.
 class CloudSyncException implements Exception {
@@ -6,6 +6,16 @@ class CloudSyncException implements Exception {
   final dynamic originalError;
 
   CloudSyncException(this.message, [this.originalError]);
+
+  // (N2) Standardized error strings
+  static const String authFailed = 'Failed to authenticate with cloud storage';
+  static const String authHeadersMissing = 'Failed to obtain requested authorization headers';
+  static const String notAuthenticated = 'Not authenticated. Call authenticate() first';
+  static const String uploadFailed = 'Failed to upload backup to cloud storage';
+  static const String downloadFailed = 'Failed to download backup from cloud storage';
+  static const String fetchChecksumFailed = 'Failed to fetch latest cloud checksum';
+  static const String noBackupFound = 'No backup found in cloud storage';
+  static const String backupIdMissing = 'Backup file has no valid identifier';
 
   @override
   String toString() {
@@ -23,18 +33,18 @@ abstract class CloudSyncInterface {
   /// Should throw [CloudSyncException] if authentication fails.
   Future<void> authenticate();
 
-  /// Uploads an encrypted backup file to the cloud storage.
+  /// Uploads an encrypted backup payload to the cloud storage.
   ///
-  /// [file] The encrypted backup file to upload.
+  /// [payload] The encrypted binary data to upload.
   /// [checksum] The integrity checksum of the file.
   /// Should throw [CloudSyncException] on network, quota, or other upload errors.
-  Future<void> uploadEncryptedBackup(File file, String checksum);
+  Future<void> uploadEncryptedBackup(Uint8List payload, String checksum);
 
   /// Downloads the encrypted backup from the cloud storage.
   ///
-  /// Returns the downloaded [File].
+  /// Returns the raw binary payload.
   /// Should throw [CloudSyncException] on failure.
-  Future<File> downloadEncryptedBackup();
+  Future<Uint8List> downloadEncryptedBackup();
 
   /// Fetches the latest cloud checksum to determine if a newer backup exists.
   ///

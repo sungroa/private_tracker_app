@@ -1,69 +1,45 @@
-import 'dart:io';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../domain/models/cycle_log.dart';
 import '../../domain/models/custom_tag.dart';
 import 'secure_key_storage.dart';
 import 'local_database_manager.dart';
-import 'backup_restore_service.dart';
-import 'data_export_service.dart';
 import 'data_sources/cycle_data_source.dart';
 import 'data_sources/symptom_data_source.dart';
 import 'data_sources/tag_data_source.dart';
 import 'hive_dtos.dart';
+import 'model_mapper.dart';
+import 'data_export_service.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
-
-/// High-level orchestration service for all persistence and security operations.
+/// Core storage service focused on initialization and low-level data access.
 /// 
-/// [EncryptedStorageService] serves as the primary entry point for managing data lifecycle,
-/// including initialization, backup/restore, and CSV exports. It coordinates multiple
-/// specialized [LocalDataSource] objects and security services.
-/// 
-/// This service implements a "Zero-Knowledge" storage strategy where all data is 
-/// encrypted on-device using AES-256 before being written to disk.
+/// High-level orchestration for backup and sync is handled by [BackupOrchestrator].
 class EncryptedStorageService {
   final SecureKeyStorage _keyStorage;
   final LocalDatabaseManager _dbManager;
-  final BackupRestoreService _backupService;
   final DataExportService _exportService;
   
   final CycleDataSource _cycleDataSource;
   final SymptomDataSource _symptomDataSource;
   final TagDataSource _tagDataSource;
 
-  /// Injected constructor to support Dependency Injection (DI) and testability.
   EncryptedStorageService({
     required SecureKeyStorage keyStorage,
     required LocalDatabaseManager dbManager,
-    required BackupRestoreService backupService,
     required DataExportService exportService,
     required CycleDataSource cycleDataSource,
     required SymptomDataSource symptomDataSource,
     required TagDataSource tagDataSource,
   }) : _keyStorage = keyStorage,
        _dbManager = dbManager,
-       _backupService = backupService,
        _exportService = exportService,
        _cycleDataSource = cycleDataSource,
        _symptomDataSource = symptomDataSource,
        _tagDataSource = tagDataSource;
 
-  /// Returns true if the underlying database manager has completed initialization.
   bool get isInitialized => _dbManager.isInitialized;
 
-  // Internal mapping of box names for Hive orchestration.
-  static const String cycleLogBox = LocalDatabaseManager.cycleLogBox;
-  static const String symptomLogBox = LocalDatabaseManager.symptomLogBox;
-  static const String customTagBox = LocalDatabaseManager.customTagBox;
-
-  /// Initializes the Hive database, secure key storage, and opens encrypted boxes.
-  /// 
-  /// The process involves:
-  /// 1. retrieving or generating a 256-bit AES encryption key via [_keyStorage].
-  /// 2. Initializing [Hive] and registering type adapters.
-  /// 3. Opening encrypted boxes using the retrieved key.
-  /// 
-  /// [basePath] Optional override for the database directory (primarily for testing).
+  /// Initializes the Hive database and encryption.
   Future<void> initialize({String? basePath}) async {
     final encryptionKey = await _keyStorage.getOrCreateEncryptionKey();
     
@@ -73,11 +49,10 @@ class EncryptedStorageService {
     ).timeout(const Duration(seconds: 10));
   }
 
-  /// Low-level access to a specific Hive box. Use with caution.
+  /// Low-level access to a specific Hive box.
   Box<T> getBox<T>(String name) => _dbManager.getBox<T>(name);
 
-  /// Aggregates all user logs and produces a human-readable CSV string.
-  /// Delegates to [DataExportService].
+  /// Aggregates all user logs for CSV export.
   Future<String> exportDataToCsv() async {
     return _exportService.exportDataToCsv(
       cycleEvents: _cycleDataSource.getCycleLogs(),
@@ -85,100 +60,39 @@ class EncryptedStorageService {
     );
   }
 
-  /// Creates a password-protected, AES-encrypted, and GZIP-compressed backup file.
-  /// Delegates to [BackupRestoreService].
-  /// 
-  /// [userPassword] The password provided by the user to derive a KEK (Key Encryption Key).
-  Future<File> exportEncryptedBackup(String userPassword) async {
-    return _backupService.exportEncryptedBackup(
-      userPassword: userPassword,
-      cycleEvents: _cycleDataSource.getCycleLogs(),
-      symptomLogs: _symptomDataSource.getAllSymptomLogs(),
-      customTags: _tagDataSource.getCustomTags(),
-    );
-  }
-
-  /// Decrypts and restores application state from a [.enc] backup file.
-  /// 
-  /// WARNING: This operation wipes all current local data before importing backup contents.
-  Future<void> importEncryptedBackup(File file, String userPassword) async {
-    final data = await _backupService.importEncryptedBackup(file, userPassword);
-    await restoreData(data);
-  }
-
-  /// Exports a cloud-specific backup using a persistent secret key.
-  Future<File> exportCloudBackup(List<int> cloudKey) async {
-    return _backupService.exportBackupWithKey(
-      encryptionKey: cloudKey,
-      cycleEvents: _cycleDataSource.getCycleLogs(),
-      symptomLogs: _symptomDataSource.getAllSymptomLogs(),
-      customTags: _tagDataSource.getCustomTags(),
-    );
-  }
-
-  /// Imports a cloud-specific backup using a persistent secret key.
-  Future<void> importCloudBackup(File file, List<int> cloudKey) async {
-    final data = await _backupService.importBackupWithKey(file, cloudKey);
-    await restoreData(data);
-  }
-
-  /// Aggregates all currently stored data into a single serializable Map.
+  /// Serializes all current data into a Map.
   Map<String, dynamic> getAllDataAsMap() {
     return {
-      'cycleLogs': _cycleDataSource.getCycleLogs().map((l) => l.toMap()).toList(),
-      'symptomLogs': _symptomDataSource.getAllSymptomLogs().map((l) => l.toMap()).toList(),
-      'customTags': _tagDataSource.getCustomTags().map((t) => t.toMap()).toList(),
+      'cycleLogs': _cycleDataSource.getCycleLogs().map((l) => ModelMapper.cycleLogToMap(l)).toList(),
+      'symptomLogs': _symptomDataSource.getAllSymptomLogs().map((l) => ModelMapper.symptomLogToMap(l)).toList(),
+      'customTags': _tagDataSource.getCustomTags().map((t) => ModelMapper.customTagToMap(t)).toList(),
     };
   }
 
-  /// Internal helper to atomically update local storage with restored data.
-  Future<void> restoreData(Map<String, dynamic> data) async {
-    // 1. Wipe current state to ensure a clean restoration
-    await _cycleDataSource.clear();
-    await _symptomDataSource.clear();
-    await _tagDataSource.clear();
-
-    // 2. Import Custom Tags first (dependencies for symptom logs)
-    final List<dynamic> tagsJson = data['customTags'] ?? [];
-    for (var tagMap in tagsJson) {
-      final tag = CustomTag.fromMap(Map<String, dynamic>.from(tagMap));
-      await _tagDataSource.addCustomTag(tag.name);
-    }
-
-    // 3. Import Cycle Logs
-    final List<dynamic> cycleLogsJson = data['cycleLogs'] ?? [];
-    for (var logMap in cycleLogsJson) {
-      final event = CycleLog.fromMap(Map<String, dynamic>.from(logMap));
-      await _cycleDataSource.saveCycleLog(event);
-    }
-
-    // 4. Import Symptom Logs
-    final List<dynamic> symptomLogsJson = data['symptomLogs'] ?? [];
-    for (var logMap in symptomLogsJson) {
-      final log = SymptomLog.fromMap(Map<String, dynamic>.from(logMap));
-      await _symptomDataSource.saveSymptomLog(log);
-    }
-  }
-
-  /// Persists merged data into local storage without wiping existing records first.
-  /// Uses the provided models to update or add records.
+  /// Bulk persistence of domain models.
   Future<void> persistMergedData({
     required List<CycleLog> cycleLogs,
     required List<SymptomLog> symptomLogs,
     required List<CustomTag> customTags,
   }) async {
-    for (var tag in customTags) {
-      // Use put directly to preserve the tag's updatedAt and ID
-      await _tagDataSource.put(tag.id, CustomTagDto.fromDomain(tag));
-    }
-    for (var log in cycleLogs) {
-      await _cycleDataSource.put(log.id, CycleLogDto.fromDomain(log));
-    }
-    for (var log in symptomLogs) {
-      await _symptomDataSource.put(log.id, SymptomLogDto.fromDomain(log));
+    if (customTags.isNotEmpty) {
+      await _tagDataSource.putAll({
+        for (var tag in customTags) tag.id: CustomTagDto.fromDomain(tag)
+      });
     }
     
-    // Notify the database manager that a bulk modification occurred
+    if (cycleLogs.isNotEmpty) {
+      await _cycleDataSource.putAll({
+        for (var log in cycleLogs) log.id: CycleLogDto.fromDomain(log)
+      });
+    }
+    
+    if (symptomLogs.isNotEmpty) {
+      await _symptomDataSource.putAll({
+        for (var log in symptomLogs) log.id: SymptomLogDto.fromDomain(log)
+      });
+    }
+    
     await _dbManager.updateLastModified();
   }
 }
