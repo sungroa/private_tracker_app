@@ -1,6 +1,5 @@
 import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
-import 'package:uuid/uuid.dart';
 
 /// Represents a daily health log entry containing symptoms, mood, and FAM metrics.
 /// 
@@ -37,10 +36,9 @@ class SymptomLog {
 
   /// Creates a [SymptomLog] with validation.
   /// 
-  /// [moodRating] Defaults to 3 (Neutral). Must be between 1 and 5.
-  /// [basalBodyTemperature] If provided, must be within a physiologically valid range.
+  /// Following "Zero Technical Debt" principles, the constructor is now "pure".
   SymptomLog({
-    String? id,
+    required this.id,
     required this.date,
     required List<String> symptoms,
     required this.moodRating,
@@ -48,10 +46,8 @@ class SymptomLog {
     this.basalBodyTemperature,
     this.cervicalFluidType,
     this.lhTestPositive,
-    DateTime? updatedAt,
-  })  : id = id ?? const Uuid().v4(),
-        updatedAt = updatedAt ?? DateTime.now(),
-        symptoms = UnmodifiableListView(List.from(symptoms)),
+    required this.updatedAt,
+  })  : symptoms = UnmodifiableListView(List.from(symptoms)),
         assert(moodRating >= 1 && moodRating <= 5, 'Mood rating must be between 1 and 5'),
         assert(basalBodyTemperature == null || (basalBodyTemperature >= 35.0 && basalBodyTemperature <= 110.0), 'BBT must be a physiologically valid temperature');
 

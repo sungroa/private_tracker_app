@@ -1,25 +1,31 @@
-import '../../../domain/models/symptom_log.dart';
+import 'package:private_tracker_app/core/registry/hive_registry.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
 import '../local_database_manager.dart';
 import '../hive_dtos.dart';
+import '../model_mapper.dart';
 import 'local_data_source.dart';
 
 class SymptomDataSource extends LocalDataSource<SymptomLogDto> {
-  SymptomDataSource(LocalDatabaseManager dbManager) : super(dbManager, LocalDatabaseManager.symptomLogBox);
+  SymptomDataSource(LocalDatabaseManager dbManager)
+      : super(dbManager, HiveRegistry.symptomLogBox);
 
-  List<SymptomLog> getSymptomLogsForMonth(DateTime month) {
-    return values
+  Future<List<SymptomLog>> getSymptomLogsForMonth(DateTime month) async {
+    final dtos = await getAll();
+    return dtos
         .where((dto) => dto.date.year == month.year && dto.date.month == month.month)
-        .map((dto) => dto.toDomain())
+        .map((dto) => ModelMapper.symptomLogFromDto(dto))
         .toList();
   }
 
-  List<SymptomLog> getAllSymptomLogs() {
-    return values.map((dto) => dto.toDomain()).toList();
+  Future<List<SymptomLog>> getSymptomLogs() async {
+    final dtos = await getAll();
+    return dtos.map((dto) => ModelMapper.symptomLogFromDto(dto)).toList();
   }
 
   Future<void> saveSymptomLog(SymptomLog log) {
+    // Ensure accurate persistence metadata
     final updatedLog = log.copyWith(updatedAt: DateTime.now());
-    return put(updatedLog.id, SymptomLogDto.fromDomain(updatedLog));
+    return put(updatedLog.id, ModelMapper.symptomLogToDto(updatedLog));
   }
 
   Future<void> deleteSymptomLog(String id) {

@@ -8,9 +8,8 @@ import 'package:private_tracker_app/core/services/auth_service.dart';
 import 'package:private_tracker_app/core/services/preferences_service.dart';
 import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
-import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
-import 'package:private_tracker_app/data/storage/data_export_service.dart';
 import 'package:private_tracker_app/presentation/pages/home_page.dart';
+import 'package:private_tracker_app/core/services/service_locator.dart';
 import 'package:app_links/app_links.dart';
 
 class MockAuthService extends Mock implements AuthService {}
@@ -59,15 +58,17 @@ void main() {
 
     testWidgets('App smoke test renders home page', (WidgetTester tester) async {
       await tester.runAsync(() async {
+        final sl = ServiceLocator();
+        sl.setup(
+          auth: mockAuthService,
+          prefs: mockPreferencesService,
+          keys: mockKeyStorage,
+          db: dbManager,
+          customAppLinks: mockAppLinks,
+        );
+
         await tester.pumpWidget(PrivacyTrackerApp(
-          keyStorage: mockKeyStorage,
-          dbManager: dbManager,
-          backupService: BackupRestoreService(),
-          exportService: DataExportService(),
-          appLinks: mockAppLinks,
-          storageBasePath: tempDir.path,
-          authService: mockAuthService,
-          preferencesService: mockPreferencesService,
+          serviceLocator: sl,
         ));
 
         // Initial pump to start initialization

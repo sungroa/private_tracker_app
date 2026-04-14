@@ -1,8 +1,12 @@
 import '../models/cycle_log.dart';
-import '../models/trends.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
+import '../models/trends.dart';
 
 
+/// Maps daily health logs to cycle-relative Basal Body Temperature (BBT) data.
+/// 
+/// 💼 **Domain Context**: Transforms chronological data into cycle-day relative
+/// data points, allowing for comparison across different cycles.
 class BbtMapper {
   static List<BbtPoint> getBbtHistoryForCurrentCycle(List<CycleLog> cycleLogs, List<SymptomLog> symptomLogs) {
     if (cycleLogs.isEmpty) return [];

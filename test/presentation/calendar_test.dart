@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/presentation/widgets/custom_calendar/calendar_grid.dart';
 import 'package:private_tracker_app/presentation/widgets/custom_calendar/calendar_day_cell.dart';
-import 'package:private_tracker_app/domain/models/symptom_log.dart';
-
+import '../helpers/test_model_factory.dart';
 
 void main() {
   group('CustomCalendar Widget Tests', () {
@@ -102,7 +101,7 @@ void main() {
     testWidgets('Symptom markers are displayed on relevant days', (WidgetTester tester) async {
       final symptomDay = DateTime(2026, 4, 15);
       final symptomMap = {
-        formatKey(symptomDay): SymptomLog(
+        formatKey(symptomDay): TestModelFactory.createSymptomLog(
           date: symptomDay,
           symptoms: const ['Cramps'],
           moodRating: 3,

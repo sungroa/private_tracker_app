@@ -2,6 +2,10 @@ import '../models/trends.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
 
+/// Utility for analyzing symptom frequency and mood trends.
+/// 
+/// 💼 **Domain Context**: Provides categorical analysis of health biomarkers,
+/// identifying prevalent patterns in user-reported data.
 class SymptomAnalyzer {
   static List<MapEntry<String, int>> calculateTopSymptoms(List<SymptomLog> logs) {
     final Map<String, int> counts = {};

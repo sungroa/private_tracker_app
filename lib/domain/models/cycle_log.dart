@@ -1,5 +1,4 @@
 import 'package:meta/meta.dart';
-import 'package:uuid/uuid.dart';
 
 /// Represents a menstruation cycle entry (period log).
 /// 
@@ -28,19 +27,17 @@ class CycleLog {
 
   /// Creates a [CycleLog] with validation.
   /// 
-  /// [id] If null, a new v4 UUID will be generated.
-  /// [flowIntensity] Must be between 1 and 5.
-  /// [endDate] Must not be before [startDate].
+  /// Following "Zero Technical Debt" principles, the constructor is now "pure".
+  /// ID generation and timestamping should be handled by a factory or the 
+  /// repository layer before instantiation.
   CycleLog({
-    String? id,
+    required this.id,
     required this.startDate,
     this.endDate,
     this.notes,
     this.flowIntensity = 3,
-    DateTime? updatedAt,
-  })  : id = id ?? const Uuid().v4(),
-        updatedAt = updatedAt ?? DateTime.now(),
-        assert(flowIntensity >= 1 && flowIntensity <= 5, 'Flow intensity must be between 1 and 5'),
+    required this.updatedAt,
+  })  : assert(flowIntensity >= 1 && flowIntensity <= 5, 'Flow intensity must be between 1 and 5'),
         assert(endDate == null || !endDate.isBefore(startDate), 'End date cannot be before start date');
 
   /// Creates a copy of this object with potentially changed values.

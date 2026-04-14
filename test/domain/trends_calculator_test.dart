@@ -1,32 +1,29 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/trends_calculator.dart';
-import 'package:private_tracker_app/domain/models/symptom_log.dart';
-
+import '../helpers/test_model_factory.dart';
 
 void main() {
   group('TrendsCalculator BBT Mapping', () {
     final now = DateTime(2026, 4, 1);
     
     final cycleLogs = [
-      CycleLog(startDate: now.subtract(const Duration(days: 5))), // Cycle started 5 days ago
+      TestModelFactory.createCycleLog(startDate: now.subtract(const Duration(days: 5))), // Cycle started 5 days ago
     ];
 
     final symptomLogs = [
-      SymptomLog(
+      TestModelFactory.createSymptomLog(
         date: now.subtract(const Duration(days: 4)),
         symptoms: const ['Cramps'],
         moodRating: 3,
         basalBodyTemperature: 36.5,
       ),
-      SymptomLog(
+      TestModelFactory.createSymptomLog(
         date: now.subtract(const Duration(days: 3)),
-        symptoms: const [],
         moodRating: 4,
         basalBodyTemperature: 36.6,
         lhTestPositive: true,
       ),
-      SymptomLog(
+      TestModelFactory.createSymptomLog(
         date: now.subtract(const Duration(days: 2)),
         symptoms: const ['Headache'],
         moodRating: 2,
@@ -55,10 +52,10 @@ void main() {
     test('should only include logs with BBT', () {
       final logsWithMissingBbt = [
         ...symptomLogs,
-        SymptomLog(
+        TestModelFactory.createSymptomLog(
           date: now.subtract(const Duration(days: 1)),
-          symptoms: const [],
           moodRating: 5,
+          basalBodyTemperature: null,
         ), // No BBT
       ];
       
@@ -68,14 +65,13 @@ void main() {
 
     test('should only include logs from the current cycle', () {
       final multipleCycles = [
-        CycleLog(startDate: now.subtract(const Duration(days: 5))), // Current
-        CycleLog(startDate: now.subtract(const Duration(days: 35))), // Previous
+        TestModelFactory.createCycleLog(startDate: now.subtract(const Duration(days: 5))), // Current
+        TestModelFactory.createCycleLog(startDate: now.subtract(const Duration(days: 35))), // Previous
       ];
       
       final oldLogs = [
-        SymptomLog(
+        TestModelFactory.createSymptomLog(
           date: now.subtract(const Duration(days: 34)),
-          symptoms: const [],
           moodRating: 3,
           basalBodyTemperature: 36.8,
         ),

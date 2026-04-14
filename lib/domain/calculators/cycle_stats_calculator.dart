@@ -1,6 +1,12 @@
 import 'dart:math';
 import '../models/cycle_log.dart';
 
+/// Statistical utilities for menstruation cycle data analysis.
+/// 
+/// 💼 **Domain Context**: This calculator handles the heavy mathematical lifting
+/// for long-term data trends. It utilizes statistical methodologies like
+/// Interquartile Range (IQR) for outlier filtering and Exponential Decay for
+/// weighted averages.
 class CycleStatsCalculator {
   static const int defaultCycleLength = 28;
 

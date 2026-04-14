@@ -14,10 +14,9 @@ import 'package:private_tracker_app/core/services/auth_service.dart';
 import 'package:private_tracker_app/core/services/preferences_service.dart';
 import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
-import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
-import 'package:private_tracker_app/data/storage/data_export_service.dart';
 import 'package:private_tracker_app/data/storage/partner_storage_service.dart';
 import 'package:private_tracker_app/presentation/pages/home_page.dart';
+import 'package:private_tracker_app/core/services/service_locator.dart';
 import 'package:app_links/app_links.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
@@ -101,15 +100,17 @@ void main() {
 
   testWidgets('Integration: Pushed route can access PartnerStorageService', (WidgetTester tester) async {
     await tester.runAsync(() async {
+      final sl = ServiceLocator();
+      sl.setup(
+        keys: SecureKeyStorage(mockSecureStorage),
+        db: LocalDatabaseManager(),
+        auth: mockAuthService,
+        prefs: mockPreferencesService,
+        customAppLinks: mockAppLinks,
+      );
+
       await tester.pumpWidget(PrivacyTrackerApp(
-        keyStorage: SecureKeyStorage(mockSecureStorage),
-        dbManager: LocalDatabaseManager(),
-        backupService: BackupRestoreService(),
-        exportService: DataExportService(),
-        appLinks: mockAppLinks,
-        storageBasePath: tempDir.path,
-        authService: mockAuthService,
-        preferencesService: mockPreferencesService,
+        serviceLocator: sl,
       ));
       
       // Advance beyond the splash/loading screen

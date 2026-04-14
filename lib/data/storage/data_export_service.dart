@@ -1,6 +1,8 @@
 import 'dart:isolate';
 import '../../domain/models/cycle_log.dart';
-import 'package:private_tracker_app/domain/models/symptom_log.dart';
+import '../../domain/models/symptom_log.dart';
+import '../../domain/models/custom_tag.dart';
+import 'model_mapper.dart';
 
 class DataExportService {
   /// Exports all data to a CSV string.
@@ -11,6 +13,21 @@ class DataExportService {
     required List<SymptomLog> symptomLogs,
   }) async {
     return Isolate.run(() => _generateCsv(cycleEvents, symptomLogs));
+  }
+
+  /// Aggregates all user logs and tags into a JSON-ready map for cloud sync or backup.
+  /// 
+  /// WARNING: Use with caution as this loads all data into memory at once.
+  Map<String, dynamic> exportAllDataAsJsonReadyMap({
+    required List<CycleLog> cycleLogs,
+    required List<SymptomLog> symptomLogs,
+    required List<CustomTag> customTags,
+  }) {
+    return {
+      'cycleLogs': cycleLogs.map((l) => ModelMapper.cycleLogToMap(l)).toList(),
+      'symptomLogs': symptomLogs.map((l) => ModelMapper.symptomLogToMap(l)).toList(),
+      'customTags': customTags.map((t) => ModelMapper.customTagToMap(t)).toList(),
+    };
   }
 }
 

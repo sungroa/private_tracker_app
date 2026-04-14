@@ -15,7 +15,7 @@ abstract class IDataSourceRepository {
   /// - 'cycleLogs': List of Map
   /// - 'symptomLogs': List of Map
   /// - 'customTags': List of Map
-  Map<String, dynamic> getAllDataAsMap();
+  Future<Map<String, dynamic>> getAllDataAsMap();
 
   /// Persists merged domain objects into local storage.
   /// 
