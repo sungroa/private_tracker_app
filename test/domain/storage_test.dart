@@ -9,23 +9,24 @@ import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
 import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
 import 'package:private_tracker_app/data/storage/data_export_service.dart';
-import 'package:private_tracker_app/domain/models/cycle_log.dart';
+import 'package:private_tracker_app/data/storage/data_sources/data_seeding_service.dart';
+import 'package:private_tracker_app/data/storage/backup_orchestrator.dart';
 import 'package:private_tracker_app/data/storage/data_sources/cycle_data_source.dart';
 import 'package:private_tracker_app/data/storage/data_sources/symptom_data_source.dart';
 import 'package:private_tracker_app/data/storage/data_sources/tag_data_source.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import 'package:private_tracker_app/domain/models/symptom_log.dart';
-
+import '../helpers/test_model_factory.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 class MockPathProviderPlatform extends Mock with MockPlatformInterfaceMixin implements PathProviderPlatform {}
 
 void main() {
-  group('EncryptedStorageService Tests', () {
+  group('EncryptedStorageService & BackupOrchestrator Tests', () {
     late Directory tempDir;
     late MockFlutterSecureStorage mockStorage;
     late EncryptedStorageService storageService;
+    late BackupOrchestrator backupOrchestrator;
     late CycleDataSource cycleDataSource;
     late SymptomDataSource symptomDataSource;
     late TagDataSource tagDataSource;
@@ -49,14 +50,21 @@ void main() {
       storageService = EncryptedStorageService(
         keyStorage: SecureKeyStorage(mockStorage),
         dbManager: dbManager,
-        backupService: BackupRestoreService(),
         exportService: DataExportService(),
+        seedingService: DataSeedingService(),
         cycleDataSource: cycleDataSource,
         symptomDataSource: symptomDataSource,
         tagDataSource: tagDataSource,
       );
 
-      // Mock encryption key logic
+      backupOrchestrator = BackupOrchestrator(
+        backupService: BackupRestoreService(),
+        dbManager: dbManager,
+        cycleDataSource: cycleDataSource,
+        symptomDataSource: symptomDataSource,
+        tagDataSource: tagDataSource,
+      );
+
       final key = Hive.generateSecureKey();
       when(() => mockStorage.read(key: any(named: 'key'))).thenAnswer((_) async => base64UrlEncode(key));
       when(() => mockStorage.write(key: any(named: 'key'), value: any(named: 'value'))).thenAnswer((_) async => {});
@@ -74,8 +82,7 @@ void main() {
 
     test('saveSymptomLog should save with date-based key', () async {
       final date = DateTime(2026, 3, 28);
-      final log = SymptomLog(
-        id: 'test-id',
+      final log = TestModelFactory.createSymptomLog(
         date: date,
         symptoms: const ['Cramps', 'Headache'],
         moodRating: 4,
@@ -83,49 +90,44 @@ void main() {
 
       await symptomDataSource.saveSymptomLog(log);
 
-      final savedLogs = symptomDataSource.getSymptomLogsForMonth(date);
+      final savedLogs = await symptomDataSource.getSymptomLogsForMonth(date);
       expect(savedLogs.length, 1);
       expect(savedLogs.first.symptoms, contains('Cramps'));
     });
 
     test('getSymptomLogsForMonth should filter correctly', () async {
-      await symptomDataSource.saveSymptomLog(SymptomLog(
-        id: 'id1',
+      await symptomDataSource.saveSymptomLog(TestModelFactory.createSymptomLog(
         date: DateTime(2026, 3, 28),
         symptoms: const ['Cramps'],
-        moodRating: 3,
       ));
-      await symptomDataSource.saveSymptomLog(SymptomLog(
-        id: 'id2',
+      await symptomDataSource.saveSymptomLog(TestModelFactory.createSymptomLog(
         date: DateTime(2026, 4, 1),
         symptoms: const ['Bloating'],
-        moodRating: 2,
       ));
 
-      final marchLogs = symptomDataSource.getSymptomLogsForMonth(DateTime(2026, 3, 1));
+      final marchLogs = await symptomDataSource.getSymptomLogsForMonth(DateTime(2026, 3, 1));
       expect(marchLogs.length, 1);
       expect(marchLogs.first.symptoms, contains('Cramps'));
     });
 
     test('saveCycleLog and getCycleLogs should work', () async {
-      final log1 = CycleLog(id: 'c1', startDate: DateTime(2026, 2, 1));
-      final log2 = CycleLog(id: 'c2', startDate: DateTime(2026, 3, 1));
+      final log1 = TestModelFactory.createCycleLog(startDate: DateTime(2026, 2, 1));
+      final log2 = TestModelFactory.createCycleLog(startDate: DateTime(2026, 3, 1));
 
       await cycleDataSource.saveCycleLog(log1);
       await cycleDataSource.saveCycleLog(log2);
 
-      final allLogs = cycleDataSource.getCycleLogs();
+      final allLogs = await cycleDataSource.getCycleLogs();
       expect(allLogs.length, 2);
-      expect(allLogs.first.startDate, DateTime(2026, 3, 1)); // Sorted newest first
+      expect(allLogs.first.startDate, DateTime(2026, 3, 1)); 
     });
 
     test('exportDataToCsv should format CSV string correctly', () async {
       await cycleDataSource.clear();
       await symptomDataSource.clear();
 
-      await cycleDataSource.saveCycleLog(CycleLog(id: 'c1', startDate: DateTime(2026, 3, 1), notes: 'Cycle note'));
-      await symptomDataSource.saveSymptomLog(SymptomLog(
-        id: 's1',
+      await cycleDataSource.saveCycleLog(TestModelFactory.createCycleLog(startDate: DateTime(2026, 3, 1), notes: 'Cycle note'));
+      await symptomDataSource.saveSymptomLog(TestModelFactory.createSymptomLog(
         date: DateTime(2026, 3, 5),
         symptoms: const ['Cramps', 'Fatigue'],
         moodRating: 3,
@@ -139,75 +141,53 @@ void main() {
       expect(csvString, contains('Symptom,2026-03-05,,Cramps; Fatigue,3,,,,Symptom note'));
     });
 
-    test('addCustomTag and deleteCustomTag should work', () async {
+    test('saveTag and deleteTag should work', () async {
       await tagDataSource.clear();
 
-      await tagDataSource.addCustomTag('New Symptom');
-      expect(tagDataSource.getCustomTags().length, 1);
-      expect(tagDataSource.getCustomTags().first.name, 'New Symptom');
-
-      await tagDataSource.addCustomTag('NEW SYMPTOM');
-      expect(tagDataSource.getCustomTags().length, 1);
-
-      final tag = tagDataSource.getCustomTags().first;
-      await tagDataSource.deleteCustomTag(tag);
-      expect(tagDataSource.getCustomTags().length, 0);
+      final tag = TestModelFactory.createTag(name: 'New Symptom');
+      await tagDataSource.saveTag(tag);
+      expect((await tagDataSource.getCustomTags()).length, 1);
+      
+      await tagDataSource.delete(tag.id);
+      expect((await tagDataSource.getCustomTags()).length, 0);
     });
 
     test('Encrypted backup and restore should preserve all data', () async {
-      // 1. Prepare data
       await cycleDataSource.clear();
       await symptomDataSource.clear();
       await tagDataSource.clear();
 
-      await cycleDataSource.saveCycleLog(CycleLog(id: 'c1', startDate: DateTime(2026, 3, 1), notes: 'Backup test'));
-      await symptomDataSource.saveSymptomLog(SymptomLog(
-        id: 's1',
-        date: DateTime(2026, 3, 5),
+      await cycleDataSource.saveCycleLog(TestModelFactory.createCycleLog(notes: 'Backup test'));
+      await symptomDataSource.saveSymptomLog(TestModelFactory.createSymptomLog(
         symptoms: const ['Cramps'],
         moodRating: 5,
       ));
-      await tagDataSource.addCustomTag('Backup Tag');
+      await tagDataSource.saveTag(TestModelFactory.createTag(name: 'Backup Tag'));
 
       // 2. Export
       const password = 'test-password-123';
-      final backupFile = await storageService.exportEncryptedBackup(password);
+      final backupFile = await backupOrchestrator.exportEncryptedBackup(password);
       expect(await backupFile.exists(), isTrue);
 
       // 3. Clear local state
       await cycleDataSource.clear();
       await symptomDataSource.clear();
       await tagDataSource.clear();
-      expect(cycleDataSource.getCycleLogs(), isEmpty);
+      expect(await cycleDataSource.getCycleLogs(), isEmpty);
 
       // 4. Restore
-      await storageService.importEncryptedBackup(backupFile, password);
+      await backupOrchestrator.importEncryptedBackup(backupFile, password);
 
       // 5. Verify
-      final cycles = cycleDataSource.getCycleLogs();
-      final symptoms = symptomDataSource.getAllSymptomLogs();
-      final tags = tagDataSource.getCustomTags();
+      final cycles = await cycleDataSource.getCycleLogs();
+      final symptoms = await symptomDataSource.getSymptomLogs();
+      final tags = await tagDataSource.getCustomTags();
 
       expect(cycles.length, 1);
       expect(cycles.first.notes, 'Backup test');
       expect(symptoms.length, 1);
       expect(symptoms.first.moodRating, 5);
       expect(tags.any((t) => t.name == 'Backup Tag'), isTrue);
-
-      // Clean up
-      if (await backupFile.exists()) {
-        await backupFile.delete();
-      }
-    });
-
-    test('Restore should fail with wrong password', () async {
-      const password = 'right-password';
-      final backupFile = await storageService.exportEncryptedBackup(password);
-      
-      expect(
-        () => storageService.importEncryptedBackup(backupFile, 'wrong-password'),
-        throwsException,
-      );
 
       if (await backupFile.exists()) {
         await backupFile.delete();

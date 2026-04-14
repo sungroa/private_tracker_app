@@ -6,6 +6,7 @@ import 'package:private_tracker_app/domain/services/cloud_sync_interface.dart';
 import 'package:private_tracker_app/domain/repositories/data_source_repository.dart';
 import 'package:private_tracker_app/domain/repositories/sync_metadata_repository.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
+import 'package:private_tracker_app/data/storage/model_mapper.dart';
 
 class MockCloudSync extends Mock implements CloudSyncInterface {}
 class MockDataSourceRepository extends Mock implements IDataSourceRepository {}
@@ -76,22 +77,18 @@ void main() {
       when(() => mockCloudSync.downloadEncryptedBackup()).thenAnswer((_) async => Uint8List.fromList([4, 5, 6]));
       
       when(() => mockDataSource.parseCloudBackup(any(), any())).thenAnswer((_) async => {
-        'cycleLogs': [cloudLog.toMap()],
+        'cycleLogs': [ModelMapper.cycleLogToMap(cloudLog)],
         'symptomLogs': [],
         'customTags': [],
       });
 
-      when(() => mockDataSource.getAllDataAsMap()).thenReturn({
-        'cycleLogs': [localLog.toMap()],
+      when(() => mockDataSource.getAllDataAsMap()).thenAnswer((_) async => {
+        'cycleLogs': [ModelMapper.cycleLogToMap(localLog)],
         'symptomLogs': [],
         'customTags': [],
       });
 
-      when(() => mockDataSource.persistMergedData(
-        cycleLogs: any(named: 'cycleLogs'),
-        symptomLogs: any(named: 'symptomLogs'),
-        customTags: any(named: 'customTags'),
-      )).thenAnswer((_) async {});
+      when(() => mockDataSource.persistMergedMap(any())).thenAnswer((_) async {});
       
       when(() => mockDataSource.exportCloudBackup(any())).thenAnswer((_) async => Uint8List.fromList([7, 8, 9]));
       when(() => mockCloudSync.uploadEncryptedBackup(any(), any())).thenAnswer((_) async {});
@@ -102,14 +99,11 @@ void main() {
 
       expect(result, isTrue);
       
-      final captured = verify(() => mockDataSource.persistMergedData(
-        cycleLogs: captureAny(named: 'cycleLogs'),
-        symptomLogs: any(named: 'symptomLogs'),
-        customTags: any(named: 'customTags'),
-      )).captured;
+      final captured = verify(() => mockDataSource.persistMergedMap(captureAny())).captured;
 
-      final List<CycleLog> mergedCycles = captured.first;
-      expect(mergedCycles.first.updatedAt.isAtSameMomentAs(cloudLog.updatedAt), isTrue);
+      final Map<String, dynamic> mergedMap = captured.first;
+      final List<dynamic> mergedCycles = mergedMap['cycleLogs'];
+      expect(mergedCycles.first['updatedAt'], cloudLog.updatedAt.toUtc().toIso8601String());
     });
   });
 }

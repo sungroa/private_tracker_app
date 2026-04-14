@@ -1,9 +1,6 @@
 import 'dart:isolate';
 import 'package:crypto/crypto.dart';
 
-import '../models/custom_tag.dart';
-import '../models/cycle_log.dart';
-import '../models/symptom_log.dart';
 import '../repositories/data_source_repository.dart';
 import '../repositories/sync_metadata_repository.dart';
 import '../services/cloud_sync_interface.dart';
@@ -64,7 +61,7 @@ class SyncDataUseCase {
       }
 
       // 3. Prepare local/cloud maps for merging
-      final localDataMap = _dataSource.getAllDataAsMap();
+      final localDataMap = await _dataSource.getAllDataAsMap();
       final cloudKey = await _keyProvider();
       final cloudDataMap = await _dataSource.parseCloudBackup(cloudPayload, cloudKey);
       

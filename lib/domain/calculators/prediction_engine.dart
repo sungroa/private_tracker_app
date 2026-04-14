@@ -2,7 +2,9 @@ import '../models/cycle_log.dart';
 
 /// Engine responsible for projecting future menstruation and fertility events.
 /// 
-/// This class encapsulates the mathematical models used for predictions.
+/// 💼 **Domain Context**: Encapsulates the mathematical models used for 
+/// temporal projections. It implements standard fertility awareness protocols,
+/// assuming a statistical luteal phase of 14 days.
 class PredictionEngine {
   /// Predicts the next period start date based on historical average cycle length.
   /// 

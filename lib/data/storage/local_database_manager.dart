@@ -1,25 +1,26 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../domain/models/custom_tag.dart';
+import '../../core/registry/hive_registry.dart';
+import '../../core/utils/security_logger.dart';
 import 'hive_dtos.dart';
 
 class LocalDatabaseManager {
-  static const String cycleLogBox = 'cycle_logs';
-  static const String symptomLogBox = 'symptom_logs';
-  static const String customTagBox = 'custom_tags';
-  static const String metaBox = 'meta';
-  static const String partnerDataBox = 'partner_data';
-  
-  static const String lastLocalModifiedKey = 'last_local_modified';
-  static const String lastSyncChecksumKey = 'last_sync_checksum';
+  /// Default timeout for database operations.
+  static const Duration _dbTimeout = Duration(seconds: 5);
 
   bool _isInitialized = false;
   Future<void>? _initializeFuture;
+
+  // Cached box references for performance
+  Box<CycleLogDto>? _cycleBox;
+  Box<SymptomLogDto>? _symptomBox;
+  Box<CustomTagDto>? _tagBox;
+  Box<String>? _metaBox;
 
   bool get isInitialized => _isInitialized;
 
   /// Initializes Hive and the encrypted boxes.
   Future<void> initialize({String? basePath, required List<int> encryptionKey}) async {
-    if (_isInitialized && Hive.isBoxOpen(symptomLogBox)) return;
+    if (_isInitialized && _cycleBox != null && Hive.isBoxOpen(HiveRegistry.cycleLogBox)) return;
     
     if (_initializeFuture != null) return _initializeFuture;
 
@@ -30,107 +31,117 @@ class LocalDatabaseManager {
   Future<void> _performInitialization(String? basePath, List<int> encryptionKey) async {
     try {
       if (basePath != null) {
-        // In tests or custom environments
         Hive.init(basePath);
       } else {
-        // Standard mobile initialization
         try {
           await Hive.initFlutter();
         } catch (e) {
-          // Fallback for tests if initFlutter fails
+          SecurityLogger.logError("Hive.initFlutter failed, falling back to Hive.init('.')", error: e);
           Hive.init('.');
         }
       }
 
-    // Register Adapters
-    if (!Hive.isAdapterRegistered(10)) Hive.registerAdapter(CycleLogDtoAdapter());
-    if (!Hive.isAdapterRegistered(11)) Hive.registerAdapter(SymptomLogDtoAdapter());
-    if (!Hive.isAdapterRegistered(12)) Hive.registerAdapter(CustomTagDtoAdapter());
+      // Register Adapters
+      _registerAdapters();
 
-    await Hive.openBox<CycleLogDto>(
-      cycleLogBox,
-      encryptionCipher: HiveAesCipher(encryptionKey),
-    ).timeout(const Duration(seconds: 5));
-    
-    await Hive.openBox<SymptomLogDto>(
-      symptomLogBox,
-      encryptionCipher: HiveAesCipher(encryptionKey),
-    ).timeout(const Duration(seconds: 5));
-    
-    await Hive.openBox<CustomTagDto>(
-      customTagBox,
-      encryptionCipher: HiveAesCipher(encryptionKey),
-    ).timeout(const Duration(seconds: 5));
+      final cipher = HiveAesCipher(encryptionKey);
 
-    // Open meta box (unencrypted, stores only flags)
-    await Hive.openBox<String>(metaBox).timeout(const Duration(seconds: 5));
-    
-    // Open partner data box
-    try {
-      await Hive.openBox(
-        partnerDataBox,
-        encryptionCipher: HiveAesCipher(encryptionKey),
-      ).timeout(const Duration(seconds: 5));
-    } catch (e) {
-      // If the box exists and is unencrypted, opening with a cipher throws.
-      // We'll delete it and reopen encrypted. Partner data is syncable and safe to drop.
-      await Hive.deleteBoxFromDisk(partnerDataBox);
-      await Hive.openBox(
-        partnerDataBox,
-        encryptionCipher: HiveAesCipher(encryptionKey),
-      ).timeout(const Duration(seconds: 5));
-    }
-
-    // Pre-populate defaults if empty
-    await _initializeDefaultTags();
-    
-    _isInitialized = true;
-    } catch (e) {
+      // (P1) Parallelize box opening for improved startup performance
+      final boxes = await Future.wait([
+        Hive.openBox<CycleLogDto>(HiveRegistry.cycleLogBox, encryptionCipher: cipher).timeout(_dbTimeout),
+        Hive.openBox<SymptomLogDto>(HiveRegistry.symptomLogBox, encryptionCipher: cipher).timeout(_dbTimeout),
+        Hive.openBox<CustomTagDto>(HiveRegistry.customTagBox, encryptionCipher: cipher).timeout(_dbTimeout),
+        Hive.openBox<String>(HiveRegistry.metaBox).timeout(_dbTimeout),
+      ]);
+      
+      _cycleBox = boxes[0] as Box<CycleLogDto>;
+      _symptomBox = boxes[1] as Box<SymptomLogDto>;
+      _tagBox = boxes[2] as Box<CustomTagDto>;
+      _metaBox = boxes[3] as Box<String>;
+      
+      // Open partner data box with non-destructive error handling
+      await _openPartnerBox(cipher);
+      
+      _isInitialized = true;
+      SecurityLogger.logEvent("LocalDatabaseManager initialized successfully");
+    } catch (e, stack) {
       _initializeFuture = null;
+      SecurityLogger.logError("LocalDatabaseManager initialization failed", error: e, stackTrace: stack);
       rethrow;
     }
   }
 
-  Future<void> _initializeDefaultTags() async {
-    final box = Hive.box<CustomTagDto>(customTagBox);
-    if (box.isEmpty) {
-      final defaults = [
-        'Cramps',
-        'Bloating',
-        'Acne',
-        'Headache',
-        'Mood Swings',
-        'Fatigue',
-      ];
-      final Map<String, CustomTagDto> tagsToPut = {};
-      for (var name in defaults) {
-        final tag = CustomTag(name: name, isDefault: true);
-        tagsToPut[tag.id] = CustomTagDto.fromDomain(tag);
-      }
-      await box.putAll(tagsToPut);
+  void _registerAdapters() {
+    if (!Hive.isAdapterRegistered(HiveRegistry.cycleLogTypeId)) Hive.registerAdapter(CycleLogDtoAdapter());
+    if (!Hive.isAdapterRegistered(HiveRegistry.symptomLogTypeId)) Hive.registerAdapter(SymptomLogDtoAdapter());
+    if (!Hive.isAdapterRegistered(HiveRegistry.customTagTypeId)) Hive.registerAdapter(CustomTagDtoAdapter());
+  }
+
+  Future<void> _openPartnerBox(HiveAesCipher cipher) async {
+    try {
+      await Hive.openBox(
+        HiveRegistry.partnerDataBox,
+        encryptionCipher: cipher,
+      ).timeout(_dbTimeout);
+    } catch (e) {
+      // (S2) If encryption fails, we don't silently delete. 
+      // We log it and let the calling orchestration decide (e.g., re-link partner).
+      SecurityLogger.logError(
+        "Failed to open partner data box. This may require re-pairing with partner.",
+        error: e
+      );
+      
+      // Re-throwing so the application knows initialization wasn't 100% clean
+      rethrow;
     }
   }
 
-  Box<T> getBox<T>(String name) => Hive.box<T>(name);
+  /// Low-level access to a specific Hive box. Internal to data layer.
+  Box<T> getBox<T>(String name) {
+    if (!_isInitialized) {
+      throw StateError('Attempted to access box "$name" before database initialization.');
+    }
+    
+    // Use cached references when possible to avoid Map lookups in Hive.
+    if (name == HiveRegistry.cycleLogBox && _cycleBox is Box<T>) return _cycleBox as Box<T>;
+    if (name == HiveRegistry.symptomLogBox && _symptomBox is Box<T>) return _symptomBox as Box<T>;
+    if (name == HiveRegistry.customTagBox && _tagBox is Box<T>) return _tagBox as Box<T>;
+    if (name == HiveRegistry.metaBox && _metaBox is Box<T>) return _metaBox as Box<T>;
+    
+    return Hive.box<T>(name);
+  }
 
   /// Updates the global creation/modification timestamp in the meta box.
   Future<void> updateLastModified() async {
-    final box = Hive.box<String>(metaBox);
-    await box.put(lastLocalModifiedKey, DateTime.now().toIso8601String());
+    try {
+      final box = getBox<String>(HiveRegistry.metaBox);
+      await box.put(HiveRegistry.lastLocalModifiedKey, DateTime.now().toIso8601String());
+    } catch (e) {
+      SecurityLogger.logError("Failed to update last modified timestamp", error: e);
+    }
   }
   
   /// Closes all managed boxes and resets the initialization state.
   Future<void> close() async {
     if (!_isInitialized) return;
     
-    // Use type-safe box retrieval to avoid "Box already open with different type" errors
-    if (Hive.isBoxOpen(cycleLogBox)) await Hive.box<CycleLogDto>(cycleLogBox).close();
-    if (Hive.isBoxOpen(symptomLogBox)) await Hive.box<SymptomLogDto>(symptomLogBox).close();
-    if (Hive.isBoxOpen(customTagBox)) await Hive.box<CustomTagDto>(customTagBox).close();
-    if (Hive.isBoxOpen(metaBox)) await Hive.box<String>(metaBox).close();
-    if (Hive.isBoxOpen(partnerDataBox)) await Hive.box(partnerDataBox).close();
-    
     _isInitialized = false;
     _initializeFuture = null;
+
+    // Specifying types is required by Hive when boxes were opened with explicit types
+    final boxesToClose = [
+      if (_cycleBox != null) _cycleBox!.close(),
+      if (_symptomBox != null) _symptomBox!.close(),
+      if (_tagBox != null) _tagBox!.close(),
+      if (_metaBox != null) _metaBox!.close(),
+      if (Hive.isBoxOpen(HiveRegistry.partnerDataBox)) Hive.box(HiveRegistry.partnerDataBox).close(),
+    ];
+    
+    _cycleBox = null;
+    _symptomBox = null;
+    _tagBox = null;
+    _metaBox = null;
+    
+    await Future.wait(boxesToClose);
   }
 }

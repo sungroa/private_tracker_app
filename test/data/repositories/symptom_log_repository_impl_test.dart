@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:private_tracker_app/domain/models/symptom_log.dart';
 import 'package:private_tracker_app/data/repositories/symptom_log_repository_impl.dart';
 import 'package:private_tracker_app/data/storage/data_sources/symptom_data_source.dart';
+import '../../helpers/test_model_factory.dart';
 
 class MockSymptomDataSource extends Mock implements SymptomDataSource {}
 
@@ -11,11 +11,7 @@ void main() {
   late SymptomLogRepositoryImpl repository;
 
   setUpAll(() {
-    registerFallbackValue(SymptomLog(
-      date: DateTime.now(),
-      symptoms: const [],
-      moodRating: 3,
-    ));
+    registerFallbackValue(TestModelFactory.createSymptomLog());
   });
 
   setUp(() {
@@ -23,33 +19,29 @@ void main() {
     repository = SymptomLogRepositoryImpl(mockDataSource);
   });
 
-  tearDown(() {
-    // Reset any global mocks if necessary
-  });
-
   group('SymptomLogRepositoryImpl', () {
-    test('getSymptomLogs returns logs from storage', () {
-      final log = SymptomLog(date: DateTime.now(), symptoms: const [], moodRating: 3);
-      when(() => mockDataSource.getAllSymptomLogs()).thenReturn([log]);
+    test('getSymptomLogs returns logs from storage', () async {
+      final log = TestModelFactory.createSymptomLog();
+      when(() => mockDataSource.getSymptomLogs()).thenAnswer((_) async => [log]);
 
-      final result = repository.getSymptomLogs();
+      final result = await repository.getSymptomLogs();
 
       expect(result.length, 1);
       expect(result.first, log);
-      verify(() => mockDataSource.getAllSymptomLogs()).called(1);
+      verify(() => mockDataSource.getSymptomLogs()).called(1);
     });
 
-    test('getSymptomLogsForMonth calls storage', () {
+    test('getSymptomLogsForMonth calls storage', () async {
       final month = DateTime(2023, 10);
-      when(() => mockDataSource.getSymptomLogsForMonth(any())).thenReturn([]);
+      when(() => mockDataSource.getSymptomLogsForMonth(any())).thenAnswer((_) async => []);
 
-      repository.getSymptomLogsForMonth(month);
+      await repository.getSymptomLogsForMonth(month);
 
       verify(() => mockDataSource.getSymptomLogsForMonth(month)).called(1);
     });
 
     test('addSymptomLog calls storage save', () async {
-      final log = SymptomLog(date: DateTime.now(), symptoms: const [], moodRating: 3);
+      final log = TestModelFactory.createSymptomLog();
       when(() => mockDataSource.saveSymptomLog(any())).thenAnswer((_) async {});
 
       await repository.addSymptomLog(log);
@@ -58,7 +50,7 @@ void main() {
     });
 
     test('updateSymptomLog calls storage save', () async {
-      final log = SymptomLog(date: DateTime.now(), symptoms: const [], moodRating: 3);
+      final log = TestModelFactory.createSymptomLog();
       when(() => mockDataSource.saveSymptomLog(any())).thenAnswer((_) async {});
 
       await repository.updateSymptomLog(log);

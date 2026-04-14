@@ -1,17 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/trends_calculator.dart';
-import 'package:private_tracker_app/domain/models/symptom_log.dart';
-
+import '../helpers/test_model_factory.dart';
 
 void main() {
   group('TrendsCalculator Tests', () {
     test('calculateAverageCycleLength calculates correctly from multiple logs', () {
       final now = DateTime.now();
       final logs = [
-        CycleLog(startDate: now), // Today
-        CycleLog(startDate: now.subtract(const Duration(days: 30))), // 30 days ago
-        CycleLog(startDate: now.subtract(const Duration(days: 58))), // 28 days ago
+        TestModelFactory.createCycleLog(startDate: now), // Today
+        TestModelFactory.createCycleLog(startDate: now.subtract(const Duration(days: 30))), // 30 days ago
+        TestModelFactory.createCycleLog(startDate: now.subtract(const Duration(days: 58))), // 28 days ago
       ];
 
       final trends = TrendsCalculator.calculateTrends(logs, []);
@@ -22,12 +20,12 @@ void main() {
     test('calculateAveragePeriodDuration calculates correctly from completed logs', () {
       final now = DateTime.now();
       final logs = [
-        CycleLog(
+        TestModelFactory.createCycleLog(
           startDate: now.subtract(const Duration(days: 30)), 
           endDate: now.subtract(const Duration(days: 25)),
         ), // 6 days duration (25, 26, 27, 28, 29, 30? Wait, subtraction days)
         // Duration: difference + 1. (30 - 25) + 1 = 6.
-        CycleLog(
+        TestModelFactory.createCycleLog(
           startDate: now.subtract(const Duration(days: 60)),
           endDate: now.subtract(const Duration(days: 56)),
         ), // 5 days duration (60-56)+1
@@ -40,17 +38,17 @@ void main() {
 
     test('calculateTopSymptoms counts and sorts correctly', () {
       final logs = [
-        SymptomLog(
+        TestModelFactory.createSymptomLog(
           date: DateTime.now(), 
           symptoms: const ['Cramps', 'Bloating'], 
           moodRating: 3,
         ),
-        SymptomLog(
+        TestModelFactory.createSymptomLog(
           date: DateTime.now().subtract(const Duration(days: 1)), 
           symptoms: const ['Cramps', 'Fatigue'], 
           moodRating: 1,
         ),
-        SymptomLog(
+        TestModelFactory.createSymptomLog(
           date: DateTime.now().subtract(const Duration(days: 2)), 
           symptoms: const ['Cramps'], 
           moodRating: 2,
@@ -67,9 +65,9 @@ void main() {
     test('getMoodHistory returns sorted points within 30 days', () {
       final now = DateTime.now();
       final logs = [
-        SymptomLog(date: now, symptoms: const [], moodRating: 5),
-        SymptomLog(date: now.subtract(const Duration(days: 10)), symptoms: const [], moodRating: 4),
-        SymptomLog(date: now.subtract(const Duration(days: 40)), symptoms: const [], moodRating: 1), // Outside range
+        TestModelFactory.createSymptomLog(date: now, symptoms: const [], moodRating: 5),
+        TestModelFactory.createSymptomLog(date: now.subtract(const Duration(days: 10)), symptoms: const [], moodRating: 4),
+        TestModelFactory.createSymptomLog(date: now.subtract(const Duration(days: 40)), symptoms: const [], moodRating: 1), // Outside range
       ];
 
       final trends = TrendsCalculator.calculateTrends([], logs);

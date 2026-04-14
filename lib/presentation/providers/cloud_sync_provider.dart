@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import '../../domain/usecases/sync_data_use_case.dart';
 import '../../core/services/preferences_service.dart';
 
+/// State management provider for cloud synchronization (Google Drive / iCloud).
+/// 
+/// 🎨 **Presentation Architecture**: Coordinates the async sync workflow and 
+/// maintains the UI state for synchronization status, errors, and last-sync 
+/// timestamps.
 class CloudSyncProvider with ChangeNotifier {
   final SyncDataUseCase _syncUseCase;
   final PreferencesService _prefs;

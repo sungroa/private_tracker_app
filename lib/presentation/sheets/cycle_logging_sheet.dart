@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
 import '../../domain/models/cycle_log.dart';
 import '../theme/app_theme.dart';
+import 'package:uuid/uuid.dart';
 
 class CycleLoggingSheet extends StatefulWidget {
   final DateTime selectedDay;
@@ -95,11 +96,12 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     setState(() => _isSaving = true);
     try {
       final event = CycleLog(
-        id: widget.cycleLog?.id,
+        id: widget.cycleLog?.id ?? const Uuid().v4(),
         startDate: _startDate,
         endDate: _endDate,
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         flowIntensity: _flowIntensity,
+        updatedAt: DateTime.now(),
       );
       final provider = context.read<CycleProvider>();
       if (widget.cycleLog != null) {

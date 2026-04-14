@@ -6,6 +6,7 @@ import '../providers/tag_provider.dart';
 import '../../domain/models/custom_tag.dart';
 import '../theme/app_theme.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
+import 'package:uuid/uuid.dart';
 
 
 class SymptomLoggingSheet extends StatefulWidget {
@@ -84,7 +85,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     try {
       final bbt = double.tryParse(_tempController.text);
       final log = SymptomLog(
-        id: widget.symptomLog?.id,
+        id: widget.symptomLog?.id ?? const Uuid().v4(),
         date: widget.selectedDay,
         symptoms: _selectedSymptoms,
         moodRating: _moodRating,
@@ -92,6 +93,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
         basalBodyTemperature: bbt,
         cervicalFluidType: _selectedFluid,
         lhTestPositive: _lhPositive,
+        updatedAt: DateTime.now(),
       );
       if (widget.symptomLog != null) {
         await context.read<SymptomProvider>().updateSymptomLog(log);

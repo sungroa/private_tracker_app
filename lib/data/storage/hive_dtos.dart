@@ -36,30 +36,6 @@ class CycleLogDto extends HiveObject {
     required this.flowIntensity,
     required this.updatedAt,
   });
-
-  /// Maps a pure domain [CycleLog] into a [CycleLogDto] for persistence.
-  factory CycleLogDto.fromDomain(CycleLog domain) {
-    return CycleLogDto(
-      id: domain.id,
-      startDate: domain.startDate,
-      endDate: domain.endDate,
-      notes: domain.notes,
-      flowIntensity: domain.flowIntensity,
-      updatedAt: domain.updatedAt,
-    );
-  }
-
-  /// Maps this [CycleLogDto] back into a pure domain [CycleLog].
-  CycleLog toDomain() {
-    return CycleLog(
-      id: id,
-      startDate: startDate,
-      endDate: endDate,
-      notes: notes,
-      flowIntensity: flowIntensity,
-      updatedAt: updatedAt,
-    );
-  }
 }
 
 /// Data Transfer Object (DTO) for [SymptomLog].
@@ -95,36 +71,6 @@ class SymptomLogDto extends HiveObject {
     this.lhTestPositive,
     required this.updatedAt,
   });
-
-  /// Maps a pure domain [SymptomLog] into a [SymptomLogDto] for persistence.
-  factory SymptomLogDto.fromDomain(SymptomLog domain) {
-    return SymptomLogDto(
-      id: domain.id,
-      date: domain.date,
-      symptoms: domain.symptoms,
-      moodRating: domain.moodRating,
-      notes: domain.notes,
-      basalBodyTemperature: domain.basalBodyTemperature,
-      cervicalFluidType: domain.cervicalFluidType,
-      lhTestPositive: domain.lhTestPositive,
-      updatedAt: domain.updatedAt,
-    );
-  }
-
-  /// Maps this [SymptomLogDto] back into a pure domain [SymptomLog].
-  SymptomLog toDomain() {
-    return SymptomLog(
-      id: id,
-      date: date,
-      symptoms: symptoms,
-      moodRating: moodRating,
-      notes: notes,
-      basalBodyTemperature: basalBodyTemperature,
-      cervicalFluidType: cervicalFluidType,
-      lhTestPositive: lhTestPositive,
-      updatedAt: updatedAt,
-    );
-  }
 }
 
 /// Data Transfer Object (DTO) for [CustomTag].
@@ -145,24 +91,4 @@ class CustomTagDto extends HiveObject {
     required this.isDefault,
     required this.updatedAt,
   });
-
-  /// Maps a pure domain [CustomTag] into a [CustomTagDto] for persistence.
-  factory CustomTagDto.fromDomain(CustomTag domain) {
-    return CustomTagDto(
-      id: domain.id,
-      name: domain.name,
-      isDefault: domain.isDefault,
-      updatedAt: domain.updatedAt,
-    );
-  }
-
-  /// Maps this [CustomTagDto] back into a pure domain [CustomTag].
-  CustomTag toDomain() {
-    return CustomTag(
-      id: id,
-      name: name,
-      isDefault: isDefault,
-      updatedAt: updatedAt,
-    );
-  }
 }

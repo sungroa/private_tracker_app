@@ -1,4 +1,5 @@
 import '../../domain/models/shared_phase_data.dart';
+import '../../core/registry/hive_registry.dart';
 import 'local_database_manager.dart';
 
 class PartnerStorageService {
@@ -6,7 +7,7 @@ class PartnerStorageService {
   
   PartnerStorageService(this._dbManager);
 
-  static const String partnerBoxName = LocalDatabaseManager.partnerDataBox;
+  static const String partnerBoxName = HiveRegistry.partnerDataBox;
   static const String dataKey = 'shared_phase_data';
   static const String encryptionKeyKey = 'partner_encryption_key';
 

@@ -1,11 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import '../../core/utils/security_logger.dart';
 
 class SecureKeyStorage {
   static const String _encryptionKeyName = 'hive_encryption_key_v1';
+  static const String _cloudKeyName = 'cloud_sync_encryption_key_v1';
+  
+  /// Timeout for secure storage operations to prevent app hangs.
+  static const Duration _storageTimeout = Duration(seconds: 3);
+
   final FlutterSecureStorage _secureStorage;
 
   SecureKeyStorage(this._secureStorage);
@@ -15,35 +21,38 @@ class SecureKeyStorage {
     String? keyString;
     
     try {
-      // On Web, secure storage can sometimes stall or timeout. 
-      // We wrap it in a timeout to prevent the entire app from hanging.
       keyString = await _secureStorage.read(key: _encryptionKeyName)
-          .timeout(const Duration(seconds: 3));
-    } catch (e) {
-      debugPrint("SecureKeyStorage: Secure storage read error or timeout: $e");
-      if (kIsWeb) {
-        // Fallback or re-attempt logic for Web could go here.
-        // For now, we allow it to proceed to generation if null.
-      }
+          .timeout(_storageTimeout);
+    } catch (e, stack) {
+      SecurityLogger.logError(
+        "Secure storage read error for primary key",
+        error: e,
+        stackTrace: stack,
+      );
     }
     
     if (keyString == null) {
-      // No key exists — generate and persist a new one
+      SecurityLogger.logEvent("Primary encryption key not found. Generating new key.");
+      
       final key = Hive.generateSecureKey();
       final encoded = base64UrlEncode(key);
       try {
         await _secureStorage.write(key: _encryptionKeyName, value: encoded)
-            .timeout(const Duration(seconds: 3));
+            .timeout(_storageTimeout);
         
         // Re-read to confirm the write succeeded
         keyString = await _secureStorage.read(key: _encryptionKeyName)
-            .timeout(const Duration(seconds: 3));
-      } catch (e) {
-        debugPrint("SecureKeyStorage: Secure storage write/re-read error: $e");
+            .timeout(_storageTimeout);
+      } catch (e, stack) {
+        SecurityLogger.logError(
+          "Secure storage write/re-read error for primary key",
+          error: e,
+          stackTrace: stack,
+        );
         if (kIsWeb) {
            throw StateError(
             'Secure storage is unavailable on this browser. '
-            'Please ensure cookies and local storage are enabled and not in Incognito mode with blockages.'
+            'Please ensure cookies and local storage are enabled and not in Incognito mode.'
           );
         }
       }
@@ -61,28 +70,36 @@ class SecureKeyStorage {
 
   /// Securely retrieves the dedicated cloud sync encryption key or generates a new one.
   Future<List<int>> getOrCreateCloudSyncKey() async {
-    const String cloudKeyName = 'cloud_sync_encryption_key_v1';
     String? keyString;
     
     try {
-      keyString = await _secureStorage.read(key: cloudKeyName)
-          .timeout(const Duration(seconds: 3));
-    } catch (e) {
-      debugPrint("SecureKeyStorage: Cloud key read error/timeout: $e");
+      keyString = await _secureStorage.read(key: _cloudKeyName)
+          .timeout(_storageTimeout);
+    } catch (e, stack) {
+      SecurityLogger.logError(
+        "Secure storage read error for cloud sync key",
+        error: e,
+        stackTrace: stack,
+      );
     }
     
     if (keyString == null) {
+      SecurityLogger.logEvent("Cloud sync key not found. Generating new key.");
+
       final key = Hive.generateSecureKey();
       final encoded = base64UrlEncode(key);
       try {
-        await _secureStorage.write(key: cloudKeyName, value: encoded)
-            .timeout(const Duration(seconds: 3));
+        await _secureStorage.write(key: _cloudKeyName, value: encoded)
+            .timeout(_storageTimeout);
         
-        // (C5) Re-read to confirm the write succeeded
-        keyString = await _secureStorage.read(key: cloudKeyName)
-            .timeout(const Duration(seconds: 3));
-      } catch (e) {
-        debugPrint("SecureKeyStorage: Cloud key write/re-read error: $e");
+        keyString = await _secureStorage.read(key: _cloudKeyName)
+            .timeout(_storageTimeout);
+      } catch (e, stack) {
+        SecurityLogger.logError(
+          "Secure storage write/re-read error for cloud sync key",
+          error: e,
+          stackTrace: stack,
+        );
       }
       
       if (keyString == null) {

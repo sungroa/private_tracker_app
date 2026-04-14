@@ -1,8 +1,5 @@
 import 'dart:io';
 import 'dart:typed_data';
-import '../../domain/models/custom_tag.dart';
-import '../../domain/models/cycle_log.dart';
-import '../../domain/models/symptom_log.dart';
 import 'backup_restore_service.dart';
 import 'data_sources/cycle_data_source.dart';
 import 'data_sources/symptom_data_source.dart';
@@ -11,9 +8,14 @@ import 'hive_dtos.dart';
 import 'local_database_manager.dart';
 import 'model_mapper.dart';
 
-/// specialized service to orchestrate backup and restore operations.
+/// Specialized service for orchestrating complex backup and restore workflows.
 /// 
-/// Decoupled from [EncryptedStorageService] to satisfy SRP.
+/// 🏛️ **Architecture**: Decoupled from [EncryptedStorageService] to satisfy the 
+/// Single Responsibility Principle (SRP). It coordinates high-level operations 
+/// across multiple data sources and the [BackupRestoreService].
+/// 
+/// 🔄 **Atomic Operations**: This service ensures that restoration is "atomic" 
+/// by wiping existing boxes before applying a new state, preventing data pollution.
 class BackupOrchestrator {
   final BackupRestoreService _backupService;
   final LocalDatabaseManager _dbManager;
@@ -37,9 +39,9 @@ class BackupOrchestrator {
   Future<File> exportEncryptedBackup(String userPassword) async {
     return _backupService.exportEncryptedBackup(
       userPassword: userPassword,
-      cycleEvents: _cycleDataSource.getCycleLogs(),
-      symptomLogs: _symptomDataSource.getAllSymptomLogs(),
-      customTags: _tagDataSource.getCustomTags(),
+      cycleEvents: await _cycleDataSource.getCycleLogs(),
+      symptomLogs: await _symptomDataSource.getSymptomLogs(),
+      customTags: await _tagDataSource.getCustomTags(),
     );
   }
 
@@ -53,9 +55,9 @@ class BackupOrchestrator {
   Future<Uint8List> exportCloudBackup(List<int> cloudKey) async {
     return _backupService.exportBackupWithKey(
       encryptionKey: cloudKey,
-      cycleEvents: _cycleDataSource.getCycleLogs(),
-      symptomLogs: _symptomDataSource.getAllSymptomLogs(),
-      customTags: _tagDataSource.getCustomTags(),
+      cycleEvents: await _cycleDataSource.getCycleLogs(),
+      symptomLogs: await _symptomDataSource.getSymptomLogs(),
+      customTags: await _tagDataSource.getCustomTags(),
     );
   }
 
@@ -117,19 +119,19 @@ class BackupOrchestrator {
 
     if (customTags.isNotEmpty) {
       await _tagDataSource.putAll({
-        for (var tag in customTags) tag.id: CustomTagDto.fromDomain(tag)
+        for (var tag in customTags) tag.id: ModelMapper.customTagToDto(tag)
       });
     }
     
     if (cycleLogs.isNotEmpty) {
       await _cycleDataSource.putAll({
-        for (var log in cycleLogs) log.id: CycleLogDto.fromDomain(log)
+        for (var log in cycleLogs) log.id: ModelMapper.cycleLogToDto(log)
       });
     }
     
     if (symptomLogs.isNotEmpty) {
       await _symptomDataSource.putAll({
-        for (var log in symptomLogs) log.id: SymptomLogDto.fromDomain(log)
+        for (var log in symptomLogs) log.id: ModelMapper.symptomLogToDto(log)
       });
     }
     
@@ -138,16 +140,16 @@ class BackupOrchestrator {
 
   MapEntry<String, CustomTagDto> _createTagEntry(Map<String, dynamic> map) {
     final domain = ModelMapper.customTagFromMap(map);
-    return MapEntry(domain.id, CustomTagDto.fromDomain(domain));
+    return MapEntry(domain.id, ModelMapper.customTagToDto(domain));
   }
 
   MapEntry<String, CycleLogDto> _createCycleEntry(Map<String, dynamic> map) {
     final domain = ModelMapper.cycleLogFromMap(map);
-    return MapEntry(domain.id, CycleLogDto.fromDomain(domain));
+    return MapEntry(domain.id, ModelMapper.cycleLogToDto(domain));
   }
 
   MapEntry<String, SymptomLogDto> _createSymptomEntry(Map<String, dynamic> map) {
     final domain = ModelMapper.symptomLogFromMap(map);
-    return MapEntry(domain.id, SymptomLogDto.fromDomain(domain));
+    return MapEntry(domain.id, ModelMapper.symptomLogToDto(domain));
   }
 }

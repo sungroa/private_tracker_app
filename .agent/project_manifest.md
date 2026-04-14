@@ -1,41 +1,39 @@
 # 🧭 Project Manifest: Private Tracker
 
 ## 📊 Session Data
-- **Last Updated:** 2026-04-13T06:42:00
-- **Session ID:** `d4b61b00-4dfe-453b-b359-838c08941bd2`
-- **Session Health:** HEALTHY
-- **Context Budget:** ~70% (Turn 10+)
+- **Last Updated:** 2026-04-14T05:48:30
+- **Session ID:** `c684fc77-44f8-429b-ba93-963eb8fa3f27`
+- **Session Health:** NOMINAL
+- **Context Budget:** ~30% (Turn 2)
 
 ## 🎯 Objectives & Constraints
-- **Primary Objective:** Zero Technical Debt Architectural Audit & Refactor.
+- **Primary Objective:** Zero Technical Debt Refactor (Comprehensive Audit Follow-up).
 - **STRICT_CONSTRAINTS:**
   1. Maintain 100% architectural separation (Domain/Data/Presentation).
-  2. No serialization logic in Domain models.
-  3. No framework dependencies in Domain.
+  2. All repository methods MUST be asynchronous (`Future`).
+  3. No heavy computation on the UI thread (Isolates for Trends).
+  4. Privacy-First Logging (No PII leakage in release).
 
 ## 🛠️ Validation & State
 - **fast_validation_command:** `flutter analyze`
 - **full_validation_command:** `flutter test --reporter expanded`
 - **Best Known State:**
-  - **Stability restored**: All smoke tests pass.
-  - **Architecture purified**: Domain models decoupled from serialization.
-  - **SRP Enforced**: EncryptedStorageService decomposed.
-- **Verification Token:** Pass: `flutter test test/widget_test.dart test/presentation/provider_scope_test.dart`
+  - **Clean Audit**: Comprehensive audit complete. Implementation plan created.
+- **Verification Token:** Pass: `flutter analyze`
 
 ## 📋 Action Plan
-- [x] **Audit**: Conduct merciless architectural audit. ([Report Generated](file:///home/sungroa/.gemini/antigravity/brain/d4b61b00-4dfe-453b-b359-838c08941bd2/audit_report.md))
-- [x] **Phase 1**: Fix failing smoke tests and initialization race conditions.
-- [x] **Phase 2**: Purify Domain models (remove `toMap`/`fromMap`).
-- [x] **Phase 3**: Optimize `restoreData` and batch DB writes.
-- [x] **Phase 4**: Decompose `EncryptedStorageService` (SRP compliance).
+- [x] **Audit**: Conduct merciless architectural audit.
+- [ ] **Infrastructure**: Refactor HiveRegistry and SecurityLogger.
+- [ ] **Data Layer**: Migrate Repositories to Async.
+- [ ] **Domain Layer**: Clean up Models and Use Cases.
+- [ ] **Presentation**: Implement AppInitializer and Optimize Provider.
+- [ ] **Verification**: 100% Test Coverage validation.
 
 ## 🚫 Dead Ends
-- **Isolate.run**: Must ensure only serializable data passes through isolate boundaries.
-- **Collection Literals**: In Dart, `{ for ... MapEntry }` creates a `Set<MapEntry>`, not a `Map`. Use `Map.fromEntries` or `key: value` syntax.
+- **Sync Repository Methods**: Avoid returning `List<T>` directly from repositories; always wrap in `Future`.
 
 ## 💡 Learnings
-- **Initialization Order**: Accessing providers in `initState` or early build phases via `Provider.of/context.read` can lead to race conditions if not guarded by `mounted` or deferred.
-- **SRP in Data Layer**: Decomposing storage services into orchestrators (BackupOrchestrator) and low-level managers (LocalDatabaseManager) improves testability and readability.
+- **Isolate.run**: Ideal for offloading `TrendsCalculator` from use cases without complex messaging.
 
 ## Next Steps
-- Refactor complete. Standing by for further instructions or feature development.
+- Obtain approval for [implementation_plan.md](file:///home/sungroa/.gemini/antigravity/brain/c684fc77-44f8-429b-ba93-963eb8fa3f27/implementation_plan.md).

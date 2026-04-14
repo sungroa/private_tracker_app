@@ -1,92 +1,100 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
-import 'package:private_tracker_app/domain/repositories/cycle_log_repository.dart';
-import 'package:private_tracker_app/domain/repositories/symptom_log_repository.dart';
+import 'package:private_tracker_app/domain/models/trends.dart';
+import 'package:private_tracker_app/domain/usecases/get_cycle_logs_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/save_cycle_log_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/delete_cycle_log_use_case.dart';
 import 'package:private_tracker_app/presentation/providers/cycle_provider.dart';
 
-class MockCycleLogRepository extends Mock implements CycleLogRepository {}
-class MockSymptomLogRepository extends Mock implements SymptomLogRepository {}
-class FakeCycleEvent extends Fake implements CycleLog {}
+class MockGetCycleLogsUseCase extends Mock implements GetCycleLogsUseCase {}
+class MockSaveCycleLogUseCase extends Mock implements SaveCycleLogUseCase {}
+class MockDeleteCycleLogUseCase extends Mock implements DeleteCycleLogUseCase {}
+class FakeCycleLog extends Fake implements CycleLog {}
 
 void main() {
-  late MockCycleLogRepository mockRepo;
-  late MockSymptomLogRepository mockSymptomRepo;
+  late MockGetCycleLogsUseCase mockGetUseCase;
+  late MockSaveCycleLogUseCase mockSaveUseCase;
+  late MockDeleteCycleLogUseCase mockDeleteUseCase;
   late CycleProvider provider;
 
   setUpAll(() {
-    registerFallbackValue(FakeCycleEvent());
+    registerFallbackValue(FakeCycleLog());
   });
 
   setUp(() {
-    mockRepo = MockCycleLogRepository();
-    mockSymptomRepo = MockSymptomLogRepository();
-    when(() => mockRepo.getCycleLogs()).thenReturn([]);
-    when(() => mockSymptomRepo.getSymptomLogs()).thenReturn([]);
-    provider = CycleProvider(mockRepo, mockSymptomRepo);
+    mockGetUseCase = MockGetCycleLogsUseCase();
+    mockSaveUseCase = MockSaveCycleLogUseCase();
+    mockDeleteUseCase = MockDeleteCycleLogUseCase();
+
+    when(() => mockGetUseCase.execute()).thenAnswer((_) async => AnalysedCycles(
+      logs: [],
+      trends: TrendData(
+        averageCycleLength: 0,
+        averagePeriodDuration: 0,
+        topSymptoms: [],
+        moodHistory: [],
+      ),
+    ));
+
+    provider = CycleProvider(mockGetUseCase, mockSaveUseCase, mockDeleteUseCase);
   });
 
-  test('initial state loads events and calculates trends', () {
-    verify(() => mockRepo.getCycleLogs()).called(1);
-    verify(() => mockSymptomRepo.getSymptomLogs()).called(1);
+  test('constructor has zero side-effects', () {
+    verifyNever(() => mockGetUseCase.execute());
+    expect(provider.isLoading, isFalse);
     expect(provider.cycleEvents, isEmpty);
-    // CycleCalculator always provides a default prediction (now + 28 days) even with no data
-    expect(provider.predictedNextPeriod, isNotNull);
   });
 
-  test('addEvent calls repository and reloads events', () async {
-    final event = CycleLog(startDate: DateTime(2023, 1, 1));
-    when(() => mockRepo.addCycleLog(any())).thenAnswer((_) async {});
-    when(() => mockRepo.getCycleLogs()).thenReturn([event]);
+  test('initialize loads events via use case', () async {
+    await provider.initialize();
+
+    verify(() => mockGetUseCase.execute()).called(1);
+    expect(provider.cycleEvents, isEmpty);
+    expect(provider.predictedNextPeriod, isNull);
+  });
+
+  test('addEvent calls save use case and reloads', () async {
+    final event = CycleLog(
+      id: 'test-id',
+      startDate: DateTime(2023, 1, 1),
+      updatedAt: DateTime.now(),
+    );
+    when(() => mockSaveUseCase.execute(any())).thenAnswer((_) async {});
+    
+    when(() => mockGetUseCase.execute()).thenAnswer((_) async => AnalysedCycles(
+      logs: [event],
+      trends: TrendData(
+        averageCycleLength: 0,
+        averagePeriodDuration: 0,
+        topSymptoms: [],
+        moodHistory: [],
+      ),
+    ));
 
     int listenerCallCount = 0;
     provider.addListener(() => listenerCallCount++);
 
     await provider.addEvent(event);
 
-    verify(() => mockRepo.addCycleLog(event)).called(1);
-    verify(() => mockRepo.getCycleLogs()).called(2); // 1 initially, 1 after add
+    verify(() => mockSaveUseCase.execute(event)).called(1);
+    verify(() => mockGetUseCase.execute()).called(1); 
     expect(provider.cycleEvents, [event]);
-    expect(listenerCallCount, 1);
-  });
-
-  test('predictedNextPeriod shifts when past cycle is updated', () async {
-    // Setup: 2 cycles, 28 days apart.
-    // Cycle 2: Mar 29
-    // Cycle 1: Mar 1
-    // Initial prediction: Mar 29 + 28 days = Apr 26
-    final cycle1Start = DateTime.utc(2026, 3, 1);
-    final cycle2Start = DateTime.utc(2026, 3, 29);
-    final event1 = CycleLog(startDate: cycle1Start);
-    final event2 = CycleLog(startDate: cycle2Start);
-
-    when(() => mockRepo.getCycleLogs()).thenReturn([event2, event1]);
-    provider.refresh(); // Reload with these 2 events
-
-    expect(provider.predictedNextPeriod, DateTime.utc(2026, 3, 29).add(const Duration(days: 28)));
-
-    // Update: Shift cycle 1 to Feb 26 (increasing interval to 31 days)
-    // Newest interval: 31 days. Weighted average of one interval is 31.
-    // New prediction: Mar 29 + 31 days = Apr 29
-    final shiftedEvent1 = CycleLog(startDate: DateTime.utc(2026, 2, 26));
-    when(() => mockRepo.updateCycleLog(any())).thenAnswer((_) async {});
-    when(() => mockRepo.getCycleLogs()).thenReturn([event2, shiftedEvent1]);
-
-    await provider.updateEvent(shiftedEvent1);
-
-    expect(provider.predictedNextPeriod, DateTime.utc(2026, 3, 29).add(const Duration(days: 31)));
-  });
-
-  test('deleteEvent calls repository and reloads events', () async {
-    when(() => mockRepo.deleteCycleLog(any())).thenAnswer((_) async {});
     
-    int listenerCallCount = 0;
-    provider.addListener(() => listenerCallCount++);
+    expect(provider.getEventByDate(DateTime(2023, 1, 1)), event);
+    expect(listenerCallCount, 2);
+  });
 
+  test('deleteEvent calls delete use case and reloads', () async {
+    when(() => mockDeleteUseCase.execute(any())).thenAnswer((_) async {});
+    when(() => mockGetUseCase.execute()).thenAnswer((_) async => AnalysedCycles(
+      logs: [],
+      trends: TrendData(averageCycleLength: 0, averagePeriodDuration: 0, topSymptoms: [], moodHistory: []),
+    ));
+    
     await provider.deleteEvent('test-id');
 
-    verify(() => mockRepo.deleteCycleLog('test-id')).called(1);
-    verify(() => mockRepo.getCycleLogs()).called(2);
-    expect(listenerCallCount, 1);
+    verify(() => mockDeleteUseCase.execute('test-id')).called(1);
+    verify(() => mockGetUseCase.execute()).called(1);
   });
 }

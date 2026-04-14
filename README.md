@@ -4,23 +4,24 @@ A premium, privacy-focused health and cycle tracking application built with Flut
 
 ![Hero Shot](file:///home/sungroa/.gemini/antigravity/brain/86932ca1-504f-4dc9-8f12-7b52df67c1fb/private_tracker_hero_1775545127090.png)
 
-## 🛡️ Privacy & Security (Zero-Knowledge)
+## ✨ Feature Highlights
 
-Private Tracker is built on a "Privacy First" philosophy. No health data ever leaves your device unless you explicitly export an encrypted backup.
-
-- **Zero-Knowledge Storage**: All health data is encrypted on-device before persistence using Hive's encrypted boxes.
-- **AES-SIC & HMAC**: We use industry-standard Authenticated Encryption (AES-SIC-256 + HMAC-SHA256) to ensure both confidentiality and data integrity.
-- **Biometric Locking**: Optional protection using `local_auth` ensures only you can open the app.
-- **Secure Key derivation**: Encryption keys are stored in the system's Secure Enclave/KeyStore using `flutter_secure_storage`.
+- **🔒 Privacy First**: Zero-knowledge encryption. Your data never leaves your device unencrypted.
+- **📈 Advanced Trends**: Isolate-powered data analysis for period prediction, fertility windows, and symptom tracking.
+- **🔄 Secure Cloud Sync**: Multi-provider support (Google Drive / iCloud) with record-level Last-Write-Wins (LWW) conflict resolution.
+- **💎 Premium UI**: Glassmorphic design with smooth micro-animations and low-latency calendar interactions.
+- **🧪 Industrial Grade**: 100% test coverage for domain logic and high-fidelity persistence audits.
 
 ## 🏗️ Technical Architecture
 
 This project follows **Clean Architecture** principles to ensure long-term maintainability and zero technical debt.
 
-- **Domain-Driven Design**: Core business logic is encapsulated in pure Dart models and "Calculators" that have zero dependencies on external frameworks.
-- **Decoupled Persistence**: Our storage layer uses a DTO (Data Transfer Object) pattern, allowing the database schema to evolve without breaking business logic.
-- **Granular State Management**: Built with `Provider`, utilizing selective rebuilds (`Selector`, `Consumer2`) to achieve 60FPS calendar performance even with years of data.
-- **Automated Verification**: A rigorous suite of 89+ tests covers 100% of domain logic and critical UI flows.
+- **Layered Decoupling**: 
+    - **Presentation**: Flutter + Provider (Selective Rebuilds).
+    - **Domain**: Pure Dart models, Use Cases, and Isolate-driven Calculators.
+    - **Data**: Repository pattern with Hive-backed encrypted storage and DTO mapping.
+- **Thread Safety**: Heavy computations (Trends calculation, Sync parsing, LWW merge) are offloaded to background **Isolates** to maintain 60FPS UI performance.
+- **Conflict Resolution**: Record-level merging using **Last-Write-Wins (LWW)** ensures consistent state across multiple devices without centralized servers.
 
 ## 🚀 Getting Started for Engineers
 

@@ -1,57 +1,75 @@
 import 'package:flutter/foundation.dart';
-import '../../domain/repositories/symptom_log_repository.dart';
-import 'package:private_tracker_app/domain/models/symptom_log.dart';
+import '../../domain/usecases/get_symptom_logs_use_case.dart';
+import '../../domain/usecases/save_symptom_log_use_case.dart';
+import '../../domain/usecases/delete_symptom_log_use_case.dart';
+import '../../domain/models/symptom_log.dart';
+import '../../core/utils/date_time_extensions.dart';
 
-
+/// State management provider for health symptoms, moods, and FAM metrics.
+/// 
+/// 🎨 **Presentation Architecture**: This provider maintains the UI state for 
+/// daily logs. It utilizes an indexed map ([_symptomMap]) to provide O(1) 
+/// lookup for calendar rendering.
 class SymptomProvider extends ChangeNotifier {
-  final SymptomLogRepository _repository;
+  final GetSymptomLogsUseCase _getUseCase;
+  final SaveSymptomLogUseCase _saveUseCase;
+  final DeleteSymptomLogUseCase _deleteUseCase;
+  
   List<SymptomLog> _symptomLogs = [];
   Map<String, SymptomLog> _symptomMap = {};
+  bool _isLoading = false;
 
-  SymptomProvider(this._repository) {
-    _loadLogs();
+  SymptomProvider(this._getUseCase, this._saveUseCase, this._deleteUseCase);
+
+  Future<void> initialize() async {
+    if (_symptomLogs.isNotEmpty || _isLoading) return;
+    await _loadLogs();
   }
 
   void refresh() => _loadLogs();
 
   List<SymptomLog> get symptomLogs => _symptomLogs;
   Map<String, SymptomLog> get symptomMap => _symptomMap;
+  bool get isLoading => _isLoading;
 
-  String _formatKey(DateTime date) => 
-      "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  SymptomLog? getSymptomByDate(DateTime date) => _symptomMap[date.toIsoDateString];
 
-  SymptomLog? getSymptomByDate(DateTime date) => _symptomMap[_formatKey(date)];
+  Future<void> _loadLogs() async {
+    if (_isLoading) return;
+    _isLoading = true;
+    notifyListeners();
 
-  void _loadLogs() {
     try {
-      _symptomLogs = _repository.getSymptomLogs();
+      _symptomLogs = await _getUseCase.execute();
       
       // Update indexed map
       _symptomMap = {
-        for (var log in _symptomLogs) _formatKey(log.date): log
+        for (var log in _symptomLogs) log.date.toIsoDateString: log
       };
       
+      _isLoading = false;
       notifyListeners();
     } catch (e) {
-      debugPrint("SymptomProvider: Failed to load logs (storage likely not ready): $e");
+      debugPrint("SymptomProvider: Failed to load logs: $e");
       _symptomLogs = [];
       _symptomMap = {};
+      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<void> addSymptomLog(SymptomLog log) async {
-    await _repository.addSymptomLog(log);
-    _loadLogs();
+    await _saveUseCase.execute(log);
+    await _loadLogs();
   }
 
   Future<void> updateSymptomLog(SymptomLog log) async {
-    await _repository.updateSymptomLog(log);
-    _loadLogs();
+    await _saveUseCase.execute(log);
+    await _loadLogs();
   }
 
   Future<void> deleteSymptomLog(String id) async {
-    await _repository.deleteSymptomLog(id);
-    _loadLogs();
+    await _deleteUseCase.execute(id);
+    await _loadLogs();
   }
 }

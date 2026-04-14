@@ -15,17 +15,28 @@ import 'package:private_tracker_app/presentation/sheets/cycle_logging_sheet.dart
 import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
 import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
-import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
 import 'package:private_tracker_app/data/storage/data_export_service.dart';
-import 'package:private_tracker_app/presentation/theme/app_theme.dart';
+import 'package:private_tracker_app/data/storage/data_sources/data_seeding_service.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:private_tracker_app/presentation/theme/app_theme.dart';
 import 'package:private_tracker_app/presentation/providers/cycle_provider.dart';
 import 'package:private_tracker_app/presentation/providers/symptom_provider.dart';
 import 'package:private_tracker_app/presentation/providers/tag_provider.dart';
+import 'package:private_tracker_app/domain/usecases/get_cycle_logs_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/save_cycle_log_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/delete_cycle_log_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/get_symptom_logs_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/save_symptom_log_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/delete_symptom_log_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/get_tags_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/add_tag_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/delete_tag_use_case.dart';
 import 'package:private_tracker_app/data/storage/data_sources/cycle_data_source.dart';
 import 'package:private_tracker_app/data/storage/data_sources/symptom_data_source.dart';
 import 'package:private_tracker_app/data/storage/data_sources/tag_data_source.dart';
+import 'package:uuid/uuid.dart';
+import 'package:private_tracker_app/domain/models/custom_tag.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
@@ -73,8 +84,8 @@ void main() {
       storageService = EncryptedStorageService(
         keyStorage: SecureKeyStorage(mockStorage),
         dbManager: dbManager,
-        backupService: BackupRestoreService(),
         exportService: DataExportService(),
+        seedingService: DataSeedingService(),
         cycleDataSource: cycleDataSource,
         symptomDataSource: symptomDataSource,
         tagDataSource: tagDataSource,
@@ -86,8 +97,12 @@ void main() {
 
       await storageService.initialize(basePath: hiveDir.path).timeout(const Duration(seconds: 5));
       
-      if (tagDataSource.getCustomTags().isEmpty) {
-        await tagDataSource.addCustomTag('Cramps');
+      if ((await tagDataSource.getCustomTags()).isEmpty) {
+        await tagDataSource.saveTag(CustomTag(
+          id: const Uuid().v4(),
+          name: 'Cramps',
+          updatedAt: DateTime.now(),
+        ));
       }
     });
 
@@ -113,8 +128,22 @@ void main() {
             Provider<EncryptedStorageService>.value(value: storageService),
             Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(symptomDataSource)),
             Provider<TagRepository>(create: (_) => TagRepositoryImpl(tagDataSource)),
-            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(symptomDataSource))),
-            ChangeNotifierProvider(create: (context) => TagProvider(context.read<TagRepository>())),
+            ChangeNotifierProvider(create: (_) {
+              final repo = SymptomLogRepositoryImpl(symptomDataSource);
+              return SymptomProvider(
+                GetSymptomLogsUseCase(repo),
+                SaveSymptomLogUseCase(repo),
+                DeleteSymptomLogUseCase(repo),
+              );
+            }),
+            ChangeNotifierProvider(create: (_) {
+              final repo = TagRepositoryImpl(tagDataSource);
+              return TagProvider(
+                GetTagsUseCase(repo),
+                AddTagUseCase(repo),
+                DeleteTagUseCase(repo),
+              );
+            }),
           ],
         ),
       );
@@ -128,10 +157,15 @@ void main() {
           child: CycleLoggingSheet(selectedDay: DateTime.now()),
           providers: [
             Provider<EncryptedStorageService>.value(value: storageService),
-            ChangeNotifierProvider(create: (_) => CycleProvider(
-              CycleLogRepositoryImpl(cycleDataSource),
-              SymptomLogRepositoryImpl(symptomDataSource),
-            )),
+            ChangeNotifierProvider(create: (_) {
+              final cycleRepo = CycleLogRepositoryImpl(cycleDataSource);
+              final symptomRepo = SymptomLogRepositoryImpl(symptomDataSource);
+              return CycleProvider(
+                GetCycleLogsUseCase(cycleRepo, symptomRepo),
+                SaveCycleLogUseCase(cycleRepo),
+                DeleteCycleLogUseCase(cycleRepo),
+              );
+            }),
           ],
         ),
       );
@@ -152,8 +186,22 @@ void main() {
             Provider<EncryptedStorageService>.value(value: storageService),
             Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(symptomDataSource)),
             Provider<TagRepository>(create: (_) => TagRepositoryImpl(tagDataSource)),
-            ChangeNotifierProvider(create: (_) => SymptomProvider(SymptomLogRepositoryImpl(symptomDataSource))),
-            ChangeNotifierProvider(create: (context) => TagProvider(context.read<TagRepository>())),
+            ChangeNotifierProvider(create: (_) {
+              final repo = SymptomLogRepositoryImpl(symptomDataSource);
+              return SymptomProvider(
+                GetSymptomLogsUseCase(repo),
+                SaveSymptomLogUseCase(repo),
+                DeleteSymptomLogUseCase(repo),
+              );
+            }),
+            ChangeNotifierProvider(create: (_) {
+              final repo = TagRepositoryImpl(tagDataSource);
+              return TagProvider(
+                GetTagsUseCase(repo),
+                AddTagUseCase(repo),
+                DeleteTagUseCase(repo),
+              );
+            }),
           ],
         ),
       );
@@ -172,7 +220,7 @@ void main() {
       
       await safePump(tester);
 
-      final logs = symptomDataSource.getSymptomLogsForMonth(date);
+      final logs = await symptomDataSource.getSymptomLogsForMonth(date);
       expect(logs.isNotEmpty, true, reason: 'Symptom log should be saved');
     });
 
@@ -187,10 +235,15 @@ void main() {
           child: CycleLoggingSheet(selectedDay: date),
           providers: [
             Provider<EncryptedStorageService>.value(value: storageService),
-            ChangeNotifierProvider(create: (_) => CycleProvider(
-              CycleLogRepositoryImpl(cycleDataSource),
-              SymptomLogRepositoryImpl(symptomDataSource),
-            )),
+            ChangeNotifierProvider(create: (_) {
+              final cycleRepo = CycleLogRepositoryImpl(cycleDataSource);
+              final symptomRepo = SymptomLogRepositoryImpl(symptomDataSource);
+              return CycleProvider(
+                GetCycleLogsUseCase(cycleRepo, symptomRepo),
+                SaveCycleLogUseCase(cycleRepo),
+                DeleteCycleLogUseCase(cycleRepo),
+              );
+            }),
           ],
         ),
       );
@@ -206,7 +259,7 @@ void main() {
       
       await safePump(tester);
 
-      final logs = cycleDataSource.getCycleLogs();
+      final logs = await cycleDataSource.getCycleLogs();
       expect(logs.length, 1, reason: 'Cycle log should be saved');
     });
   });

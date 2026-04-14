@@ -3,6 +3,14 @@ import 'calculators/cycle_stats_calculator.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
 
+/// Core domain logic for menstruation cycle analysis and predictions.
+/// 
+/// 💼 **Domain Context**: This calculator is the brain of the prediction engine.
+/// It uses a hybrid approach:
+/// 1. **Sympto-Thermal Method (STM)**: If BBT data is available, it uses the 
+/// 3-over-6 rule for mathematical confirmation of ovulation.
+/// 2. **Statistical Fallback**: For users without BBT tracking, it uses 
+/// weighted historical averages with outlier removal.
 class CycleCalculator {
   // Average cycle length (default 28 days)
   static const int defaultCycleLength = 28;

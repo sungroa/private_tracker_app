@@ -1,20 +1,30 @@
 import 'package:meta/meta.dart';
-import 'package:uuid/uuid.dart';
 
+/// Represents a user-defined category for health events.
+/// 
+/// 💼 **Domain Context**: This model allows users to personalize the logging
+/// experience by adding categories that are not included by default (e.g., 'Cramp', 'Brain Fog').
 @immutable
 class CustomTag {
+  /// Unique identifier for the tag.
   final String id;
+
+  /// The user-facing label for this tag.
   final String name;
+
+  /// Whether this is a system-provided tag that cannot be easily deleted.
   final bool isDefault;
+
+  /// The last time this tag metadata was modified.
   final DateTime updatedAt;
 
-  CustomTag({
-    String? id,
+  /// Canonical constructor for [CustomTag].
+  const CustomTag({
+    required this.id,
     required this.name,
     this.isDefault = false,
-    DateTime? updatedAt,
-  }) : id = id ?? const Uuid().v4(),
-       updatedAt = updatedAt ?? DateTime.now();
+    required this.updatedAt,
+  });
 
   CustomTag copyWith({
     String? id,
