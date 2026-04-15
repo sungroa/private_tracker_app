@@ -47,6 +47,7 @@ class AppInitializer {
 
       // 3. Trigger auto-sync if cloud is enabled
       final cloudSync = context.read<CloudSyncProvider>();
+      await cloudSync.init();
       if (cloudSync.isCloudEnabled) {
         unawaited(cloudSync.sync());
       }

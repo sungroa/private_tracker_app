@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import '../../domain/models/cycle_log.dart';
@@ -7,6 +8,7 @@ import '../../domain/usecases/save_cycle_log_use_case.dart';
 import '../../domain/usecases/delete_cycle_log_use_case.dart';
 import '../../core/utils/security_logger.dart';
 import '../../core/utils/date_time_extensions.dart';
+import 'cloud_sync_provider.dart';
 
 /// State management provider for menstruation cycle data and predictions.
 /// 
@@ -18,6 +20,7 @@ class CycleProvider extends ChangeNotifier {
   final GetCycleLogsUseCase _getCyclesUseCase;
   final SaveCycleLogUseCase _saveCycleUseCase;
   final DeleteCycleLogUseCase _deleteCycleUseCase;
+  CloudSyncProvider? _cloudSync;
   
   /// The raw list of all cycle entries.
   List<CycleLog> _cycleEvents = [];
@@ -38,8 +41,14 @@ class CycleProvider extends ChangeNotifier {
   CycleProvider(
     this._getCyclesUseCase,
     this._saveCycleUseCase,
-    this._deleteCycleUseCase,
-  );
+    this._deleteCycleUseCase, {
+    CloudSyncProvider? cloudSync,
+  }) : _cloudSync = cloudSync;
+
+  /// Allows late binding of the sync provider to avoid circular dependency.
+  void attachSyncProvider(CloudSyncProvider cloudSync) {
+    _cloudSync = cloudSync;
+  }
 
   /// Explicit initialization to avoid constructor side-effects.
   Future<void> initialize() async {
@@ -119,17 +128,28 @@ class CycleProvider extends ChangeNotifier {
   Future<void> addEvent(CycleLog event) async {
     await _saveCycleUseCase.execute(event);
     await _loadEvents();
+    _triggerSync();
   }
 
   /// Updates an existing cycle log via [SaveCycleLogUseCase].
   Future<void> updateEvent(CycleLog event) async {
     await _saveCycleUseCase.execute(event);
     await _loadEvents();
+    _triggerSync();
   }
 
   /// Deletes a cycle log via [DeleteCycleLogUseCase].
   Future<void> deleteEvent(String id) async {
     await _deleteCycleUseCase.execute(id);
     await _loadEvents();
+    _triggerSync();
+  }
+
+  /// Triggers a background sync without blocking the UI.
+  void _triggerSync() {
+    final sync = _cloudSync;
+    if (sync != null && sync.isCloudEnabled) {
+      unawaited(sync.sync());
+    }
   }
 }

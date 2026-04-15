@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../domain/usecases/get_symptom_logs_use_case.dart';
 import '../../domain/usecases/save_symptom_log_use_case.dart';
 import '../../domain/usecases/delete_symptom_log_use_case.dart';
 import '../../domain/models/symptom_log.dart';
 import '../../core/utils/date_time_extensions.dart';
+import 'cloud_sync_provider.dart';
 
 /// State management provider for health symptoms, moods, and FAM metrics.
 /// 
@@ -14,12 +16,20 @@ class SymptomProvider extends ChangeNotifier {
   final GetSymptomLogsUseCase _getUseCase;
   final SaveSymptomLogUseCase _saveUseCase;
   final DeleteSymptomLogUseCase _deleteUseCase;
+  CloudSyncProvider? _cloudSync;
   
   List<SymptomLog> _symptomLogs = [];
   Map<String, SymptomLog> _symptomMap = {};
   bool _isLoading = false;
 
-  SymptomProvider(this._getUseCase, this._saveUseCase, this._deleteUseCase);
+  SymptomProvider(this._getUseCase, this._saveUseCase, this._deleteUseCase, {
+    CloudSyncProvider? cloudSync,
+  }) : _cloudSync = cloudSync;
+
+  /// Allows late binding of the sync provider to avoid circular dependency.
+  void attachSyncProvider(CloudSyncProvider cloudSync) {
+    _cloudSync = cloudSync;
+  }
 
   Future<void> initialize() async {
     if (_symptomLogs.isNotEmpty || _isLoading) return;
@@ -61,15 +71,26 @@ class SymptomProvider extends ChangeNotifier {
   Future<void> addSymptomLog(SymptomLog log) async {
     await _saveUseCase.execute(log);
     await _loadLogs();
+    _triggerSync();
   }
 
   Future<void> updateSymptomLog(SymptomLog log) async {
     await _saveUseCase.execute(log);
     await _loadLogs();
+    _triggerSync();
   }
 
   Future<void> deleteSymptomLog(String id) async {
     await _deleteUseCase.execute(id);
     await _loadLogs();
+    _triggerSync();
+  }
+
+  /// Triggers a background sync without blocking the UI.
+  void _triggerSync() {
+    final sync = _cloudSync;
+    if (sync != null && sync.isCloudEnabled) {
+      unawaited(sync.sync());
+    }
   }
 }
