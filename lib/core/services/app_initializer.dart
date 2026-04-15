@@ -6,6 +6,7 @@ import '../../presentation/providers/symptom_provider.dart';
 import '../../presentation/providers/tag_provider.dart';
 import '../../presentation/providers/cloud_sync_provider.dart';
 import '../utils/security_logger.dart';
+import '../services/notification_service.dart';
 import 'package:provider/provider.dart';
 
 /// Service responsible for coordinated application initialization.
@@ -39,6 +40,7 @@ class AppInitializer {
         context.read<CycleProvider>().initialize(),
         context.read<SymptomProvider>().initialize(),
         context.read<TagProvider>().initialize(),
+        context.read<NotificationService>().initialize(),
       ]);
 
       if (!context.mounted) return;

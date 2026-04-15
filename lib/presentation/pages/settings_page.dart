@@ -69,16 +69,28 @@ class _SettingsPageState extends State<SettingsPage> {
 
   String _sanitizeError(dynamic error) {
     // (W10) Error Sanitization: Prevent information leakage in UI
-    final errorStr = error.toString().toLowerCase();
-    if (errorStr.contains('password') || errorStr.contains('key')) {
+    final errorStr = error.toString();
+    final lowerError = errorStr.toLowerCase();
+    
+    if (lowerError.contains('password') || lowerError.contains('key')) {
       return 'Authentication failed. Please verify your credentials.';
     }
-    if (errorStr.contains('notfound') || errorStr.contains('404')) {
+    if (lowerError.contains('notfound') || lowerError.contains('404')) {
       return 'Backup not found on cloud.';
     }
-    if (errorStr.contains('network') || errorStr.contains('socket') || errorStr.contains('timeout')) {
+    if (lowerError.contains('network') || lowerError.contains('socket') || lowerError.contains('timeout')) {
       return 'Connection timed out. Please check your internet.';
     }
+    
+    // Check if it's a CloudSyncException and extract its message
+    if (errorStr.contains('CloudSyncException:')) {
+      final parts = errorStr.split('CloudSyncException:');
+      if (parts.length > 1) {
+        // Return the standardized message part
+        return parts[1].split('(Original error:')[0].trim();
+      }
+    }
+    
     return 'An unexpected error occurred. Please try again later.';
   }
 

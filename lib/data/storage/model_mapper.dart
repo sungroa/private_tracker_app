@@ -50,7 +50,7 @@ class ModelMapper {
       endDate: dto.endDate,
       notes: dto.notes,
       flowIntensity: dto.flowIntensity,
-      updatedAt: dto.updatedAt,
+      updatedAt: dto.updatedAt ?? DateTime(1970),
     );
   }
 
@@ -108,7 +108,7 @@ class ModelMapper {
       basalBodyTemperature: dto.basalBodyTemperature,
       cervicalFluidType: dto.cervicalFluidType,
       lhTestPositive: dto.lhTestPositive,
-      updatedAt: dto.updatedAt,
+      updatedAt: dto.updatedAt ?? DateTime(1970),
     );
   }
 
@@ -146,7 +146,7 @@ class ModelMapper {
       id: dto.id,
       name: dto.name,
       isDefault: dto.isDefault,
-      updatedAt: dto.updatedAt,
+      updatedAt: dto.updatedAt ?? DateTime(1970),
     );
   }
 }

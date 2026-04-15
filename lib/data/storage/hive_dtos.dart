@@ -26,7 +26,7 @@ class CycleLogDto extends HiveObject {
   @HiveField(4)
   final int flowIntensity;
   @HiveField(5)
-  final DateTime updatedAt;
+  final DateTime? updatedAt;
 
   CycleLogDto({
     required this.id,
@@ -34,8 +34,32 @@ class CycleLogDto extends HiveObject {
     this.endDate,
     this.notes,
     required this.flowIntensity,
-    required this.updatedAt,
+    this.updatedAt,
   });
+
+  /// Maps a pure domain [CycleLog] into a [CycleLogDto] for persistence.
+  factory CycleLogDto.fromDomain(CycleLog domain) {
+    return CycleLogDto(
+      id: domain.id,
+      startDate: domain.startDate,
+      endDate: domain.endDate,
+      notes: domain.notes,
+      flowIntensity: domain.flowIntensity,
+      updatedAt: domain.updatedAt,
+    );
+  }
+
+  /// Maps this [CycleLogDto] back into a pure domain [CycleLog].
+  CycleLog toDomain() {
+    return CycleLog(
+      id: id,
+      startDate: startDate,
+      endDate: endDate,
+      notes: notes,
+      flowIntensity: flowIntensity,
+      updatedAt: updatedAt ?? DateTime(1970),
+    );
+  }
 }
 
 /// Data Transfer Object (DTO) for [SymptomLog].
@@ -58,7 +82,7 @@ class SymptomLogDto extends HiveObject {
   @HiveField(7)
   final bool? lhTestPositive;
   @HiveField(8)
-  final DateTime updatedAt;
+  final DateTime? updatedAt;
 
   SymptomLogDto({
     required this.id,
@@ -69,8 +93,38 @@ class SymptomLogDto extends HiveObject {
     this.basalBodyTemperature,
     this.cervicalFluidType,
     this.lhTestPositive,
-    required this.updatedAt,
+    this.updatedAt,
   });
+
+  /// Maps a pure domain [SymptomLog] into a [SymptomLogDto] for persistence.
+  factory SymptomLogDto.fromDomain(SymptomLog domain) {
+    return SymptomLogDto(
+      id: domain.id,
+      date: domain.date,
+      symptoms: domain.symptoms,
+      moodRating: domain.moodRating,
+      notes: domain.notes,
+      basalBodyTemperature: domain.basalBodyTemperature,
+      cervicalFluidType: domain.cervicalFluidType,
+      lhTestPositive: domain.lhTestPositive,
+      updatedAt: domain.updatedAt,
+    );
+  }
+
+  /// Maps this [SymptomLogDto] back into a pure domain [SymptomLog].
+  SymptomLog toDomain() {
+    return SymptomLog(
+      id: id,
+      date: date,
+      symptoms: symptoms,
+      moodRating: moodRating,
+      notes: notes,
+      basalBodyTemperature: basalBodyTemperature,
+      cervicalFluidType: cervicalFluidType,
+      lhTestPositive: lhTestPositive,
+      updatedAt: updatedAt ?? DateTime(1970),
+    );
+  }
 }
 
 /// Data Transfer Object (DTO) for [CustomTag].
@@ -83,12 +137,32 @@ class CustomTagDto extends HiveObject {
   @HiveField(2)
   final bool isDefault;
   @HiveField(3)
-  final DateTime updatedAt;
+  final DateTime? updatedAt;
 
   CustomTagDto({
     required this.id,
     required this.name,
     required this.isDefault,
-    required this.updatedAt,
+    this.updatedAt,
   });
+
+  /// Maps a pure domain [CustomTag] into a [CustomTagDto] for persistence.
+  factory CustomTagDto.fromDomain(CustomTag domain) {
+    return CustomTagDto(
+      id: domain.id,
+      name: domain.name,
+      isDefault: domain.isDefault,
+      updatedAt: domain.updatedAt,
+    );
+  }
+
+  /// Maps this [CustomTagDto] back into a pure domain [CustomTag].
+  CustomTag toDomain() {
+    return CustomTag(
+      id: id,
+      name: name,
+      isDefault: isDefault,
+      updatedAt: updatedAt ?? DateTime(1970),
+    );
+  }
 }

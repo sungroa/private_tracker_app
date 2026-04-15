@@ -22,7 +22,7 @@ class CycleLogDtoAdapter extends TypeAdapter<CycleLogDto> {
       endDate: fields[2] as DateTime?,
       notes: fields[3] as String?,
       flowIntensity: fields[4] as int,
-      updatedAt: fields[5] as DateTime,
+      updatedAt: fields[5] as DateTime?,
     );
   }
 
@@ -74,7 +74,7 @@ class SymptomLogDtoAdapter extends TypeAdapter<SymptomLogDto> {
       basalBodyTemperature: fields[5] as double?,
       cervicalFluidType: fields[6] as String?,
       lhTestPositive: fields[7] as bool?,
-      updatedAt: fields[8] as DateTime,
+      updatedAt: fields[8] as DateTime?,
     );
   }
 
@@ -127,7 +127,7 @@ class CustomTagDtoAdapter extends TypeAdapter<CustomTagDto> {
       id: fields[0] as String,
       name: fields[1] as String,
       isDefault: fields[2] as bool,
-      updatedAt: fields[3] as DateTime,
+      updatedAt: fields[3] as DateTime?,
     );
   }
 

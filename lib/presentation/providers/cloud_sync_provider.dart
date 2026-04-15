@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/usecases/sync_data_use_case.dart';
 import '../../core/services/preferences_service.dart';
+import '../../core/utils/security_logger.dart';
 
 /// State management provider for cloud synchronization (Google Drive / iCloud).
 /// 
@@ -78,8 +79,9 @@ class CloudSyncProvider with ChangeNotifier {
       final now = DateTime.now();
       _lastSyncTime = now;
       await _prefs.setLastSyncTime(now);
-    } catch (e) {
+    } catch (e, stack) {
       _lastError = e.toString();
+      SecurityLogger.logError("Synchronization failed", error: e, stackTrace: stack);
     } finally {
       _isSyncing = false;
       notifyListeners();
