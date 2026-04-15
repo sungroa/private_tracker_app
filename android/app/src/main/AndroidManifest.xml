@@ -40,6 +40,14 @@
             android:name="flutterEmbedding"
             android:value="2" />
         
+        <!-- (W10) Default channel for notifications (forces visibility in system settings) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="daily_reminder_channel" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+        
         <!-- flutter_local_notifications receivers -->
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"

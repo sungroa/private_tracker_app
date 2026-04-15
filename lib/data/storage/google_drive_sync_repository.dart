@@ -55,7 +55,10 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       }
 
       const scope = drive.DriveApi.driveAppdataScope;
-      final account = await _googleSignIn.authenticate(scopeHint: [scope]);
+      
+      // (W10) Attempt silent sign-in first to avoid account picker
+      GoogleSignInAccount? account = await _googleSignIn.attemptLightweightAuthentication();
+      account ??= await _googleSignIn.authenticate(scopeHint: [scope]);
 
       final authHeaders = await account.authorizationClient.authorizationHeaders(
         [scope], 

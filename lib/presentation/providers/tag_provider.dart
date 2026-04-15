@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../domain/models/custom_tag.dart';
 import '../../domain/usecases/get_tags_use_case.dart';
 import '../../domain/usecases/add_tag_use_case.dart';
 import '../../domain/usecases/delete_tag_use_case.dart';
+import 'cloud_sync_provider.dart';
 
 /// State management provider for user-defined health categories (tags).
 /// 
@@ -13,11 +15,19 @@ class TagProvider with ChangeNotifier {
   final GetTagsUseCase _getUseCase;
   final AddTagUseCase _addUseCase;
   final DeleteTagUseCase _deleteUseCase;
+  CloudSyncProvider? _cloudSync;
   
   List<CustomTag> _tags = [];
   bool _isLoading = false;
 
-  TagProvider(this._getUseCase, this._addUseCase, this._deleteUseCase);
+  TagProvider(this._getUseCase, this._addUseCase, this._deleteUseCase, {
+    CloudSyncProvider? cloudSync,
+  }) : _cloudSync = cloudSync;
+
+  /// Allows late binding of the sync provider to avoid circular dependency.
+  void attachSyncProvider(CloudSyncProvider cloudSync) {
+    _cloudSync = cloudSync;
+  }
 
   Future<void> initialize() async {
     if (_tags.isNotEmpty || _isLoading) return;
@@ -47,10 +57,20 @@ class TagProvider with ChangeNotifier {
   Future<void> addTag(String name) async {
     await _addUseCase.execute(name);
     await refresh();
+    _triggerSync();
   }
 
   Future<void> deleteTag(CustomTag tag) async {
     await _deleteUseCase.execute(tag);
     await refresh();
+    _triggerSync();
+  }
+
+  /// Triggers a background sync without blocking the UI.
+  void _triggerSync() {
+    final sync = _cloudSync;
+    if (sync != null && sync.isCloudEnabled) {
+      unawaited(sync.sync());
+    }
   }
 }

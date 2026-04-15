@@ -87,27 +87,6 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
         Provider.value(value: sl.getCycleLogsUseCase),
         Provider.value(value: sl.saveCycleLogUseCase),
         Provider.value(value: sl.deleteCycleLogUseCase),
-        ChangeNotifierProvider(
-          create: (context) => CycleProvider(
-            context.read<GetCycleLogsUseCase>(),
-            context.read<SaveCycleLogUseCase>(),
-            context.read<DeleteCycleLogUseCase>(),
-          ),
-        ),
-        ChangeNotifierProvider(
-          create: (context) => SymptomProvider(
-            context.read<GetSymptomLogsUseCase>(),
-            context.read<SaveSymptomLogUseCase>(),
-            context.read<DeleteSymptomLogUseCase>(),
-          ),
-        ),
-        ChangeNotifierProvider(
-          create: (context) => TagProvider(
-            context.read<GetTagsUseCase>(),
-            context.read<AddTagUseCase>(),
-            context.read<DeleteTagUseCase>(),
-          ),
-        ),
         Provider.value(value: sl.cloudSync),
         Provider.value(value: sl.syncUseCase),
         ChangeNotifierProvider(
@@ -115,6 +94,33 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
             syncUseCase: context.read<SyncDataUseCase>(),
             prefs: context.read<PreferencesService>(),
           ),
+        ),
+        ChangeNotifierProxyProvider<CloudSyncProvider, CycleProvider>(
+          create: (context) => CycleProvider(
+            context.read<GetCycleLogsUseCase>(),
+            context.read<SaveCycleLogUseCase>(),
+            context.read<DeleteCycleLogUseCase>(),
+          ),
+          update: (context, cloudSync, cycleProvider) =>
+              cycleProvider!..attachSyncProvider(cloudSync),
+        ),
+        ChangeNotifierProxyProvider<CloudSyncProvider, SymptomProvider>(
+          create: (context) => SymptomProvider(
+            context.read<GetSymptomLogsUseCase>(),
+            context.read<SaveSymptomLogUseCase>(),
+            context.read<DeleteSymptomLogUseCase>(),
+          ),
+          update: (context, cloudSync, symptomProvider) =>
+              symptomProvider!..attachSyncProvider(cloudSync),
+        ),
+        ChangeNotifierProxyProvider<CloudSyncProvider, TagProvider>(
+          create: (context) => TagProvider(
+            context.read<GetTagsUseCase>(),
+            context.read<AddTagUseCase>(),
+            context.read<DeleteTagUseCase>(),
+          ),
+          update: (context, cloudSync, tagProvider) =>
+              tagProvider!..attachSyncProvider(cloudSync),
         ),
       ],
       child: AppLifecycleManager(

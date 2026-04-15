@@ -13,26 +13,22 @@ class NotificationService {
 
   /// Initializes the notification service.
   Future<void> initialize() async {
+    debugPrint('[PrivacyTracker.Notifications] Initializing NotificationService...');
     // Initialize timezone data
     tz.initializeTimeZones();
     
     // Get device timezone
     try {
-      // In flutter_timezone 5.0.2, getLocalTimezone() might return dynamic.
       final dynamic locationData = await FlutterTimezone.getLocalTimezone();
-      String timeZoneName;
-      if (locationData is String) {
-        timeZoneName = locationData;
-      } else {
-        timeZoneName = locationData.toString(); 
-      }
+      String timeZoneName = locationData is String ? locationData : locationData.toString();
       tz.setLocalLocation(tz.getLocation(timeZoneName));
+      debugPrint('[PrivacyTracker.Notifications] Timezone set to: $timeZoneName');
     } catch (e) {
-      // Fallback to UTC if timezone lookup fails
+      debugPrint('[PrivacyTracker.Notifications] Timezone fallback to UTC: $e');
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
 
-    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('ic_launcher');
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false, 
       requestBadgePermission: false, 
@@ -45,11 +41,26 @@ class NotificationService {
     );
 
     await _notificationsPlugin.initialize(
-      settings: settings, // v21 uses named parameter 'settings'
+      settings: settings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Handle notification click if needed
+        debugPrint('[PrivacyTracker.Notifications] Notification response: ${response.payload}');
       },
     );
+
+    // (W10) Explicitly create the channel to ensure it appears in Android settings
+    final androidPlugin = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (androidPlugin != null) {
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'daily_reminder_channel',
+          'Daily Reminders',
+          description: 'Recurring daily logging reminders',
+          importance: Importance.max,
+        ),
+      );
+      debugPrint('[PrivacyTracker.Notifications] Notification channel created.');
+    }
+    debugPrint('[PrivacyTracker.Notifications] Initialization complete.');
   }
 
   /// Schedules a recurring daily notification.
