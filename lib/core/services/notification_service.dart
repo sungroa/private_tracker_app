@@ -109,6 +109,7 @@ class NotificationService {
         _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     
     final bool? androidGranted = await androidPlugin?.requestNotificationsPermission();
+    final bool? exactAlarmsGranted = await androidPlugin?.requestExactAlarmsPermission();
 
     final bool? iosGranted = await _notificationsPlugin
         .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
@@ -118,6 +119,6 @@ class NotificationService {
           sound: true,
         );
 
-    return (androidGranted ?? false) || (iosGranted ?? false);
+    return (androidGranted ?? false) || (exactAlarmsGranted ?? false) || (iosGranted ?? false);
   }
 }

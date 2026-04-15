@@ -31,10 +31,14 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
   final GoogleSignIn _googleSignIn;
   drive.DriveApi? _driveApi;
   http.Client? _authClient;
+  final String? _serverClientId;
   bool _initializedSignIn = false;
 
-  GoogleDriveSyncRepository({GoogleSignIn? googleSignIn})
-      : _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
+  GoogleDriveSyncRepository({
+    GoogleSignIn? googleSignIn,
+    String? serverClientId,
+  })  : _googleSignIn = googleSignIn ?? GoogleSignIn.instance,
+        _serverClientId = serverClientId;
 
   /// Allows injecting a mock DriveApi for testing without needing to authenticate.
   void setMockDriveApi(drive.DriveApi api) {
@@ -45,19 +49,18 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
   Future<void> authenticate() async {
     try {
       if (!_initializedSignIn) {
-        // Ensure initialize is called at least once per instance lifecycle
-        await _googleSignIn.initialize();
+        // (W10) Client configuration required on Android for this plugin version
+        await _googleSignIn.initialize(serverClientId: _serverClientId);
         _initializedSignIn = true;
       }
 
       const scope = drive.DriveApi.driveAppdataScope;
       final account = await _googleSignIn.authenticate(scopeHint: [scope]);
-      
+
       final authHeaders = await account.authorizationClient.authorizationHeaders(
         [scope], 
         promptIfNecessary: true,
       );
-
       if (authHeaders == null) {
         throw CloudSyncException(CloudSyncException.authHeadersMissing);
       }

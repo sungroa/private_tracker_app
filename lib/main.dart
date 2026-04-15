@@ -33,7 +33,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Initialize Service Locator with default implementations
-  ServiceLocator().setup();
+  ServiceLocator().setup(
+    serverClientId: '971903019211-ftmfmqm9994pnhd777hktjm6tmi8a152.apps.googleusercontent.com',
+  );
   
   runApp(const PrivacyTrackerApp());
 }
