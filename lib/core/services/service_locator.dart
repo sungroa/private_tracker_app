@@ -170,6 +170,7 @@ class ServiceLocator {
     SymptomDataSource? symptomDs,
     TagDataSource? tagDs,
     AppLinks? customAppLinks,
+    String? serverClientId,
   }) {
     // 1. Core independent services
     appInitializer = AppInitializer();
@@ -231,7 +232,7 @@ class ServiceLocator {
     deleteTagUseCase = DeleteTagUseCase(tagRepository);
 
     // 6. Cloud Sync Integration
-    cloudSync = GoogleDriveSyncRepository();
+    cloudSync = GoogleDriveSyncRepository(serverClientId: serverClientId);
     syncUseCase = SyncDataUseCase(
       cloudSync: cloudSync,
       dataSource: dataSourceRepository,

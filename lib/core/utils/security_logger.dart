@@ -28,8 +28,12 @@ class SecurityLogger {
         developer.log('🔍 Context: $sensitiveContext', name: _tag);
       }
     } else {
-      // Production: Complete silence for privacy. 
-      // If we had a crash reporter (e.g. Sentry), we would send generic breadcrumbs here.
+      // Production: Log ONLY the message and error (excluding sensitiveContext)
+      // We use debugPrint which typically reaches logcat under the 'flutter' tag.
+      debugPrint('[$_tag] 🚨 $message');
+      if (error != null) {
+        debugPrint('[$_tag] 🛑 Error: $error');
+      }
     }
   }
 
