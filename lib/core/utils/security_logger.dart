@@ -54,4 +54,13 @@ class SecurityLogger {
       developer.log('ℹ️ $message', name: _tag);
     }
   }
+
+  /// (W10) Standardized non-security event logging.
+  static void logInfo(String message) {
+    if (kDebugMode) {
+      developer.log('🔵 $message', name: _tag);
+    } else {
+      debugPrint('[$_tag] 🔵 $message');
+    }
+  }
 }

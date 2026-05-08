@@ -7,6 +7,8 @@ class PreferencesService {
   static const String _notificationTimeKey = 'notification_time';
   static const String _cloudSyncEnabledKey = 'is_cloud_sync_enabled';
   static const String _lastSyncTimeKey = 'last_sync_time';
+  static const String _recoveryPassphraseSetKey = 'is_recovery_passphrase_set';
+  static const String _recoverySaltKey = 'recovery_salt';
 
   final FlutterSecureStorage _secureStorage;
 
@@ -70,7 +72,32 @@ class PreferencesService {
     return null;
   }
 
-  Future<void> setLastSyncTime(DateTime time) async {
-    await _secureStorage.write(key: _lastSyncTimeKey, value: time.toIso8601String());
+  Future<void> setLastSyncTime(DateTime? time) async {
+    if (time == null) {
+      await _secureStorage.delete(key: _lastSyncTimeKey);
+    } else {
+      await _secureStorage.write(key: _lastSyncTimeKey, value: time.toIso8601String());
+    }
+  }
+
+  Future<bool> isRecoveryPassphraseSet() async {
+    final value = await _secureStorage.read(key: _recoveryPassphraseSetKey);
+    return value == 'true';
+  }
+
+  Future<void> setRecoveryPassphraseSet(bool set) async {
+    await _secureStorage.write(key: _recoveryPassphraseSetKey, value: set.toString());
+  }
+
+  Future<String?> getRecoverySalt() async {
+    return await _secureStorage.read(key: _recoverySaltKey);
+  }
+
+  Future<void> setRecoverySalt(String? salt) async {
+    if (salt == null) {
+      await _secureStorage.delete(key: _recoverySaltKey);
+    } else {
+      await _secureStorage.write(key: _recoverySaltKey, value: salt);
+    }
   }
 }

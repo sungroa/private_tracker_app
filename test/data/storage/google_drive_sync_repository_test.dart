@@ -43,19 +43,29 @@ void main() {
 
   group('GoogleDriveSyncRepository', () {
     test('authenticate() successfully sets up auth client', () async {
-      when(() => mockGoogleSignIn.initialize()).thenAnswer((_) async {});
+      // No initialize() stub needed: initialize() is called once at app
+      // startup in main(), not inside authenticate().
+      when(() => mockGoogleSignIn.attemptLightweightAuthentication())
+          .thenAnswer((_) async => null);
       when(() => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')))
           .thenAnswer((_) async => mockGoogleSignInAccount);
-      when(() => mockGoogleSignInAccount.authorizationClient).thenReturn(mockAuthClient);
-      
-      when(() => mockAuthClient.authorizationHeaders(any(), promptIfNecessary: any(named: 'promptIfNecessary')))
-          .thenAnswer((_) async => {'Authorization': 'Bearer test_token'});
+      when(() => mockGoogleSignInAccount.authorizationClient)
+          .thenReturn(mockAuthClient);
+
+      when(() => mockAuthClient.authorizationHeaders(
+            any(),
+            promptIfNecessary: any(named: 'promptIfNecessary'),
+          )).thenAnswer((_) async => {'Authorization': 'Bearer test_token'});
 
       await repository.authenticate();
 
-      verify(() => mockGoogleSignIn.initialize()).called(1);
-      verify(() => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint'))).called(1);
-      verify(() => mockAuthClient.authorizationHeaders(any(), promptIfNecessary: true)).called(1);
+      // initialize() is no longer called inside authenticate() — it lives in main().
+      verifyNever(
+          () => mockGoogleSignIn.initialize(serverClientId: any(named: 'serverClientId')));
+      verify(() => mockGoogleSignIn.authenticate(scopeHint: any(named: 'scopeHint')))
+          .called(1);
+      verify(() => mockAuthClient.authorizationHeaders(any(), promptIfNecessary: false))
+          .called(1);
     });
 
     test('fetchLatestCloudChecksum() returns checksum if backup exists', () async {

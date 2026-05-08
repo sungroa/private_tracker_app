@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/preferences_service.dart';
@@ -23,20 +24,31 @@ import 'domain/usecases/delete_symptom_log_use_case.dart';
 import 'domain/usecases/get_tags_use_case.dart';
 import 'domain/usecases/add_tag_use_case.dart';
 import 'domain/usecases/delete_tag_use_case.dart';
+import 'data/storage/secure_key_storage.dart';
+import 'domain/services/cloud_sync_interface.dart';
 
 class StorageConfig {
   final String? storageBasePath;
   StorageConfig({this.storageBasePath});
 }
 
+/// The OAuth2 server/web client ID for Google Sign-In.
+/// Required by both [GoogleSignIn.instance.initialize] and [ServiceLocator.setup].
+const _kGoogleServerClientId =
+    '971903019211-ftmfmqm9994pnhd777hktjm6tmi8a152.apps.googleusercontent.com';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // google_sign_in v7 mandates initialize() be awaited ONCE before any
+  // API calls and before runApp().
+  await GoogleSignIn.instance.initialize(serverClientId: _kGoogleServerClientId);
+
   // Initialize Service Locator with default implementations
   ServiceLocator().setup(
-    serverClientId: '971903019211-ftmfmqm9994pnhd777hktjm6tmi8a152.apps.googleusercontent.com',
+    serverClientId: _kGoogleServerClientId,
   );
-  
+
   runApp(const PrivacyTrackerApp());
 }
 
@@ -93,6 +105,8 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
           create: (context) => CloudSyncProvider(
             syncUseCase: context.read<SyncDataUseCase>(),
             prefs: context.read<PreferencesService>(),
+            keyStorage: context.read<SecureKeyStorage>(),
+            cloudSync: context.read<CloudSyncInterface>(),
           ),
         ),
         ChangeNotifierProxyProvider<CloudSyncProvider, CycleProvider>(

@@ -12,6 +12,7 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../../core/services/preferences_service.dart';
+import '../../core/utils/security_logger.dart';
 import 'share_prediction_page.dart';
 import 'partner_mode_page.dart';
 
@@ -50,6 +51,13 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _syncErrorListener() {
     if (!mounted || _syncProvider == null) return;
+    
+    // (W10) Prioritize recovery UI: Hide technical sync errors if the recovery prompt is active
+    if (_syncProvider!.requiresRecoveryPrompt) {
+      _syncProvider?.clearError();
+      return;
+    }
+
     if (_syncProvider!.lastError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -476,10 +484,157 @@ class _SettingsPageState extends State<SettingsPage> {
             onChanged(val);
           },
           activeThumbColor: primary,
-          activeTrackColor: primary.withValues(alpha: 0.5),
         ),
       ),
     );
+  }
+
+  Widget _buildRecoverySecurityCard(BuildContext context, CloudSyncProvider syncProvider, bool isDark, Color primary) {
+    if (syncProvider.requiresRecoveryPrompt) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24, borderColor: Colors.orange.withValues(alpha: 0.3)),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Action Required",
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: isDark ? Colors.white : Colors.black87),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "An encrypted backup was found in the cloud. Enter your recovery passphrase to restore access to your data.",
+              style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black54),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () => _handleRestoreWithPassphrase(syncProvider),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text("RECOVER CLOUD DATA", style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => _handleResetCloudSync(syncProvider),
+              style: TextButton.styleFrom(foregroundColor: isDark ? Colors.white38 : Colors.black38),
+              child: const Text("RESET & START OVER", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
+      child: _buildSettingsItem(
+        icon: syncProvider.isRecoveryEnabled ? Icons.verified_user_rounded : Icons.gpp_maybe_rounded,
+        iconColor: syncProvider.isRecoveryEnabled ? Colors.green : Colors.orange,
+        title: "Recovery Security",
+        subtitle: syncProvider.isRecoveryEnabled ? "Passphrase protection active" : "Required for new device restore",
+        isDark: isDark,
+        onTap: () => _handleSetupRecovery(syncProvider),
+        trailing: syncProvider.isRecoveryEnabled 
+            ? const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20)
+            : const Text("SET UP", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
+      ),
+    );
+  }
+
+  Future<void> _handleSetupRecovery(CloudSyncProvider provider) async {
+    HapticFeedback.mediumImpact();
+    final passphrase = await _showPasswordDialog(
+      title: 'Set Recovery Passphrase',
+      message: 'This passphrase is used to encrypt your cloud backups. You will need it to restore your data on a new phone. This CANNOT be reset.',
+      isCreate: true,
+    );
+
+    if (passphrase != null && mounted) {
+      await provider.setupRecovery(passphrase);
+      if (mounted && provider.lastError == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Recovery security enabled!'), backgroundColor: Colors.green),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleRestoreWithPassphrase(CloudSyncProvider provider) async {
+    HapticFeedback.mediumImpact();
+    final passphrase = await _showPasswordDialog(
+      title: 'Enter Recovery Passphrase',
+      message: 'Enter the passphrase you set on your other device to decrypt the cloud backup.',
+      isCreate: false,
+    );
+
+    if (passphrase != null && mounted) {
+      await provider.restoreRecovery(passphrase);
+      if (mounted && provider.lastError == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cloud data recovered successfully!'), backgroundColor: Colors.green),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleResetCloudSync(CloudSyncProvider provider) async {
+    HapticFeedback.heavyImpact();
+    
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Cloud Sync?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+        content: const Text(
+          'This will PERMANENTLY DELETE all your data from the cloud. Local data stays safe. You should only do this if you lost your password.',
+          style: TextStyle(fontFamily: AppTheme.fontFamily),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Yes, Wipe Cloud Data', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      SecurityLogger.logInfo("UI: User confirmed cloud wipe. Requesting biometric auth...");
+      final authService = context.read<AuthService>();
+      final authenticated = await authService.authenticate();
+      
+      if (authenticated && mounted) {
+        SecurityLogger.logInfo("UI: Biometric auth success. Triggering wipe logic...");
+        await provider.resetCloudData();
+        if (mounted && provider.lastError == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Cloud sync reset successfully.'), backgroundColor: AppTheme.primaryColor),
+          );
+        }
+      } else if (mounted) {
+        SecurityLogger.logInfo("UI: Biometric auth failed or cancelled. Aborting wipe.");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Authentication failed. Reset aborted.")),
+        );
+      }
+    }
   }
 
   String _formatRelativeTime(DateTime? time) {
@@ -701,32 +856,34 @@ class _SettingsPageState extends State<SettingsPage> {
                                 Icon(Icons.check_circle_rounded, color: primary, size: 28),
                             ],
                           ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: ElevatedButton.icon(
-                              onPressed: syncProvider.isSyncing ? null : () => syncProvider.sync(),
-                              icon: syncProvider.isSyncing 
-                                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : Icon(syncProvider.lastError != null ? Icons.refresh_rounded : Icons.sync_rounded),
-                              label: Text(
-                                syncProvider.isSyncing 
-                                    ? "SYNCING..." 
-                                    : (syncProvider.lastError != null ? "RETRY SYNC" : "SYNC NOW"),
-                                style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: syncProvider.isSyncing ? null : () => syncProvider.sync(),
+                                  icon: const Icon(Icons.sync_rounded, size: 18),
+                                  label: const Text("SYNC NOW", style: TextStyle(fontWeight: FontWeight.bold)),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: primary,
+                                    side: BorderSide(color: primary.withValues(alpha: 0.5)),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primary,
-                                foregroundColor: isDark ? AppTheme.backgroundDarkColor : Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              const SizedBox(width: 12),
+                              IconButton(
+                                onPressed: () => _handleResetCloudSync(syncProvider),
+                                icon: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
+                                tooltip: "Reset Cloud Data",
                               ),
-                            ),
+                            ],
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    _buildRecoverySecurityCard(context, syncProvider, isDark, primary),
                   ],
                 ],
               );

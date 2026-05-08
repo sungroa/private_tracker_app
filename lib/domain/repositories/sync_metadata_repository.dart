@@ -7,7 +7,7 @@ abstract class ISyncMetadataRepository {
   Future<String?> getLastSyncChecksum();
 
   /// Updates the checksum of the last successful synchronization.
-  Future<void> setLastSyncChecksum(String checksum);
+  Future<void> setLastSyncChecksum(String? checksum);
 
   /// Retrieves the timestamp (ISO8601) of the last local modification.
   /// 
@@ -18,4 +18,10 @@ abstract class ISyncMetadataRepository {
   /// 
   /// Typically called after a successful upload to indicate local state is in sync with cloud.
   Future<void> clearLocalModifiedFlag();
+
+  /// Retrieves the local recovery salt used for passphrase derivation.
+  Future<String?> getRecoverySalt();
+
+  /// Updates the local recovery salt.
+  Future<void> setRecoverySalt(String? salt);
 }

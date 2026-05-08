@@ -112,4 +112,17 @@ class SecureKeyStorage {
     
     return base64Url.decode(keyString);
   }
+
+  /// Explicitly sets the cloud sync encryption key (used for passphrase-derived keys).
+  Future<void> setCloudSyncKey(List<int> key) async {
+    final encoded = base64UrlEncode(key);
+    await _secureStorage.write(key: _cloudKeyName, value: encoded)
+        .timeout(_storageTimeout);
+  }
+
+  /// Deletes the cloud sync encryption key from secure storage.
+  Future<void> deleteCloudSyncKey() async {
+    await _secureStorage.delete(key: _cloudKeyName)
+        .timeout(_storageTimeout);
+  }
 }

@@ -19,4 +19,5 @@ class HiveRegistry {
   // --- Meta Keys ---
   static const String lastLocalModifiedKey = 'last_local_modified';
   static const String lastSyncChecksumKey = 'last_sync_checksum';
+  static const String recoverySaltKey = 'recovery_salt';
 }

@@ -5,6 +5,7 @@ import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 
 import '../../domain/services/cloud_sync_interface.dart';
+import '../../core/utils/security_logger.dart';
 
 /// An authenticated HTTP client that injects GoogleSignIn auth headers into requests.
 class GoogleAuthClient extends http.BaseClient {
@@ -31,14 +32,13 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
   final GoogleSignIn _googleSignIn;
   drive.DriveApi? _driveApi;
   http.Client? _authClient;
-  final String? _serverClientId;
-  bool _initializedSignIn = false;
 
   GoogleDriveSyncRepository({
     GoogleSignIn? googleSignIn,
+    // serverClientId is retained for API compatibility but initialize() is now
+    // called at app startup (main.dart), so it is no longer used here.
     String? serverClientId,
-  })  : _googleSignIn = googleSignIn ?? GoogleSignIn.instance,
-        _serverClientId = serverClientId;
+  }) : _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
 
   /// Allows injecting a mock DriveApi for testing without needing to authenticate.
   void setMockDriveApi(drive.DriveApi api) {
@@ -47,36 +47,61 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
 
   @override
   Future<void> authenticate() async {
+    // No idempotency guard here: authenticate() must always refresh
+    // auth headers to prevent stale OAuth tokens from being reused as zombie
+    // DriveApi instances. initialize() is called once at app startup in main().
+    // attemptLightweightAuthentication() reuses existing credentials instantly
+    // when the user is already signed in, so repeated calls are cheap.
     try {
-      if (!_initializedSignIn) {
-        // (W10) Client configuration required on Android for this plugin version
-        await _googleSignIn.initialize(serverClientId: _serverClientId);
-        _initializedSignIn = true;
-      }
+      SecurityLogger.logInfo("Google Drive: Refreshing authentication session...");
 
       const scope = drive.DriveApi.driveAppdataScope;
-      
-      // (W10) Attempt silent sign-in first to avoid account picker
-      GoogleSignInAccount? account = await _googleSignIn.attemptLightweightAuthentication();
-      account ??= await _googleSignIn.authenticate(scopeHint: [scope]);
 
-      final authHeaders = await account.authorizationClient.authorizationHeaders(
-        [scope], 
-        promptIfNecessary: true,
-      );
-      if (authHeaders == null) {
-        throw CloudSyncException(CloudSyncException.authHeadersMissing);
+      // Reuse existing credentials without a UI prompt when already signed in.
+      SecurityLogger.logInfo("Google Drive: Attempting lightweight sign-in...");
+      GoogleSignInAccount? account =
+          await _googleSignIn.attemptLightweightAuthentication();
+
+      if (account == null) {
+        SecurityLogger.logInfo(
+            "Google Drive: Lightweight auth failed. Requesting user sign-in...");
+        account = await _googleSignIn.authenticate(scopeHint: [scope]);
       }
 
-      // Fix C7: Use a dedicated client that we can close
-      _authClient?.close();
-      final authClient = GoogleAuthClient(authHeaders, http.Client());
-      _authClient = authClient;
-      _driveApi = drive.DriveApi(authClient);
+      SecurityLogger.logInfo(
+          "Google Drive: Account obtained. Fetching authorization headers...");
+
+      // promptIfNecessary: false — token refresh is handled internally by the
+      // authorization client without showing additional UI.
+      final authHeaders = await account.authorizationClient
+          .authorizationHeaders([scope], promptIfNecessary: false);
+
+      if (authHeaders == null) {
+        SecurityLogger.logInfo(
+            "Google Drive: Auth headers missing. Force-refreshing token...");
+        final forcedHeaders = await account.authorizationClient
+            .authorizationHeaders([scope], promptIfNecessary: true);
+        if (forcedHeaders == null) {
+          throw CloudSyncException(CloudSyncException.authHeadersMissing);
+        }
+        _setupDriveApi(forcedHeaders);
+      } else {
+        _setupDriveApi(authHeaders);
+      }
+
+      SecurityLogger.logInfo("Google Drive: Drive API client ready.");
     } catch (e) {
+      SecurityLogger.logError("Google Drive: Authentication failed", error: e);
       if (e is CloudSyncException) rethrow;
       throw CloudSyncException(CloudSyncException.authFailed, e);
     }
+  }
+
+  void _setupDriveApi(Map<String, String> headers) {
+    _authClient?.close();
+    final authClient = GoogleAuthClient(headers, http.Client());
+    _authClient = authClient;
+    _driveApi = drive.DriveApi(authClient);
   }
 
   void _checkAuthenticated() {
@@ -86,22 +111,47 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
   }
 
   @override
-  Future<void> uploadEncryptedBackup(Uint8List payload, String checksum) async {
+  Future<void> uploadEncryptedBackup(Uint8List payload, String checksum,
+      {Map<String, String?>? extraMetadata}) async {
     _checkAuthenticated();
 
     try {
       final media = drive.Media(Stream.value(payload), payload.length);
 
+      // Build the primary metadata map (appProperties supports nullable values).
+      final appPropertiesMap = <String, String?>{
+        'checksum': checksum,
+        if (extraMetadata != null) ...extraMetadata,
+      };
+
+      // Triple-redundant metadata storage so the recovery salt survives
+      // across Drive API scope differences and device transitions:
+      //   • appProperties — app-private; may be masked on some Drive API scopes.
+      //   • properties    — public fallback; visible across Drive API scopes.
+      //   • description   — last-resort plain-text fallback, prefixed 'salt:'.
+      final propertiesMap = Map.fromEntries(
+        appPropertiesMap.entries
+            .where((e) => e.value != null)
+            .map((e) => MapEntry(e.key, e.value!)),
+      );
+      final recoverySalt = extraMetadata?['recovery_salt'];
+
       final driveFile = drive.File()
         ..name = 'private_tracker_backup.enc'
         ..parents = ['appDataFolder']
-        ..appProperties = {'checksum': checksum};
+        ..appProperties = appPropertiesMap
+        ..properties = propertiesMap
+        ..description = recoverySalt != null ? 'salt:$recoverySalt' : null;
 
       // Upload the new backup
-      final newFile = await _driveApi!.files.create(driveFile, uploadMedia: media);
+      final newFile =
+          await _driveApi!.files.create(driveFile, uploadMedia: media);
+      SecurityLogger.logInfo("Upload successful. File ID: ${newFile.id}");
 
       // Clean up old backups post-upload
-      final fileList = await _driveApi!.files.list(spaces: 'appDataFolder', $fields: '*');
+      SecurityLogger.logInfo("Cleaning up old backups...");
+      final fileList =
+          await _driveApi!.files.list(spaces: 'appDataFolder', $fields: '*');
       final allFiles = fileList.files;
       if (allFiles != null && allFiles.isNotEmpty) {
         for (final f in allFiles) {
@@ -109,12 +159,13 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
             try {
               await _driveApi!.files.delete(f.id!);
             } catch (_) {
-              // Ignore deletion errors to not fail the overall upload
+              // Ignore individual deletion errors to not fail the overall upload
             }
           }
         }
       }
     } catch (e) {
+      SecurityLogger.logError("Upload failed", error: e);
       throw CloudSyncException(CloudSyncException.uploadFailed, e);
     }
   }
@@ -124,6 +175,7 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
     _checkAuthenticated();
 
     try {
+      SecurityLogger.logInfo("Listing cloud backups for download...");
       final fileList = await _driveApi!.files.list(spaces: 'appDataFolder', $fields: '*');
       final allFiles = fileList.files;
 
@@ -138,6 +190,7 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
 
       if (fileId == null) throw CloudSyncException(CloudSyncException.backupIdMissing);
 
+      SecurityLogger.logInfo("Found ${allFiles.length} files. Downloading latest (ID: $fileId)...");
       final media = await _driveApi!.files.get(
         fileId,
         downloadOptions: drive.DownloadOptions.fullMedia,
@@ -148,15 +201,67 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       await for (final chunk in media.stream) {
         builder.add(chunk);
       }
+      SecurityLogger.logInfo("Download complete (${builder.length} bytes).");
       return builder.takeBytes();
     } catch (e) {
+      SecurityLogger.logError("Download failed", error: e);
       if (e is CloudSyncException) rethrow;
       throw CloudSyncException(CloudSyncException.downloadFailed, e);
     }
   }
 
   @override
+  Future<void> deleteCloudData() async {
+    _checkAuthenticated();
+    try {
+      SecurityLogger.logInfo("Cloud Wipe: Initializing exhaustive search in appDataFolder...");
+      
+      int deletedCount = 0;
+      String? pageToken;
+      
+      do {
+        final fileList = await _driveApi!.files.list(
+          spaces: 'appDataFolder',
+          $fields: 'nextPageToken, files(id, name, createdTime, size)',
+          pageToken: pageToken,
+          pageSize: 100,
+        );
+
+        final files = fileList.files;
+        if (files == null || files.isEmpty) {
+          if (deletedCount == 0) {
+            SecurityLogger.logInfo("Cloud Wipe: No files found in appDataFolder.");
+          }
+          break;
+        }
+
+        SecurityLogger.logInfo("Cloud Wipe: Found ${files.length} files on current page. Deleting...");
+        for (final f in files) {
+          if (f.id != null) {
+            SecurityLogger.logInfo("Cloud Wipe: Deleting [${f.name}] (ID: ${f.id}, Size: ${f.size}, Created: ${f.createdTime})");
+            await _driveApi!.files.delete(f.id!);
+            deletedCount++;
+          }
+        }
+        
+        pageToken = fileList.nextPageToken;
+      } while (pageToken != null);
+
+      SecurityLogger.logInfo("Cloud Wipe: COMPLETE. Total files deleted: $deletedCount");
+    } catch (e) {
+      SecurityLogger.logError("Cloud Wipe: FAILED to purge appDataFolder", error: e);
+      throw CloudSyncException("Failed to delete cloud data.", e);
+    }
+  }
+
+  @override
   Future<String?> fetchLatestCloudChecksum() async {
+    final metadata = await fetchLatestCloudMetadata();
+    return metadata?['checksum'];
+  }
+
+  @override
+  Future<Map<String, String?>?> fetchLatestCloudMetadata() async {
     _checkAuthenticated();
 
     try {
@@ -170,7 +275,26 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       allFiles.sort((a, b) => (b.createdTime ?? DateTime(0)).compareTo(a.createdTime ?? DateTime(0)));
       final latestBackup = allFiles.first;
 
-      return latestBackup.appProperties?['checksum'];
+      // (C3) Robust retrieval: check appProperties, then properties, then description
+      final Map<String, String?> metadata = {
+        'id': latestBackup.id,
+        'name': latestBackup.name,
+        'size': latestBackup.size,
+      };
+      
+      // 1. Initial maps
+      if (latestBackup.appProperties != null) metadata.addAll(latestBackup.appProperties!);
+      if (latestBackup.properties != null) metadata.addAll(latestBackup.properties!);
+      
+      // 2. Description fallback for salt
+      if (metadata['recovery_salt'] == null && latestBackup.description != null) {
+        final desc = latestBackup.description!;
+        if (desc.startsWith('salt:')) {
+          metadata['recovery_salt'] = desc.substring(5);
+        }
+      }
+
+      return metadata;
     } catch (e) {
       throw CloudSyncException(CloudSyncException.fetchChecksumFailed, e);
     }
