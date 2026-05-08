@@ -39,13 +39,20 @@ void main() {
 
   group('SyncDataUseCase Tests', () {
     test('execute should perform initial upload if cloud is empty', () async {
-      when(() => mockCloudSync.fetchLatestCloudChecksum()).thenAnswer((_) async => null);
+      // fetchLatestCloudMetadata returns null when no backup exists
+      when(() => mockCloudSync.fetchLatestCloudMetadata())
+          .thenAnswer((_) async => null);
       when(() => mockMetadata.getLastSyncChecksum()).thenAnswer((_) async => null);
-      when(() => mockMetadata.getLastLocalModified()).thenAnswer((_) async => 'some_date');
-      
-      when(() => mockDataSource.exportCloudBackup(any())).thenAnswer((_) async => Uint8List.fromList([4, 5, 6]));
-      when(() => mockCloudSync.uploadEncryptedBackup(any(), any())).thenAnswer((_) async {});
-      when(() => mockMetadata.setLastSyncChecksum(any())).thenAnswer((_) async {});
+      when(() => mockMetadata.getLastLocalModified())
+          .thenAnswer((_) async => 'some_date');
+      when(() => mockMetadata.getRecoverySalt()).thenAnswer((_) async => null);
+
+      when(() => mockDataSource.exportCloudBackup(any()))
+          .thenAnswer((_) async => Uint8List.fromList([4, 5, 6]));
+      when(() => mockCloudSync.uploadEncryptedBackup(any(), any()))
+          .thenAnswer((_) async {});
+      when(() => mockMetadata.setLastSyncChecksum(any()))
+          .thenAnswer((_) async {});
       when(() => mockMetadata.clearLocalModifiedFlag()).thenAnswer((_) async {});
 
       final result = await useCase.execute();
@@ -55,8 +62,11 @@ void main() {
     });
 
     test('execute should skip if checksums match and no local modifications', () async {
-      when(() => mockCloudSync.fetchLatestCloudChecksum()).thenAnswer((_) async => 'checksum123');
-      when(() => mockMetadata.getLastSyncChecksum()).thenAnswer((_) async => 'checksum123');
+      when(() => mockCloudSync.fetchLatestCloudMetadata())
+          .thenAnswer((_) async => {'checksum': 'checksum123'});
+      when(() => mockMetadata.getRecoverySalt()).thenAnswer((_) async => null);
+      when(() => mockMetadata.getLastSyncChecksum())
+          .thenAnswer((_) async => 'checksum123');
       when(() => mockMetadata.getLastLocalModified()).thenAnswer((_) async => null);
 
       final result = await useCase.execute();
@@ -67,43 +77,63 @@ void main() {
 
     test('execute should merge and upload if cloud is newer', () async {
       final now = DateTime.now();
-      final localLog = CycleLog(id: '1', startDate: now, updatedAt: now);
-      final cloudLog = CycleLog(id: '1', startDate: now, updatedAt: now.add(const Duration(minutes: 5)));
+      final localLog =
+          CycleLog(id: '1', startDate: now, updatedAt: now);
+      final cloudLog = CycleLog(
+          id: '1',
+          startDate: now,
+          updatedAt: now.add(const Duration(minutes: 5)));
 
-      when(() => mockCloudSync.fetchLatestCloudChecksum()).thenAnswer((_) async => '787c798e39a5bc1910355bae6d0cd87a36b2e10fd0202a83e3bb6b005da83472'); // Correct sha256 of [4,5,6]
-      when(() => mockMetadata.getLastSyncChecksum()).thenAnswer((_) async => 'local_old');
-      when(() => mockMetadata.getLastLocalModified()).thenAnswer((_) async => null);
+      // sha256 of [4,5,6]
+      const cloudChecksum =
+          '787c798e39a5bc1910355bae6d0cd87a36b2e10fd0202a83e3bb6b005da83472';
 
-      when(() => mockCloudSync.downloadEncryptedBackup()).thenAnswer((_) async => Uint8List.fromList([4, 5, 6]));
-      
-      when(() => mockDataSource.parseCloudBackup(any(), any())).thenAnswer((_) async => {
-        'cycleLogs': [ModelMapper.cycleLogToMap(cloudLog)],
-        'symptomLogs': [],
-        'customTags': [],
-      });
+      when(() => mockCloudSync.fetchLatestCloudMetadata())
+          .thenAnswer((_) async => {'checksum': cloudChecksum});
+      when(() => mockMetadata.getRecoverySalt()).thenAnswer((_) async => null);
+      when(() => mockMetadata.getLastSyncChecksum())
+          .thenAnswer((_) async => 'local_old');
+      when(() => mockMetadata.getLastLocalModified())
+          .thenAnswer((_) async => null);
+
+      when(() => mockCloudSync.downloadEncryptedBackup())
+          .thenAnswer((_) async => Uint8List.fromList([4, 5, 6]));
+
+      when(() => mockDataSource.parseCloudBackup(any(), any()))
+          .thenAnswer((_) async => {
+                'cycleLogs': [ModelMapper.cycleLogToMap(cloudLog)],
+                'symptomLogs': [],
+                'customTags': [],
+              });
 
       when(() => mockDataSource.getAllDataAsMap()).thenAnswer((_) async => {
-        'cycleLogs': [ModelMapper.cycleLogToMap(localLog)],
-        'symptomLogs': [],
-        'customTags': [],
-      });
+            'cycleLogs': [ModelMapper.cycleLogToMap(localLog)],
+            'symptomLogs': [],
+            'customTags': [],
+          });
 
-      when(() => mockDataSource.persistMergedMap(any())).thenAnswer((_) async {});
-      
-      when(() => mockDataSource.exportCloudBackup(any())).thenAnswer((_) async => Uint8List.fromList([7, 8, 9]));
-      when(() => mockCloudSync.uploadEncryptedBackup(any(), any())).thenAnswer((_) async {});
-      when(() => mockMetadata.setLastSyncChecksum(any())).thenAnswer((_) async {});
+      when(() => mockDataSource.persistMergedMap(any()))
+          .thenAnswer((_) async {});
+
+      when(() => mockDataSource.exportCloudBackup(any()))
+          .thenAnswer((_) async => Uint8List.fromList([7, 8, 9]));
+      when(() => mockCloudSync.uploadEncryptedBackup(any(), any()))
+          .thenAnswer((_) async {});
+      when(() => mockMetadata.setLastSyncChecksum(any()))
+          .thenAnswer((_) async {});
       when(() => mockMetadata.clearLocalModifiedFlag()).thenAnswer((_) async {});
 
       final result = await useCase.execute();
 
       expect(result, isTrue);
-      
-      final captured = verify(() => mockDataSource.persistMergedMap(captureAny())).captured;
+
+      final captured =
+          verify(() => mockDataSource.persistMergedMap(captureAny())).captured;
 
       final Map<String, dynamic> mergedMap = captured.first;
       final List<dynamic> mergedCycles = mergedMap['cycleLogs'];
-      expect(mergedCycles.first['updatedAt'], cloudLog.updatedAt.toUtc().toIso8601String());
+      expect(mergedCycles.first['updatedAt'],
+          cloudLog.updatedAt.toUtc().toIso8601String());
     });
   });
 }

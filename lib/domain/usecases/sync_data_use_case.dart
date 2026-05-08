@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import '../repositories/data_source_repository.dart';
 import '../repositories/sync_metadata_repository.dart';
 import '../services/cloud_sync_interface.dart';
+import '../../core/utils/security_logger.dart';
 
 /// Orchestrates the synchronization process with record-level LWW conflict resolution.
 /// 
@@ -25,30 +26,63 @@ class SyncDataUseCase {
         _metadata = metadata,
         _keyProvider = keyProvider;
 
+  /// Updates the local recovery salt.
+  Future<void> setRecoverySalt(String salt) async {
+    await _metadata.setRecoverySalt(salt);
+  }
+
+  /// Clears local sync metadata.
+  Future<void> clearLocalMetadata() async {
+    await _metadata.setLastSyncChecksum(null);
+    await _metadata.setRecoverySalt(null);
+  }
+
   /// Executes the synchronization cycle.
   /// 
   /// Returns `true` if changes were applied to the local database.
   Future<bool> execute() async {
+    String? currentCloudSalt;
     try {
+      SecurityLogger.logInfo("Sync Cycle: Starting authentication phase...");
       await _cloudSync.authenticate();
 
-      final cloudChecksum = await _cloudSync.fetchLatestCloudChecksum();
+      SecurityLogger.logInfo("Sync Cycle: Fetching latest cloud metadata...");
+      final cloudMetadata = await _cloudSync.fetchLatestCloudMetadata();
+      final cloudChecksum = cloudMetadata?['checksum'];
+      currentCloudSalt = cloudMetadata?['recovery_salt'];
+      
+      // (W10) Recovery salt management
+      final localSalt = await _metadata.getRecoverySalt();
+      if (currentCloudSalt != null && localSalt == null) {
+        SecurityLogger.logInfo("Sync Cycle: New cloud salt detected. Storing locally.");
+        await _metadata.setRecoverySalt(currentCloudSalt);
+      } else if (currentCloudSalt != null && localSalt != null && currentCloudSalt != localSalt) {
+        throw CloudSyncException("Recovery salt mismatch between local and cloud.");
+      }
+
       final lastSyncChecksum = await _metadata.getLastSyncChecksum();
       final lastLocalModified = await _metadata.getLastLocalModified();
 
       // 1. Check if we need to do anything at all
       if (cloudChecksum == null) {
-        // First time syncing or cloud wiped: Upload local data to cloud
+        SecurityLogger.logInfo("Sync Cycle: No cloud backup found. Performing full upload.");
         await _performFullUpload();
         return false;
       }
 
       if (cloudChecksum == lastSyncChecksum && lastLocalModified == null) {
-        // Nothing changed on either side
+        SecurityLogger.logInfo("Sync Cycle: State is already up to date. Skipping merge.");
         return false;
       }
 
       // 2. Download cloud data
+      SecurityLogger.logInfo("Sync Cycle: Downloading cloud backup...");
+      // (D10) Diagnostics: Capture name and ID for better traceability on conflict
+      final fileName = cloudMetadata?['name'] ?? 'unknown';
+      final fileId = cloudMetadata?['id'] ?? 'unknown_id';
+      final fileSize = cloudMetadata?['size'] ?? 'unknown_size';
+      SecurityLogger.logInfo("Sync Cycle: Found Target File [ $fileName ] (ID: $fileId, Size: $fileSize bytes)");
+
       final cloudPayload = await _cloudSync.downloadEncryptedBackup();
       
       // Verification (W8): Verify the downloaded payload matches the cloud checksum
@@ -56,30 +90,59 @@ class SyncDataUseCase {
       if (cloudChecksum != downloadedHash) {
         throw CloudSyncException(
           CloudSyncException.downloadFailed,
-          'Integrity check failed: Cloud checksum mismatch ($cloudChecksum vs $downloadedHash)',
+          'Integrity check failed: Cloud checksum mismatch (ID: $fileId, $cloudChecksum vs $downloadedHash)',
         );
       }
 
       // 3. Prepare local/cloud maps for merging
+      SecurityLogger.logInfo("Sync Cycle: Preparing data for merge...");
       final localDataMap = await _dataSource.getAllDataAsMap();
       final cloudKey = await _keyProvider();
       final cloudDataMap = await _dataSource.parseCloudBackup(cloudPayload, cloudKey);
       
       // 4. Perform merge on background isolate using LWW
-      // (W1) Pure Dart Isolate.run to decouple from Flutter framework
+      SecurityLogger.logInfo("Sync Cycle: Entering background merge isolate...");
       final mergedDataMap = await Isolate.run(() => _mergeDataWorkerSer({
         'local': localDataMap,
         'cloud': cloudDataMap,
       }));
+      SecurityLogger.logInfo("Sync Cycle: background merge complete.");
 
       // 5. Apply merged results locally
+      SecurityLogger.logInfo("Sync Cycle: Persisting merged data to local storage...");
       await _dataSource.persistMergedMap(mergedDataMap);
+      SecurityLogger.logInfo("Sync Cycle: Persistence successful.");
 
       // 6. Final upload to ensure cloud has the merged state
+      SecurityLogger.logInfo("Sync Cycle: Performing final upload of merged state...");
       await _performFullUpload();
 
+      SecurityLogger.logInfo("Sync Cycle: SUCCESS. Local and cloud are synchronized.");
       return true;
-    } catch (e) {
+    } catch (e, stack) {
+      SecurityLogger.logError("Sync Cycle: CRITICAL FAILURE", error: e, stackTrace: stack);
+      // Deep refresh: fetch metadata again on failure to catch any just-uploaded salt.
+      // We must handle secondary failures here (e.g. expired token) to prevent
+      // the recoveryRequired exception from being swallowed.
+      try {
+        final refreshedMetadata = await _cloudSync.fetchLatestCloudMetadata();
+        final refreshedSalt = refreshedMetadata?['recovery_salt'];
+        final localSalt = await _metadata.getRecoverySalt();
+
+        if (e.toString().contains("Integrity check failed") &&
+            (currentCloudSalt != null ||
+                refreshedSalt != null ||
+                localSalt != null)) {
+          // Definitive signal: if a salt exists anywhere, decryption failure means
+          // recovery passphrase is required.
+          throw CloudSyncException(CloudSyncException.recoveryRequired, e);
+        }
+      } catch (secondaryError) {
+        // Log secondary errors instead of silently discarding them.
+        SecurityLogger.logError(
+            "Sync Cycle: Secondary error during recovery analysis (non-fatal)",
+            error: secondaryError);
+      }
       rethrow;
     }
   }
@@ -89,7 +152,14 @@ class SyncDataUseCase {
     final payload = await _dataSource.exportCloudBackup(cloudKey);
     final checksum = sha256.convert(payload).toString();
     
-    await _cloudSync.uploadEncryptedBackup(payload, checksum);
+    // (W10) We should preserve the salt in metadata if it exists
+    final localSalt = await _metadata.getRecoverySalt();
+
+    await _cloudSync.uploadEncryptedBackup(
+      payload, 
+      checksum, 
+      extraMetadata: localSalt != null ? {'recovery_salt': localSalt} : null,
+    );
     await _metadata.setLastSyncChecksum(checksum);
     await _metadata.clearLocalModifiedFlag();
   }

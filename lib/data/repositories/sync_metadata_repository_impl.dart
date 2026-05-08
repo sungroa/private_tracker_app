@@ -19,9 +19,13 @@ class SyncMetadataRepositoryImpl implements ISyncMetadataRepository {
   }
 
   @override
-  Future<void> setLastSyncChecksum(String checksum) async {
+  Future<void> setLastSyncChecksum(String? checksum) async {
     final metaBox = _dbManager.getBox<String>(HiveRegistry.metaBox);
-    await metaBox.put(HiveRegistry.lastSyncChecksumKey, checksum);
+    if (checksum == null) {
+      await metaBox.delete(HiveRegistry.lastSyncChecksumKey);
+    } else {
+      await metaBox.put(HiveRegistry.lastSyncChecksumKey, checksum);
+    }
   }
 
   @override
@@ -34,5 +38,21 @@ class SyncMetadataRepositoryImpl implements ISyncMetadataRepository {
   Future<void> clearLocalModifiedFlag() async {
     final metaBox = _dbManager.getBox<String>(HiveRegistry.metaBox);
     await metaBox.delete(HiveRegistry.lastLocalModifiedKey);
+  }
+
+  @override
+  Future<String?> getRecoverySalt() async {
+    final metaBox = _dbManager.getBox<String>(HiveRegistry.metaBox);
+    return metaBox.get(HiveRegistry.recoverySaltKey);
+  }
+
+  @override
+  Future<void> setRecoverySalt(String? salt) async {
+    final metaBox = _dbManager.getBox<String>(HiveRegistry.metaBox);
+    if (salt == null) {
+      await metaBox.delete(HiveRegistry.recoverySaltKey);
+    } else {
+      await metaBox.put(HiveRegistry.recoverySaltKey, salt);
+    }
   }
 }

@@ -16,6 +16,7 @@ class CloudSyncException implements Exception {
   static const String fetchChecksumFailed = 'Failed to fetch latest cloud checksum';
   static const String noBackupFound = 'No backup found in cloud storage';
   static const String backupIdMissing = 'Backup file has no valid identifier';
+  static const String recoveryRequired = 'Cloud backup requires a recovery passphrase';
 
   @override
   String toString() {
@@ -37,8 +38,9 @@ abstract class CloudSyncInterface {
   ///
   /// [payload] The encrypted binary data to upload.
   /// [checksum] The integrity checksum of the file.
+  /// [extraMetadata] Optional key-value pairs to store with the file (e.g., encryption salt).
   /// Should throw [CloudSyncException] on network, quota, or other upload errors.
-  Future<void> uploadEncryptedBackup(Uint8List payload, String checksum);
+  Future<void> uploadEncryptedBackup(Uint8List payload, String checksum, {Map<String, String?>? extraMetadata});
 
   /// Downloads the encrypted backup from the cloud storage.
   ///
@@ -51,4 +53,12 @@ abstract class CloudSyncInterface {
   /// Returns the checksum string, or null if no backup exists.
   /// Should throw [CloudSyncException] on failure.
   Future<String?> fetchLatestCloudChecksum();
+
+  /// (W10) Deletes all backup data from the cloud storage.
+  Future<void> deleteCloudData();
+
+  /// Fetches the application-specific metadata (properties) associated with the latest backup.
+  /// 
+  /// Returns a map of properties, or null if no backup exists.
+  Future<Map<String, String?>?> fetchLatestCloudMetadata();
 }

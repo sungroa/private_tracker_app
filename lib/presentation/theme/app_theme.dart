@@ -85,12 +85,12 @@ class AppTheme {
   }
 
   // --- Premium Glassmorphism ---
-  static BoxDecoration glassDecoration({bool isDark = false, double borderRadius = 28}) {
+  static BoxDecoration glassDecoration({bool isDark = false, double borderRadius = 28, Color? borderColor}) {
     return BoxDecoration(
       color: isDark ? surfaceDarkColor : surfaceColor,
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(
-        color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.4),
+        color: borderColor ?? (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.4)),
         width: 1.5,
       ),
       boxShadow: [

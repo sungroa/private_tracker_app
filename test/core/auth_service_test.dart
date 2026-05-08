@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -35,6 +36,24 @@ void main() {
             localizedReason: any(named: 'localizedReason'),
             options: any(named: 'options'),
           )).thenAnswer((_) async => true);
+
+      final result = await authService.authenticate();
+      expect(result, true);
+      
+      final captured = verify(() => mockAuth.authenticate(
+        localizedReason: any(named: 'localizedReason'),
+        options: captureAny(named: 'options'),
+      )).captured.first as AuthenticationOptions;
+      
+      expect(captured.stickyAuth, false);
+      expect(captured.useErrorDialogs, true);
+    });
+
+    test('authenticate should return true when PlatformException is NotAvailable', () async {
+      when(() => mockAuth.authenticate(
+            localizedReason: any(named: 'localizedReason'),
+            options: any(named: 'options'),
+          )).thenThrow(PlatformException(code: 'NotAvailable'));
 
       final result = await authService.authenticate();
       expect(result, true);
