@@ -17,6 +17,7 @@ class CloudSyncException implements Exception {
   static const String noBackupFound = 'No backup found in cloud storage';
   static const String backupIdMissing = 'Backup file has no valid identifier';
   static const String recoveryRequired = 'Cloud backup requires a recovery passphrase';
+  static const String orphanKey = 'Cloud backup key was lost and cannot be recovered';
 
   @override
   String toString() {

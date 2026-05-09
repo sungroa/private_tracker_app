@@ -187,5 +187,56 @@ void main() {
       expect(provider.lastError, contains('Old passphrase is incorrect'));
       verifyNever(() => mockKeyStorage.setCloudSyncKey(any()));
     });
+
+    // --- Orphan key: sync fails with no salt anywhere → isOrphanKey set ---
+    test('sync() sets isOrphanKey when HMAC fails with no salt anywhere', () async {
+      when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => true);
+      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
+      when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
+      when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
+      // No salt in cloud metadata
+      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer((_) async => {'checksum': 'abc'});
+      // execute() throws the orphanKey CloudSyncException
+      when(() => mockSyncUseCase.execute()).thenThrow(
+        CloudSyncException(CloudSyncException.orphanKey),
+      );
+
+      await provider.init();
+      await provider.sync();
+
+      expect(provider.isOrphanKey, true);
+      expect(provider.lastError, isNull); // Card UI handles this — no snackbar
+    });
+
+    // --- overwriteCloudWithLocal: resets orphan key flag on success ---
+    test('overwriteCloudWithLocal() resets isOrphanKey and re-uploads local data', () async {
+      when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => true);
+      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
+      when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
+      when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
+      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer((_) async => {'checksum': 'abc'});
+      when(() => mockCloudSync.deleteCloudData()).thenAnswer((_) async => {});
+      when(() => mockSyncUseCase.clearLocalMetadata()).thenAnswer((_) async => {});
+      when(() => mockSyncUseCase.execute()).thenAnswer((_) async => false);
+      when(() => mockPrefs.setLastSyncTime(any())).thenAnswer((_) async => {});
+
+      await provider.init();
+      // Manually place provider in orphan key state
+      // We do this by triggering a sync with orphanKey exception first
+      when(() => mockSyncUseCase.execute()).thenThrow(
+        CloudSyncException(CloudSyncException.orphanKey),
+      );
+      await provider.sync();
+      expect(provider.isOrphanKey, true);
+
+      // Now perform the overwrite
+      when(() => mockSyncUseCase.execute()).thenAnswer((_) async => false);
+      await provider.overwriteCloudWithLocal();
+
+      expect(provider.isOrphanKey, false);
+      expect(provider.lastError, isNull);
+      verify(() => mockCloudSync.deleteCloudData()).called(1);
+      verify(() => mockSyncUseCase.clearLocalMetadata()).called(1);
+    });
   });
 }

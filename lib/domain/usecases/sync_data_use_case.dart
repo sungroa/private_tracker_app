@@ -141,19 +141,28 @@ class SyncDataUseCase {
         final refreshedSalt = refreshedMetadata?['recovery_salt'];
         final localSalt = await _metadata.getRecoverySalt();
 
-        if (e.toString().contains("Integrity check failed") &&
-            (currentCloudSalt != null ||
-                refreshedSalt != null ||
-                localSalt != null)) {
+        final isIntegrityFailure = e.toString().contains("Integrity check failed");
+        final anySaltExists = currentCloudSalt != null || refreshedSalt != null || localSalt != null;
+
+        if (isIntegrityFailure && anySaltExists) {
           // Definitive signal: if a salt exists anywhere, decryption failure means
           // recovery passphrase is required.
           throw CloudSyncException(CloudSyncException.recoveryRequired, e);
+        } else if (isIntegrityFailure && !anySaltExists) {
+          // Orphan key: backup was encrypted with a random machine key that has since
+          // been wiped from the Keystore. No passphrase can recover it. The user must
+          // choose to overwrite with local data or reset cloud sync entirely.
+          SecurityLogger.logError("Sync Cycle: Orphan key detected. Cloud backup is irrecoverable without data loss.");
+          throw CloudSyncException(CloudSyncException.orphanKey, e);
         }
       } catch (secondaryError) {
         // Log secondary errors instead of silently discarding them.
         SecurityLogger.logError(
             "Sync Cycle: Secondary error during recovery analysis (non-fatal)",
             error: secondaryError);
+        // If the secondary error IS a CloudSyncException (recoveryRequired or orphanKey),
+        // propagate it — it supersedes the original error.
+        if (secondaryError is CloudSyncException) rethrow;
       }
       rethrow;
     }
