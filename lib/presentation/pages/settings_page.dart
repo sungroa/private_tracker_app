@@ -544,11 +544,11 @@ class _SettingsPageState extends State<SettingsPage> {
         icon: syncProvider.isRecoveryEnabled ? Icons.verified_user_rounded : Icons.gpp_maybe_rounded,
         iconColor: syncProvider.isRecoveryEnabled ? Colors.green : Colors.orange,
         title: "Recovery Security",
-        subtitle: syncProvider.isRecoveryEnabled ? "Passphrase protection active" : "Required for new device restore",
+        subtitle: syncProvider.isRecoveryEnabled ? "Tap to change passphrase" : "Required for new device restore",
         isDark: isDark,
         onTap: () => _handleSetupRecovery(syncProvider),
         trailing: syncProvider.isRecoveryEnabled 
-            ? const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20)
+            ? const Text("CHANGE", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12))
             : const Text("SET UP", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
       ),
     );
@@ -556,9 +556,16 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _handleSetupRecovery(CloudSyncProvider provider) async {
     HapticFeedback.mediumImpact();
+
+    // Branch: if recovery is already enabled, route to the change passphrase flow.
+    if (provider.isRecoveryEnabled) {
+      await _handleChangePassphrase(provider);
+      return;
+    }
+
     final passphrase = await _showPasswordDialog(
       title: 'Set Recovery Passphrase',
-      message: 'This passphrase is used to encrypt your cloud backups. You will need it to restore your data on a new phone. This CANNOT be reset.',
+      message: 'This passphrase encrypts your cloud backups. You will need it to restore your data on a new device. Keep it somewhere safe — it can be changed later from this screen.',
       isCreate: true,
     );
 
@@ -568,6 +575,120 @@ class _SettingsPageState extends State<SettingsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Recovery security enabled!'), backgroundColor: Colors.green),
         );
+      }
+    }
+  }
+
+  /// Shows the change-passphrase dialog and calls [provider.changePassphrase].
+  ///
+  /// Collects: old passphrase (for proof-of-knowledge), new passphrase, confirm new.
+  /// The old passphrase verification happens server-side via a cloud decrypt round-trip.
+  Future<void> _handleChangePassphrase(CloudSyncProvider provider) async {
+    HapticFeedback.mediumImpact();
+
+    final oldController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Change Passphrase', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Enter your current passphrase to verify identity, then set a new one. This will re-encrypt your cloud backup.',
+                style: TextStyle(fontSize: 13, color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54, fontFamily: AppTheme.fontFamily),
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: oldController,
+                obscureText: true,
+                style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                decoration: InputDecoration(
+                  labelText: 'Current Passphrase',
+                  filled: true,
+                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+                validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: newController,
+                obscureText: true,
+                style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                decoration: InputDecoration(
+                  labelText: 'New Passphrase',
+                  filled: true,
+                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) return 'Required';
+                  if (v.length < 8) return 'Minimum 8 characters';
+                  if (v == oldController.text) return 'New passphrase must differ from current';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: confirmController,
+                obscureText: true,
+                style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                decoration: InputDecoration(
+                  labelText: 'Confirm New Passphrase',
+                  filled: true,
+                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+                validator: (v) => (v != newController.text) ? 'Passphrases do not match' : null,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(context, {
+                  'old': oldController.text,
+                  'new': newController.text,
+                });
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('Change', style: TextStyle(color: isDark ? AppTheme.backgroundDarkColor : Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && mounted) {
+      await provider.changePassphrase(result['old']!, result['new']!);
+      if (mounted) {
+        if (provider.lastError == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Passphrase changed successfully!'), backgroundColor: Colors.green),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(provider.lastError!), backgroundColor: Colors.redAccent),
+          );
+          provider.clearError();
+        }
       }
     }
   }
