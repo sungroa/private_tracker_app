@@ -87,9 +87,17 @@ class SymptomProvider extends ChangeNotifier {
   }
 
   /// Triggers a background sync without blocking the UI.
+  ///
+  /// Guards prevent sync from firing when a recovery passphrase is required
+  /// ([requiresRecoveryPrompt]) or the local key cannot decrypt the cloud backup
+  /// ([isOrphanKey]). Without these guards every data-write would trigger a
+  /// CRITICAL FAILURE loop while the user hasn't entered their passphrase yet.
   void _triggerSync() {
     final sync = _cloudSync;
-    if (sync != null && sync.isCloudEnabled) {
+    if (sync != null &&
+        sync.isCloudEnabled &&
+        !sync.requiresRecoveryPrompt &&
+        !sync.isOrphanKey) {
       unawaited(sync.sync());
     }
   }
