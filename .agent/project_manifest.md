@@ -1,13 +1,13 @@
 # 🧭 Project Manifest: Private Tracker
 
 ## 📊 Session Data
-- **Last Updated:** 2026-05-10T21:41:00Z
-- **Session ID:** `1e931d2b-0799-49a9-a8c9-79a78c8a203b`
-- **Session Health:** NOMINAL
-- **Context Budget:** ~40% (Turn 2)
+- **Last Updated:** 2026-05-10T22:45:00Z
+- **Session ID:** `843c0057-c283-4c8d-93bd-591c51de6dc5`
+- **Session Health:** NOMINAL — Bug C+D fixed; pending physical verification
+- **Context Budget:** ~65% — ELEVATED
 
 ## 🎯 Objectives & Constraints
-- **Primary Objective:** Deep analysis + fix of Google Drive sync flow.
+- **Primary Objective:** Fix cloud sync password friction + add passphrase update flow.
 - **Prior Finished Features:**
   - Triple-Redundant Recovery Discovery (appProperties, properties, description).
   - Reset Cloud Sync (Permanent Cloud Wipe + Local State Reset).
@@ -17,7 +17,18 @@
 ## 🛠️ Validation & State
 - **fast_validation_command:** `flutter analyze`
 - **full_validation_command:** `flutter test`
-- **Verification Token:** Pass: `flutter analyze` = No issues. `flutter test` = 107 pass. Release APK: `[Notifications] Initialization complete.` — no `invalid_icon` crash.
+- **Verification Token:** Pass: `flutter analyze` = No issues. `flutter test` = 113 pass, 2 pre-existing. Commits: `f2764f1`, `fe7e20a`, `e5f8f0d`, `3ad9f34`, `e3c7ad0` (Bug D root cause fix).
+
+## 🐛 Confirmed Remaining Bugs (Post-Commit e3c7ad0)
+**Bug C — FIXED:** `_triggerSync()` guards in all 3 providers + `sync()` top-level early-return for `requiresRecoveryPrompt || isOrphanKey`.
+
+**Bug D — ROOT CAUSE CONFIRMED + FIX APPLIED (commit e3c7ad0):**
+- Diagnostic log revealed: `isRecoveryEnabled=true, pendingRecoverySalt=null, requiresRecoveryPrompt=false`
+- `isRecoveryEnabled=true` (stale SharedPrefs) prevented card from showing even after `_pendingRecoverySalt='pending'` was set
+- Drive metadata has no `recovery_salt` (uploaded pre-triple-redundant feature); SyncDataUseCase found salt in `ISyncMetadataRepository` local store, threw `recoveryRequired`
+- Fix: On `recoveryRequired` catch: force `_isRecoveryEnabled=false` + fetch real salt from `PreferencesService` as fallback
+- Fix: `restoreRecovery()` resolves `'pending'` sentinel via `PreferencesService.getRecoverySalt()` so passphrase entry can derive the real key
+- **Next step**: Physical verification — launch app, open Settings, confirm orange RECOVER CLOUD DATA card appears
 
 ## 🔎 Analysis Findings (Session 67eafd1e)
 See: `brain/67eafd1e.../cloud_sync_analysis.md`
@@ -45,10 +56,20 @@ See: `brain/67eafd1e.../cloud_sync_analysis.md`
 - [x] **Fix UI Sync Stale State**: Updated `HomePage` refresh button to trigger all data providers.
 - [x] **Fix Stale PreferencesService Test**: Rewrote `preferences_service_test.dart` to use `SharedPreferences.setMockInitialValues()` after migration from `FlutterSecureStorage`. 17/17 pass.
 - [x] **Add Wipe Diagnostic Logs (WIPE-DIAG-1 through 7)**: Inserted numbered checkpoints throughout `_handleResetCloudSync`. Also added `barrierDismissible: false` to the confirmation dialog. Verified `flutter analyze` = No issues.
-- [ ] **Identify Wipe Failure Point**: Deploy hot-restart build to device. Click "Reset Cloud Data". Filter logcat for `WIPE-DIAG`. Report which numbered checkpoint is the last one seen.
-- [ ] **Investigate Toggle Reset Bug**: User reports the Google Drive toggle still resets visually after app restart.
-- [ ] **Physical Verification**: User to verify sync and wipe on Android 12 device.
+- [x] **Fix Silent Auth Prompt**: Refactored `authenticate()` in `GoogleDriveSyncRepository` to cache `GoogleSignInAccount` after first auth. Subsequent sync calls reuse the warm token from the cached account's `authorizationClient`, avoiding Credential Manager UI. Removed `promptIfNecessary: true` fallback (root cause of sign-in sheet on every sync/edit). Added `clearCachedAccount()` and updated `dispose()` to null the cached account. `flutter analyze` = No issues.
+- [ ] **Physical Verification**: User to hot-restart build and confirm no more sign-in prompts during edits/sync.
 - [ ] **Fix #8 (LOW)**: `_isSyncing` Completer-based mutex (deferred, very low probability).
+- [x] **[NEW] Fix Sync-Before-Passphrase Friction**: Guard `sync()` in `toggleGoogleDrive`.
+- [x] **[NEW] Add Change Passphrase**: `changePassphrase(old, new)` in provider + dialog.
+- [x] **[NEW] Fix UI Lie**: Remove "CANNOT be reset" message.
+- [x] **[NEW] Fix AppInitializer Race**: `init()` awaits `checkRecoveryStatus`. AppInitializer guarded.
+- [x] **[NEW] Orphan Key Recovery**: `isOrphanKey` + `overwriteCloudWithLocal()` + card UI.
+- [x] **[DONE] Fix data-write provider guards (Bug C)**: Added `!requiresRecoveryPrompt && !isOrphanKey` to `_triggerSync()` in all 3 providers. Commit: `e5f8f0d`.
+- [x] **[DONE] Fix sync() loop (Bug C root fix)**: Added early-return guard to `sync()` itself. Commit: `3ad9f34`.
+- [x] **[DONE] Add diagnostic logging**: `init()` logs all 5 state flags. `checkRecoveryStatus()` logs salt found/missing.
+- [x] **[DONE] Disable SYNC NOW during recovery**: Button disabled when requiresRecoveryPrompt or isOrphanKey.
+- [x] **[DONE] Fix Bug D root cause**: Force `_isRecoveryEnabled=false` on `recoveryRequired`; fetch real salt from PrefsService. `restoreRecovery()` resolves 'pending' sentinel. Commit: `e3c7ad0`.
+- [ ] **[NEXT] Physical verification (Bug D)**: Launch app → Settings → Cloud Sync → confirm orange RECOVER CLOUD DATA card visible → enter passphrase → verify sync succeeds.
 
 ## 🚫 Dead Ends / Blockers
 - None currently.

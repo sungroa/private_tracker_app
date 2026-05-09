@@ -33,6 +33,11 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
   drive.DriveApi? _driveApi;
   http.Client? _authClient;
 
+  /// Cached account from the last successful authentication. Reusing the same
+  /// [GoogleSignInAccount] instance lets its [authorizationClient] reuse a
+  /// warm token cache, avoiding repeated Credential Manager UI invocations.
+  GoogleSignInAccount? _cachedAccount;
+
   GoogleDriveSyncRepository({
     GoogleSignIn? googleSignIn,
     // serverClientId is retained for API compatibility but initialize() is now
@@ -45,50 +50,75 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
     _driveApi = api;
   }
 
+  /// Clears the cached account, forcing a full re-authentication on the next call.
+  /// Should be called on sign-out or when the account is known to be invalid.
+  void clearCachedAccount() {
+    _cachedAccount = null;
+  }
+
   @override
   Future<void> authenticate() async {
-    // No idempotency guard here: authenticate() must always refresh
-    // auth headers to prevent stale OAuth tokens from being reused as zombie
-    // DriveApi instances. initialize() is called once at app startup in main().
-    // attemptLightweightAuthentication() reuses existing credentials instantly
-    // when the user is already signed in, so repeated calls are cheap.
+    // Smart session refresh strategy:
+    //   1. If we have a cached account, try to get auth headers silently from it.
+    //      The authorizationClient holds a refresh token that works offline.
+    //   2. If that fails (null headers = truly expired), fall back to a fresh
+    //      attemptLightweightAuthentication() — still silent, no Credential Manager UI.
+    //   3. If the lightweight attempt also fails (account removed), then
+    //      fall back to a full interactive authenticate() call.
+    //   NEVER use promptIfNecessary: true — that is what triggers the sign-in sheet.
     try {
       SecurityLogger.logInfo("Google Drive: Refreshing authentication session...");
 
       const scope = drive.DriveApi.driveAppdataScope;
+      Map<String, String>? authHeaders;
 
-      // Reuse existing credentials without a UI prompt when already signed in.
-      SecurityLogger.logInfo("Google Drive: Attempting lightweight sign-in...");
-      GoogleSignInAccount? account =
-          await _googleSignIn.attemptLightweightAuthentication();
-
-      if (account == null) {
-        SecurityLogger.logInfo(
-            "Google Drive: Lightweight auth failed. Requesting user sign-in...");
-        account = await _googleSignIn.authenticate(scopeHint: [scope]);
+      // --- Step 1: Try the cached account first (no network roundtrip). ---
+      if (_cachedAccount != null) {
+        SecurityLogger.logInfo("Google Drive: Reusing cached account for silent token refresh...");
+        authHeaders = await _cachedAccount!.authorizationClient
+            .authorizationHeaders([scope], promptIfNecessary: false);
+        if (authHeaders == null) {
+          SecurityLogger.logInfo("Google Drive: Cached token expired. Fetching fresh account...");
+          _cachedAccount = null; // invalidate stale cache
+        }
       }
 
-      SecurityLogger.logInfo(
-          "Google Drive: Account obtained. Fetching authorization headers...");
-
-      // promptIfNecessary: false — token refresh is handled internally by the
-      // authorization client without showing additional UI.
-      final authHeaders = await account.authorizationClient
-          .authorizationHeaders([scope], promptIfNecessary: false);
-
+      // --- Step 2: Fetch a fresh account silently if needed. ---
       if (authHeaders == null) {
+        SecurityLogger.logInfo("Google Drive: Attempting lightweight sign-in...");
+        GoogleSignInAccount? account =
+            await _googleSignIn.attemptLightweightAuthentication();
+
+        if (account == null) {
+          // Only reached if the user has never signed in or revoked access.
+          // This is the only path that may show a UI — it is intentional.
+          SecurityLogger.logInfo(
+              "Google Drive: Lightweight auth failed. Requesting user sign-in...");
+          account = await _googleSignIn.authenticate(scopeHint: [scope]);
+        }
+
         SecurityLogger.logInfo(
-            "Google Drive: Auth headers missing. Force-refreshing token...");
-        final forcedHeaders = await account.authorizationClient
-            .authorizationHeaders([scope], promptIfNecessary: true);
-        if (forcedHeaders == null) {
+            "Google Drive: Account obtained. Fetching authorization headers...");
+
+        // promptIfNecessary: false is critical — prevents Credential Manager UI
+        // from appearing during background syncs triggered by edits/startup.
+        authHeaders = await account.authorizationClient
+            .authorizationHeaders([scope], promptIfNecessary: false);
+
+        if (authHeaders == null) {
+          // The account exists but headers couldn't be fetched silently.
+          // Rather than show UI (promptIfNecessary: true), throw so the caller
+          // can retry or surface a non-modal error. This preserves the
+          // silent-only contract for background operations.
+          SecurityLogger.logError("Google Drive: Unable to obtain auth headers silently.");
           throw CloudSyncException(CloudSyncException.authHeadersMissing);
         }
-        _setupDriveApi(forcedHeaders);
-      } else {
-        _setupDriveApi(authHeaders);
+
+        // Cache the account so future calls skip Steps 1+2 entirely.
+        _cachedAccount = account;
       }
 
+      _setupDriveApi(authHeaders);
       SecurityLogger.logInfo("Google Drive: Drive API client ready.");
     } catch (e) {
       SecurityLogger.logError("Google Drive: Authentication failed", error: e);
@@ -305,5 +335,6 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
     _authClient?.close();
     _authClient = null;
     _driveApi = null;
+    _cachedAccount = null;
   }
 }
