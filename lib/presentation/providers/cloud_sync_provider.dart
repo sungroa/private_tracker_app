@@ -69,6 +69,13 @@ class CloudSyncProvider with ChangeNotifier {
       // Await recovery check so _pendingRecoverySalt is populated before any
       // subsequent sync() call can fire (fixes the AppInitializer race).
       await checkRecoveryStatus();
+      SecurityLogger.logInfo(
+        'Cloud Sync: Init complete. '
+        'isCloudEnabled=$isCloudEnabled, '
+        'isRecoveryEnabled=$_isRecoveryEnabled, '
+        'pendingRecoverySalt=${_pendingRecoverySalt != null ? "<set>" : "null"}, '
+        'requiresRecoveryPrompt=$requiresRecoveryPrompt, '
+        'isOrphanKey=$_isOrphanKey');
     }
   }
 
@@ -80,6 +87,13 @@ class CloudSyncProvider with ChangeNotifier {
       await _cloudSync.authenticate();
       final metadata = await _cloudSync.fetchLatestCloudMetadata();
       _pendingRecoverySalt = metadata?['recovery_salt'];
+      if (_pendingRecoverySalt != null) {
+        SecurityLogger.logInfo(
+            "Cloud Sync: Recovery salt detected in cloud backup. Recovery card will be shown.");
+      } else {
+        SecurityLogger.logInfo(
+            "Cloud Sync: No recovery salt found in cloud backup. Sync may proceed normally.");
+      }
       notifyListeners();
     } catch (e) {
       // Log auth/network errors so they appear in logcat diagnostics.
@@ -288,6 +302,16 @@ class CloudSyncProvider with ChangeNotifier {
   Future<void> sync() async {
     if (!_isInitialized) await init();
     if (_isSyncing || !isCloudEnabled) return;
+
+    // (W14) Recovery guard: refuse to sync when a passphrase is required or the
+    // cloud backup was encrypted with a lost machine key. Attempting sync in
+    // either state guarantees a CRITICAL FAILURE (wrong decryption key).
+    // The recovery card in Settings guides the user to resolve this first.
+    if (requiresRecoveryPrompt || _isOrphanKey) {
+      SecurityLogger.logInfo(
+          "Cloud Sync: Sync suppressed — recovery or orphan-key resolution is required.");
+      return;
+    }
 
     _isSyncing = true;
     _lastError = null;
