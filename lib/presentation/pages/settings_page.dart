@@ -1092,7 +1092,11 @@ class _SettingsPageState extends State<SettingsPage> {
                             children: [
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: syncProvider.isSyncing ? null : () => syncProvider.sync(),
+                                  onPressed: (syncProvider.isSyncing ||
+                                          syncProvider.requiresRecoveryPrompt ||
+                                          syncProvider.isOrphanKey)
+                                      ? null
+                                      : () => syncProvider.sync(),
                                   icon: const Icon(Icons.sync_rounded, size: 18),
                                   label: const Text("SYNC NOW", style: TextStyle(fontWeight: FontWeight.bold)),
                                   style: OutlinedButton.styleFrom(
