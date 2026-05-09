@@ -7,6 +7,8 @@ import 'settings_page.dart';
 import '../sheets/security_summary_sheet.dart';
 import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
+import '../providers/symptom_provider.dart';
+import '../providers/tag_provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -69,6 +71,8 @@ class _HomePageState extends State<HomePage> {
               onPressed: () {
                 HapticFeedback.mediumImpact();
                 context.read<CycleProvider>().refresh();
+                context.read<SymptomProvider>().refresh();
+                context.read<TagProvider>().refresh();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: const Text("Predictions updated"),
