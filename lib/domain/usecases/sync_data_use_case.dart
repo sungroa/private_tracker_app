@@ -1,4 +1,5 @@
 import 'dart:isolate';
+import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 
 import '../repositories/data_source_repository.dart';
@@ -35,6 +36,17 @@ class SyncDataUseCase {
   Future<void> clearLocalMetadata() async {
     await _metadata.setLastSyncChecksum(null);
     await _metadata.setRecoverySalt(null);
+  }
+
+  /// Verifies that [key] can successfully decrypt [payload].
+  ///
+  /// Used as a proof-of-knowledge check during passphrase rotation — the caller
+  /// must demonstrate they hold the current key before we allow a key change.
+  /// Throws if the key is incorrect or the payload is corrupted.
+  Future<void> verifyCloudDecrypt(Uint8List payload, List<int> key) async {
+    // Attempt a full parse. If the key is wrong, parseCloudBackup throws an
+    // integrity exception which propagates to the caller unchanged.
+    await _dataSource.parseCloudBackup(payload, key);
   }
 
   /// Executes the synchronization cycle.

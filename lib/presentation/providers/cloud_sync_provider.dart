@@ -116,6 +116,72 @@ class CloudSyncProvider with ChangeNotifier {
     }
   }
 
+  /// Changes an existing recovery passphrase.
+  ///
+  /// Verifies [oldPassphrase] by attempting a real cloud backup decryption
+  /// (Option A — network round-trip, most secure). Only if decryption succeeds
+  /// does the key rotation proceed. This prevents unauthorized passphrase changes
+  /// even if someone has physical screen access without knowing the current key.
+  Future<void> changePassphrase(String oldPassphrase, String newPassphrase) async {
+    _isSyncing = true;
+    _lastError = null;
+    notifyListeners();
+
+    try {
+      SecurityLogger.logInfo("Cloud Sync: Verifying old passphrase via cloud decrypt...");
+
+      // --- Step 1: Derive the old key from the stored salt ---
+      final storedSaltString = await _prefs.getRecoverySalt();
+      if (storedSaltString == null) {
+        throw StateError('No recovery salt found locally. Cannot verify old passphrase.');
+      }
+      final storedSalt = base64Url.decode(storedSaltString);
+      final oldKey = KeyDerivationUtil.deriveKey(oldPassphrase, storedSalt);
+
+      // --- Step 2: Download the cloud backup and attempt decryption ---
+      // This is the proof-of-knowledge check. If the old passphrase is wrong,
+      // parseCloudBackup will throw an integrity/decryption exception.
+      await _cloudSync.authenticate();
+      final cloudPayload = await _cloudSync.downloadEncryptedBackup();
+      // parseCloudBackup throws on bad key — this is intentional verification.
+      await _syncUseCase.verifyCloudDecrypt(cloudPayload, oldKey);
+
+      SecurityLogger.logInfo("Cloud Sync: Old passphrase verified. Rotating to new passphrase...");
+
+      // --- Step 3: Key rotation — generate new salt + key, re-upload ---
+      final newSalt = KeyDerivationUtil.generateSalt();
+      final newSaltString = base64UrlEncode(newSalt);
+      final newKey = KeyDerivationUtil.deriveKey(newPassphrase, newSalt);
+
+      await _keyStorage.setCloudSyncKey(newKey);
+      await _prefs.setRecoveryPassphraseSet(true);
+      await _prefs.setRecoverySalt(newSaltString);
+      await _syncUseCase.setRecoverySalt(newSaltString);
+
+      _isRecoveryEnabled = true;
+
+      // Force a re-upload with the new key/salt so cloud is immediately consistent.
+      await _syncUseCase.execute();
+
+      SecurityLogger.logInfo("Cloud Sync: Passphrase changed successfully.");
+    } catch (e) {
+      SecurityLogger.logError("Cloud Sync: Passphrase change failed", error: e);
+      // Surface a user-friendly message without leaking key material.
+      if (e.toString().toLowerCase().contains('integrity') ||
+          e.toString().toLowerCase().contains('incorrect key') ||
+          e.toString().toLowerCase().contains('bad padding') ||
+          e.toString().toLowerCase().contains('decryption')) {
+        _lastError = 'Old passphrase is incorrect.';
+      } else {
+        _lastError = 'Passphrase change failed. Please check your connection and try again.';
+      }
+      notifyListeners();
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
   /// Restores access to cloud data using a recovery passphrase.
   Future<void> restoreRecovery(String passphrase) async {
     if (_pendingRecoverySalt == null) return;
@@ -185,7 +251,15 @@ class CloudSyncProvider with ChangeNotifier {
     
     if (enabled) {
       await checkRecoveryStatus();
-      await sync();
+      // (W12) Guard: Only sync if no recovery passphrase is pending.
+      // If the cloud backup is password-protected and we don't have the key yet,
+      // syncing would cause a guaranteed CRITICAL FAILURE (decryption with the
+      // wrong machine-generated key). The recovery card will guide the user.
+      if (!requiresRecoveryPrompt) {
+        await sync();
+      } else {
+        SecurityLogger.logInfo("Cloud Sync: Recovery passphrase required. Deferring sync until passphrase is entered.");
+      }
     }
   }
 
