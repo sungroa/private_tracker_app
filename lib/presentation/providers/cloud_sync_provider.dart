@@ -205,18 +205,27 @@ class CloudSyncProvider with ChangeNotifier {
 
   /// Restores access to cloud data using a recovery passphrase.
   Future<void> restoreRecovery(String passphrase) async {
-    if (_pendingRecoverySalt == null) return;
+    // Resolve the real salt: use _pendingRecoverySalt if it's a genuine base64
+    // value. If it's the 'pending' sentinel (Drive metadata had no salt), fall
+    // back to the locally stored prefs salt — the one the SyncDataUseCase used
+    // to determine that recovery is required.
+    String? saltToUse = _pendingRecoverySalt;
+    if (saltToUse == null || saltToUse == 'pending') {
+      saltToUse = await _prefs.getRecoverySalt();
+    }
+    if (saltToUse == null) return;
     
     _isSyncing = true;
     notifyListeners();
 
     try {
-      final saltBytes = base64Url.decode(_pendingRecoverySalt!);
+      final saltBytes = base64Url.decode(saltToUse);
       final key = KeyDerivationUtil.deriveKey(passphrase, saltBytes);
       
       // Update local storage
       await _keyStorage.setCloudSyncKey(key);
       await _prefs.setRecoveryPassphraseSet(true);
+      await _prefs.setRecoverySalt(saltToUse);
       _isRecoveryEnabled = true;
       _pendingRecoverySalt = null;
       
@@ -329,7 +338,20 @@ class CloudSyncProvider with ChangeNotifier {
     } catch (e, stack) {
       if (e is CloudSyncException && e.message == CloudSyncException.recoveryRequired) {
         SecurityLogger.logInfo("Cloud Sync: Recovery required. Suppressing error UI for card transition.");
-        _pendingRecoverySalt ??= 'pending'; // Ensure recovery card shows if salt wasn't fetched
+        // (W15) The locally stored key is PROVABLY wrong — decryption failed.
+        // Force _isRecoveryEnabled=false so requiresRecoveryPrompt can become
+        // true and the orange recovery card appears in Settings.
+        _isRecoveryEnabled = false;
+        await _prefs.setRecoveryPassphraseSet(false);
+        // If checkRecoveryStatus() found no salt in Drive metadata, fall back
+        // to the salt stored in PreferencesService (the SyncDataUseCase found it
+        // in local sync metadata, so the prefs-layer copy likely exists too).
+        if (_pendingRecoverySalt == null) {
+          _pendingRecoverySalt = await _prefs.getRecoverySalt() ?? 'pending';
+          SecurityLogger.logInfo(
+              "Cloud Sync: Using local prefs salt as fallback. "
+              "pendingRecoverySalt=${_pendingRecoverySalt != null ? '<set>' : 'null'}");
+        }
         _lastError = null;
       } else if (e is CloudSyncException && e.message == CloudSyncException.orphanKey) {
         SecurityLogger.logError("Cloud Sync: Orphan key state. Activating recovery UI.", error: e);
