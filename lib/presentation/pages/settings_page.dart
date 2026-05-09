@@ -490,6 +490,59 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildRecoverySecurityCard(BuildContext context, CloudSyncProvider syncProvider, bool isDark, Color primary) {
+    // --- Orphan Key: cloud backup encrypted with a lost machine key ---
+    if (syncProvider.isOrphanKey) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24, borderColor: Colors.redAccent.withValues(alpha: 0.3)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.lock_reset_rounded, color: Colors.redAccent, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Cloud Backup Unrecoverable",
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: isDark ? Colors.white : Colors.black87),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "The encryption key for your cloud backup was lost (e.g. during an OS security event). Your local data is safe. You can overwrite the cloud with your current local data to restore sync.",
+              style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black54),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: syncProvider.isSyncing ? null : () => _handleOverwriteCloudWithLocal(syncProvider),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primary,
+                  foregroundColor: isDark ? Colors.black87 : Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: syncProvider.isSyncing
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text("USE LOCAL DATA", style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => _handleResetCloudSync(syncProvider),
+              style: TextButton.styleFrom(foregroundColor: isDark ? Colors.white38 : Colors.black38),
+              child: const Text("RESET & START OVER", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // --- Recovery Passphrase Required ---
     if (syncProvider.requiresRecoveryPrompt) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -682,6 +735,53 @@ class _SettingsPageState extends State<SettingsPage> {
         if (provider.lastError == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Passphrase changed successfully!'), backgroundColor: Colors.green),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(provider.lastError!), backgroundColor: Colors.redAccent),
+          );
+          provider.clearError();
+        }
+      }
+    }
+  }
+
+  /// Handles the "USE LOCAL DATA" action from the orphan key card.
+  ///
+  /// Shows a confirmation dialog (the action overwrites cloud data), then
+  /// proceeds with biometric auth before calling [provider.overwriteCloudWithLocal].
+  Future<void> _handleOverwriteCloudWithLocal(CloudSyncProvider provider) async {
+    HapticFeedback.heavyImpact();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Overwrite Cloud Backup?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+          'This will replace the cloud backup with your current local data. The old cloud backup will be permanently deleted. Your local data will NOT be affected.',
+          style: TextStyle(fontFamily: AppTheme.fontFamily),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
+            child: const Text('Yes, Overwrite Cloud', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      await provider.overwriteCloudWithLocal();
+      if (mounted) {
+        if (provider.lastError == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Cloud backup restored from local data.'), backgroundColor: Colors.green),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(

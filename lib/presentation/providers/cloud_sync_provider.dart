@@ -24,6 +24,7 @@ class CloudSyncProvider with ChangeNotifier {
   bool _isGoogleDriveEnabled = false;
   bool _isiCloudEnabled = false;
   bool _isRecoveryEnabled = false;
+  bool _isOrphanKey = false;
   String? _pendingRecoverySalt;
   String? _lastError;
   DateTime? _lastSyncTime;
@@ -44,6 +45,10 @@ class CloudSyncProvider with ChangeNotifier {
   bool get isiCloudEnabled => _isiCloudEnabled;
   bool get isCloudEnabled => (_isGoogleDriveEnabled || _isiCloudEnabled) && _isInitialized;
   bool get isRecoveryEnabled => _isRecoveryEnabled;
+  /// True when the cloud backup was encrypted with a random machine key that has
+  /// since been wiped from the Android Keystore. The data is irrecoverable;
+  /// the user must overwrite with local data or reset cloud sync.
+  bool get isOrphanKey => _isOrphanKey;
   String? get pendingRecoverySalt => _pendingRecoverySalt;
   String? get lastError => _lastError;
   DateTime? get lastSyncTime => _lastSyncTime;
@@ -61,7 +66,9 @@ class CloudSyncProvider with ChangeNotifier {
     notifyListeners();
 
     if (_isGoogleDriveEnabled) {
-      unawaited(checkRecoveryStatus());
+      // Await recovery check so _pendingRecoverySalt is populated before any
+      // subsequent sync() call can fire (fixes the AppInitializer race).
+      await checkRecoveryStatus();
     }
   }
 
@@ -298,7 +305,12 @@ class CloudSyncProvider with ChangeNotifier {
     } catch (e, stack) {
       if (e is CloudSyncException && e.message == CloudSyncException.recoveryRequired) {
         SecurityLogger.logInfo("Cloud Sync: Recovery required. Suppressing error UI for card transition.");
-        _lastError = null; 
+        _pendingRecoverySalt ??= 'pending'; // Ensure recovery card shows if salt wasn't fetched
+        _lastError = null;
+      } else if (e is CloudSyncException && e.message == CloudSyncException.orphanKey) {
+        SecurityLogger.logError("Cloud Sync: Orphan key state. Activating recovery UI.", error: e);
+        _isOrphanKey = true;
+        _lastError = null; // Card UI handles this — no snackbar needed
       } else if (requiresRecoveryPrompt) {
         SecurityLogger.logInfo("Cloud Sync: App is in recovery state. Suppressing technical error.");
         _lastError = null;
@@ -306,6 +318,38 @@ class CloudSyncProvider with ChangeNotifier {
         SecurityLogger.logError("Cloud Sync: Orchestration failure", error: e, stackTrace: stack);
         _lastError = "Sync Error: ${e.toString()}";
       }
+    } finally {
+      _isSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  /// Overwrites the irrecoverable cloud backup with current local data.
+  ///
+  /// Used when the cloud backup was encrypted with a lost machine key (orphan key
+  /// state). This uploads local data with a fresh random key, restoring sync.
+  /// Does NOT require a passphrase — it uses the machine key path, which
+  /// generates a new random key if none exists (existing local data is intact).
+  Future<void> overwriteCloudWithLocal() async {
+    _isSyncing = true;
+    _lastError = null;
+    notifyListeners();
+
+    try {
+      SecurityLogger.logInfo("Cloud Sync: Overwriting orphan cloud backup with local data...");
+      // Delete the stale backup first so the next upload is clean.
+      await _cloudSync.authenticate();
+      await _cloudSync.deleteCloudData();
+      // Clear local metadata so execute() does a full upload (not a merge).
+      await _syncUseCase.clearLocalMetadata();
+      // Perform the upload — _keyProvider generates a new key if needed.
+      await _syncUseCase.execute();
+      _isOrphanKey = false;
+      SecurityLogger.logInfo("Cloud Sync: Orphan backup overwritten. Sync restored.");
+    } catch (e, stack) {
+      SecurityLogger.logError("Cloud Sync: Overwrite failed", error: e, stackTrace: stack);
+      _lastError = "Overwrite failed. Please check your connection and try again.";
+      notifyListeners();
     } finally {
       _isSyncing = false;
       notifyListeners();
