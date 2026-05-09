@@ -17,6 +17,7 @@ import 'package:private_tracker_app/data/storage/local_database_manager.dart';
 import 'package:private_tracker_app/data/storage/partner_storage_service.dart';
 import 'package:private_tracker_app/presentation/pages/home_page.dart';
 import 'package:private_tracker_app/core/services/service_locator.dart';
+import 'package:private_tracker_app/core/services/notification_service.dart';
 import 'package:app_links/app_links.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
@@ -25,6 +26,7 @@ class MockAppLinks extends Mock implements AppLinks {}
 class MockAuthService extends Mock implements AuthService {}
 class MockPreferencesService extends Mock implements PreferencesService {}
 class MockPathProviderPlatform extends Mock with MockPlatformInterfaceMixin implements PathProviderPlatform {}
+class MockNotificationService extends Mock implements NotificationService {}
 
 void main() {
   late Directory tempDir;
@@ -32,6 +34,7 @@ void main() {
   late MockAppLinks mockAppLinks;
   late MockAuthService mockAuthService;
   late MockPreferencesService mockPreferencesService;
+  late MockNotificationService mockNotificationService;
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('provider_scope_test');
@@ -46,6 +49,9 @@ void main() {
     mockAppLinks = MockAppLinks();
     mockAuthService = MockAuthService();
     mockPreferencesService = MockPreferencesService();
+    mockNotificationService = MockNotificationService();
+
+    when(() => mockNotificationService.initialize()).thenAnswer((_) async {});
 
     // Mock AppLinks stream
     when(() => mockAppLinks.uriLinkStream).thenAnswer((_) => const Stream<Uri>.empty());
@@ -53,6 +59,7 @@ void main() {
     // Setup MockPreferencesService
     when(() => mockPreferencesService.isBiometricEnabled()).thenAnswer((_) async => false);
     when(() => mockPreferencesService.isCloudSyncEnabled()).thenAnswer((_) async => false);
+    when(() => mockPreferencesService.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
     when(() => mockPreferencesService.getLastSyncTime()).thenAnswer((_) async => null);
 
     // Open unencrypted box for PartnerModePage
@@ -107,6 +114,7 @@ void main() {
         auth: mockAuthService,
         prefs: mockPreferencesService,
         customAppLinks: mockAppLinks,
+        notifications: mockNotificationService,
       );
 
       await tester.pumpWidget(PrivacyTrackerApp(

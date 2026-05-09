@@ -10,12 +10,14 @@ import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
 import 'package:private_tracker_app/presentation/pages/home_page.dart';
 import 'package:private_tracker_app/core/services/service_locator.dart';
+import 'package:private_tracker_app/core/services/notification_service.dart';
 import 'package:app_links/app_links.dart';
 
 class MockAuthService extends Mock implements AuthService {}
 class MockPreferencesService extends Mock implements PreferencesService {}
 class MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 class MockAppLinks extends Mock implements AppLinks {}
+class MockNotificationService extends Mock implements NotificationService {}
 
 void main() {
   group('App smoke tests', () {
@@ -24,6 +26,7 @@ void main() {
     late MockPreferencesService mockPreferencesService;
     late MockSecureKeyStorage mockKeyStorage;
     late MockAppLinks mockAppLinks;
+    late MockNotificationService mockNotificationService;
     late LocalDatabaseManager dbManager;
 
     setUp(() async {
@@ -35,15 +38,18 @@ void main() {
       
       mockKeyStorage = MockSecureKeyStorage();
       mockAppLinks = MockAppLinks();
+      mockNotificationService = MockNotificationService();
       dbManager = LocalDatabaseManager();
 
       // Mock Storage Services
+      when(() => mockNotificationService.initialize()).thenAnswer((_) async {});
       when(() => mockKeyStorage.getOrCreateEncryptionKey()).thenAnswer((_) async => List<int>.filled(32, 0));
       when(() => mockAppLinks.uriLinkStream).thenAnswer((_) => const Stream<Uri>.empty());
 
       // Default behavior for smoke test: no biometric lock and no cloud sync
       when(() => mockPreferencesService.isBiometricEnabled()).thenAnswer((_) async => false);
       when(() => mockPreferencesService.isCloudSyncEnabled()).thenAnswer((_) async => false);
+      when(() => mockPreferencesService.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
       when(() => mockPreferencesService.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockAuthService.isHardwareSupported()).thenAnswer((_) async => false);
     });
@@ -65,6 +71,7 @@ void main() {
           keys: mockKeyStorage,
           db: dbManager,
           customAppLinks: mockAppLinks,
+          notifications: mockNotificationService,
         );
 
         await tester.pumpWidget(PrivacyTrackerApp(

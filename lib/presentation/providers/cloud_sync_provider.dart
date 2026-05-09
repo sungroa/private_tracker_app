@@ -13,6 +13,18 @@ import 'dart:convert';
 /// 🎨 **Presentation Architecture**: Coordinates the async sync workflow and 
 /// maintains the UI state for synchronization status, errors, and last-sync 
 /// timestamps.
+///
+/// 🔄 **State Machine**:
+/// This provider implements a finite state machine to manage the complex lifecycle
+/// of encrypted cloud backups:
+/// - **Disabled**: Cloud sync is off. No network calls are made.
+/// - **Syncing**: An active upload/download/merge operation is running in the background.
+/// - **Recovery Required**: A cloud backup exists and is protected by a passphrase, but 
+///   the local device does not have the key. All sync operations are blocked until the user 
+///   provides the passphrase to derive the key.
+/// - **Orphan Key**: The cloud backup was encrypted using a machine-generated key that 
+///   has since been lost (e.g., due to an OS-level Keystore wipe). The backup is permanently 
+///   irrecoverable and must be overwritten.
 class CloudSyncProvider with ChangeNotifier {
   final SyncDataUseCase _syncUseCase;
   final PreferencesService _prefs;
@@ -23,8 +35,16 @@ class CloudSyncProvider with ChangeNotifier {
   bool _isInitialized = false;
   bool _isGoogleDriveEnabled = false;
   bool _isiCloudEnabled = false;
+  /// UI State: True if the user has successfully entered their recovery passphrase
+  /// and the key is available locally. If false while [isCloudEnabled] is true, 
+  /// the app may need to prompt for recovery.
   bool _isRecoveryEnabled = false;
+  
   bool _isOrphanKey = false;
+  
+  /// Cryptographic State: The salt found in the cloud backup's metadata.
+  /// If this is non-null AND [_isRecoveryEnabled] is false, it means we have 
+  /// discovered a password-protected backup but haven't unlocked it yet.
   String? _pendingRecoverySalt;
   String? _lastError;
   DateTime? _lastSyncTime;
@@ -55,7 +75,13 @@ class CloudSyncProvider with ChangeNotifier {
   
   bool get requiresRecoveryPrompt => isCloudEnabled && !isRecoveryEnabled && pendingRecoverySalt != null;
 
-  /// (W2) Explicit initialization to avoid async work in constructor.
+  /// Initializes the provider's state from local storage and optionally probes the cloud.
+  ///
+  /// **Race Condition Prevention**: This method is called by `AppInitializer` during app startup.
+  /// By `await`ing `checkRecoveryStatus()`, we guarantee that the `_pendingRecoverySalt` is
+  /// populated *before* the UI renders or any automatic `sync()` calls fire. This prevents
+  /// the app from trying to download and decrypt a password-protected backup with a standard
+  /// machine key, which would result in a fatal `BadPaddingException`.
   Future<void> init() async {
     if (_isInitialized) return;
     _isGoogleDriveEnabled = await _prefs.isCloudSyncEnabled();

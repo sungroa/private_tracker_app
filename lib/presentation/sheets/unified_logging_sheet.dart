@@ -7,7 +7,12 @@ import '../theme/app_theme.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
 
-enum LoggingType { daily, cycle }
+enum LoggingType { 
+  /// Daily log
+  daily, 
+  /// Cycle log
+  cycle 
+}
 
 class UnifiedLoggingSheet extends StatefulWidget {
   final DateTime selectedDay;
