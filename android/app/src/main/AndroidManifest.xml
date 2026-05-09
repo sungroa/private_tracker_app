@@ -40,6 +40,14 @@
             android:name="flutterEmbedding"
             android:value="2" />
         
+        <!-- (W11) Hard XML reference to the notification icon so R8 resource shrinker
+             cannot rename or strip @drawable/ic_notification in release builds.
+             flutter_local_notifications resolves the icon by string name at runtime;
+             without this reference, the resource ID lookup returns 0 → invalid_icon crash. -->
+        <meta-data
+            android:name="com.dexterous.flutterlocalnotifications.default_icon"
+            android:resource="@drawable/ic_notification" />
+
         <!-- (W10) Default channel for notifications (forces visibility in system settings) -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"

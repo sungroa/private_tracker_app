@@ -1,10 +1,10 @@
 # 🧭 Project Manifest: Private Tracker
 
 ## 📊 Session Data
-- **Last Updated:** 2026-05-08T23:45:00Z
-- **Session ID:** `9bb67998-d4f3-4507-9173-20eb2c11f0ce`
+- **Last Updated:** 2026-05-10T21:41:00Z
+- **Session ID:** `1e931d2b-0799-49a9-a8c9-79a78c8a203b`
 - **Session Health:** NOMINAL
-- **Context Budget:** ~60% (Turn 1)
+- **Context Budget:** ~40% (Turn 2)
 
 ## 🎯 Objectives & Constraints
 - **Primary Objective:** Deep analysis + fix of Google Drive sync flow.
@@ -17,7 +17,7 @@
 ## 🛠️ Validation & State
 - **fast_validation_command:** `flutter analyze`
 - **full_validation_command:** `flutter test`
-- **Verification Token:** Pass: `flutter analyze` = No issues. `flutter test` = 97 pass / 2 pre-existing failures (smoke test env issue, pre-dates session).
+- **Verification Token:** Pass: `flutter analyze` = No issues. `flutter test` = 107 pass. Release APK: `[Notifications] Initialization complete.` — no `invalid_icon` crash.
 
 ## 🔎 Analysis Findings (Session 67eafd1e)
 See: `brain/67eafd1e.../cloud_sync_analysis.md`
@@ -38,12 +38,15 @@ See: `brain/67eafd1e.../cloud_sync_analysis.md`
 - [x] **Fix #4**: `checkRecoveryStatus()` now logs errors instead of swallowing them.
 - [x] **Fix #5**: Handled by Fix #2 — `authenticate()` always refreshes.
 - [x] **Fix #7**: Secondary error in `SyncDataUseCase` catch block is now logged.
-- [x] **Fix Startup Hang**: Removed `await checkRecoveryStatus()` from `CloudSyncProvider.init()` critical path to prevent UI hang at the "Secure Environment" loading screen on Android 12+.
-- [x] **Fix BadPaddingException Crash**: Migrated non-sensitive settings (biometrics toggle, cloud sync toggle, notification settings) from `FlutterSecureStorage` to `SharedPreferences` to permanently fix issues where the settings toggle would randomly reset due to Android Keystore hardware invalidation loops.
-- [x] **Fix Missing AppLinks Provider**: Added missing `Provider.value(value: sl.appLinks)` to `main.dart` to resolve initialization errors in `AppLifecycleManager`.
-- [x] **Fix Local Notifications Crash**: Fixed `PlatformException(invalid_icon)` during `AppInitializer` by explicitly prefixing `@mipmap/ic_launcher` in `AndroidInitializationSettings`.
-- [x] **Fix UI Sync Stale State**: Updated `HomePage` refresh button to manually trigger `refresh()` on all data providers (`CycleProvider`, `SymptomProvider`, `TagProvider`) so daily logs correctly redraw after a cloud sync.
-- [ ] **Investigate Toggle Reset Bug**: The user reports the Google Drive toggle still resets visually after app restart. Debugging deferred until device is available.
+- [x] **Fix Startup Hang**: Removed `await checkRecoveryStatus()` from `CloudSyncProvider.init()` critical path.
+- [x] **Fix BadPaddingException Crash**: Migrated non-sensitive settings to `SharedPreferences`.
+- [x] **Fix Missing AppLinks Provider**: Added missing `Provider.value(value: sl.appLinks)` to `main.dart`.
+- [x] **Fix Local Notifications Crash (PERMANENT)**: Root cause was R8 resource shrinker renaming `@drawable/ic_notification` in release builds. Fixed by: (1) adding `<meta-data android:name="com.dexterous.flutterlocalnotifications.default_icon" android:resource="@drawable/ic_notification"/>` to `AndroidManifest.xml`; (2) adding `res/raw/keep.xml` with `tools:keep`; (3) regenerating `ic_notification.png` as RGBA white-on-transparent. Verified: `[Notifications] Initialization complete.` ✅
+- [x] **Fix UI Sync Stale State**: Updated `HomePage` refresh button to trigger all data providers.
+- [x] **Fix Stale PreferencesService Test**: Rewrote `preferences_service_test.dart` to use `SharedPreferences.setMockInitialValues()` after migration from `FlutterSecureStorage`. 17/17 pass.
+- [x] **Add Wipe Diagnostic Logs (WIPE-DIAG-1 through 7)**: Inserted numbered checkpoints throughout `_handleResetCloudSync`. Also added `barrierDismissible: false` to the confirmation dialog. Verified `flutter analyze` = No issues.
+- [ ] **Identify Wipe Failure Point**: Deploy hot-restart build to device. Click "Reset Cloud Data". Filter logcat for `WIPE-DIAG`. Report which numbered checkpoint is the last one seen.
+- [ ] **Investigate Toggle Reset Bug**: User reports the Google Drive toggle still resets visually after app restart.
 - [ ] **Physical Verification**: User to verify sync and wipe on Android 12 device.
 - [ ] **Fix #8 (LOW)**: `_isSyncing` Completer-based mutex (deferred, very low probability).
 
