@@ -1,101 +1,120 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:private_tracker_app/core/services/preferences_service.dart';
-
-class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 void main() {
   late PreferencesService preferencesService;
-  late MockFlutterSecureStorage mockStorage;
 
   setUp(() {
-    mockStorage = MockFlutterSecureStorage();
-    preferencesService = PreferencesService.test(mockStorage);
+    // Reset SharedPreferences to a clean state before each test.
+    SharedPreferences.setMockInitialValues({});
+    preferencesService = PreferencesService();
   });
 
   group('PreferencesService Tests', () {
-    test('isBiometricEnabled should return true if stored as true', () async {
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'true');
+    // --- Biometric ---
 
-      final result = await preferencesService.isBiometricEnabled();
-      expect(result, true);
-    });
-
-    test('isBiometricEnabled should return false if stored as false or null', () async {
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => 'false');
-      expect(await preferencesService.isBiometricEnabled(), false);
-
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => null);
+    test('isBiometricEnabled returns false when nothing is stored', () async {
       expect(await preferencesService.isBiometricEnabled(), false);
     });
 
-    test('setBiometricEnabled should write to storage', () async {
-      when(() => mockStorage.write(
-            key: any(named: 'key'),
-            value: any(named: 'value'),
-            iOptions: any(named: 'iOptions'),
-            aOptions: any(named: 'aOptions'),
-            lOptions: any(named: 'lOptions'),
-            wOptions: any(named: 'wOptions'),
-            mOptions: any(named: 'mOptions'),
-            webOptions: any(named: 'webOptions'),
-          )).thenAnswer((_) async => {});
-
+    test('isBiometricEnabled returns true after setBiometricEnabled(true)', () async {
       await preferencesService.setBiometricEnabled(true);
-      verify(() => mockStorage.write(
-            key: 'is_biometric_enabled',
-            value: 'true',
-            iOptions: any(named: 'iOptions'),
-            aOptions: any(named: 'aOptions'),
-            lOptions: any(named: 'lOptions'),
-            wOptions: any(named: 'wOptions'),
-            mOptions: any(named: 'mOptions'),
-            webOptions: any(named: 'webOptions'),
-          )).called(1);
+      expect(await preferencesService.isBiometricEnabled(), true);
     });
-    
-    test('getNotificationTime should return default if null', () async {
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => null);
-          
-      expect(await preferencesService.getNotificationTime(), const TimeOfDay(hour: 20, minute: 0));
-    });
-    
-    test('getNotificationTime should return stored value', () async {
-      when(() => mockStorage.read(key: any(named: 'key')))
-          .thenAnswer((_) async => '15:45');
-          
-      expect(await preferencesService.getNotificationTime(), const TimeOfDay(hour: 15, minute: 45));
-    });
-    
-    test('setNotificationTime should format to string and save', () async {
-       when(() => mockStorage.write(
-            key: any(named: 'key'),
-            value: any(named: 'value'),
-            iOptions: any(named: 'iOptions'),
-            aOptions: any(named: 'aOptions'),
-            lOptions: any(named: 'lOptions'),
-            wOptions: any(named: 'wOptions'),
-            mOptions: any(named: 'mOptions'),
-            webOptions: any(named: 'webOptions'),
-          )).thenAnswer((_) async => {});
 
+    test('isBiometricEnabled returns false after setBiometricEnabled(false)', () async {
+      await preferencesService.setBiometricEnabled(true);
+      await preferencesService.setBiometricEnabled(false);
+      expect(await preferencesService.isBiometricEnabled(), false);
+    });
+
+    // --- Notifications ---
+
+    test('isNotificationsEnabled returns false when nothing is stored', () async {
+      expect(await preferencesService.isNotificationsEnabled(), false);
+    });
+
+    test('isNotificationsEnabled returns true after setNotificationsEnabled(true)', () async {
+      await preferencesService.setNotificationsEnabled(true);
+      expect(await preferencesService.isNotificationsEnabled(), true);
+    });
+
+    // --- Notification Time ---
+
+    test('getNotificationTime returns default 20:00 when nothing is stored', () async {
+      expect(
+        await preferencesService.getNotificationTime(),
+        const TimeOfDay(hour: 20, minute: 0),
+      );
+    });
+
+    test('getNotificationTime returns stored value after setNotificationTime', () async {
       await preferencesService.setNotificationTime(const TimeOfDay(hour: 9, minute: 5));
-      verify(() => mockStorage.write(
-            key: 'notification_time',
-            value: '9:5',
-            iOptions: any(named: 'iOptions'),
-            aOptions: any(named: 'aOptions'),
-            lOptions: any(named: 'lOptions'),
-            wOptions: any(named: 'wOptions'),
-            mOptions: any(named: 'mOptions'),
-            webOptions: any(named: 'webOptions'),
-          )).called(1);
+      expect(
+        await preferencesService.getNotificationTime(),
+        const TimeOfDay(hour: 9, minute: 5),
+      );
+    });
+
+    // --- Cloud Sync ---
+
+    test('isCloudSyncEnabled returns false when nothing is stored', () async {
+      expect(await preferencesService.isCloudSyncEnabled(), false);
+    });
+
+    test('isCloudSyncEnabled returns true after setCloudSyncEnabled(true)', () async {
+      await preferencesService.setCloudSyncEnabled(true);
+      expect(await preferencesService.isCloudSyncEnabled(), true);
+    });
+
+    // --- Last Sync Time ---
+
+    test('getLastSyncTime returns null when nothing is stored', () async {
+      expect(await preferencesService.getLastSyncTime(), isNull);
+    });
+
+    test('getLastSyncTime round-trips a DateTime through setLastSyncTime', () async {
+      final now = DateTime.utc(2026, 5, 10, 12, 0, 0);
+      await preferencesService.setLastSyncTime(now);
+      final stored = await preferencesService.getLastSyncTime();
+      expect(stored, isNotNull);
+      expect(stored!.toUtc(), now);
+    });
+
+    test('setLastSyncTime(null) removes the stored value', () async {
+      await preferencesService.setLastSyncTime(DateTime.now());
+      await preferencesService.setLastSyncTime(null);
+      expect(await preferencesService.getLastSyncTime(), isNull);
+    });
+
+    // --- Recovery Passphrase ---
+
+    test('isRecoveryPassphraseSet returns false when nothing is stored', () async {
+      expect(await preferencesService.isRecoveryPassphraseSet(), false);
+    });
+
+    test('isRecoveryPassphraseSet returns true after setRecoveryPassphraseSet(true)', () async {
+      await preferencesService.setRecoveryPassphraseSet(true);
+      expect(await preferencesService.isRecoveryPassphraseSet(), true);
+    });
+
+    // --- Recovery Salt ---
+
+    test('getRecoverySalt returns null when nothing is stored', () async {
+      expect(await preferencesService.getRecoverySalt(), isNull);
+    });
+
+    test('getRecoverySalt returns stored value after setRecoverySalt', () async {
+      await preferencesService.setRecoverySalt('abc123salt');
+      expect(await preferencesService.getRecoverySalt(), 'abc123salt');
+    });
+
+    test('setRecoverySalt(null) removes the stored value', () async {
+      await preferencesService.setRecoverySalt('abc123salt');
+      await preferencesService.setRecoverySalt(null);
+      expect(await preferencesService.getRecoverySalt(), isNull);
     });
   });
 }

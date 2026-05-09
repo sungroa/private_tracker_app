@@ -593,8 +593,10 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _handleResetCloudSync(CloudSyncProvider provider) async {
     HapticFeedback.heavyImpact();
     
+    SecurityLogger.logInfo("UI: [WIPE-DIAG-1] Opening wipe confirmation dialog...");
     final confirm = await showDialog<bool>(
       context: context,
+      barrierDismissible: false, // (W11) Prevent accidental tap-out silently cancelling a destructive operation
       builder: (context) => AlertDialog(
         title: const Text('Reset Cloud Sync?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
         content: const Text(
@@ -614,26 +616,34 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
+    SecurityLogger.logInfo("UI: [WIPE-DIAG-2] Confirmation dialog closed. Result: $confirm, mounted: $mounted");
 
     if (confirm == true && mounted) {
-      SecurityLogger.logInfo("UI: User confirmed cloud wipe. Requesting biometric auth...");
+      SecurityLogger.logInfo("UI: [WIPE-DIAG-3] User confirmed wipe. Requesting biometric auth...");
       final authService = context.read<AuthService>();
+      SecurityLogger.logInfo("UI: [WIPE-DIAG-4] AuthService acquired. Calling authenticate()...");
       final authenticated = await authService.authenticate();
+      SecurityLogger.logInfo("UI: [WIPE-DIAG-5] authenticate() returned. Result: $authenticated");
       
       if (authenticated && mounted) {
-        SecurityLogger.logInfo("UI: Biometric auth success. Triggering wipe logic...");
+        SecurityLogger.logInfo("UI: [WIPE-DIAG-6] Auth success. Calling provider.resetCloudData()...");
         await provider.resetCloudData();
         if (mounted && provider.lastError == null) {
+          SecurityLogger.logInfo("UI: [WIPE-DIAG-7] Wipe complete. No errors reported.");
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Cloud sync reset successfully.'), backgroundColor: AppTheme.primaryColor),
           );
+        } else if (mounted) {
+          SecurityLogger.logInfo("UI: [WIPE-DIAG-7] Wipe completed with error: ${provider.lastError}");
         }
       } else if (mounted) {
-        SecurityLogger.logInfo("UI: Biometric auth failed or cancelled. Aborting wipe.");
+        SecurityLogger.logInfo("UI: [WIPE-DIAG-6] Biometric auth failed or cancelled. Aborting wipe.");
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Authentication failed. Reset aborted.")),
         );
       }
+    } else {
+      SecurityLogger.logInfo("UI: [WIPE-DIAG-3] Wipe aborted. confirm=$confirm, mounted=$mounted");
     }
   }
 

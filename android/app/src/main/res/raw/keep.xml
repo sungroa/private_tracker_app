@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Resource keep rules: prevents R8/Gradle resource shrinker from stripping
+     drawables that are referenced by name at runtime (e.g. flutter_local_notifications). -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_notification"
+    tools:discard="" />
