@@ -1,0 +1,134 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../utils/security_logger.dart';
+
+class PreferencesService {
+  static const String _biometricEnabledKey = 'is_biometric_enabled';
+  static const String _notificationsEnabledKey = 'is_notifications_enabled';
+  static const String _notificationTimeKey = 'notification_time';
+  static const String _cloudSyncEnabledKey = 'is_cloud_sync_enabled';
+  static const String _lastSyncTimeKey = 'last_sync_time';
+  static const String _recoveryPassphraseSetKey = 'is_recovery_passphrase_set';
+  static const String _recoverySaltKey = 'recovery_salt';
+
+  final FlutterSecureStorage _secureStorage;
+
+  PreferencesService({FlutterSecureStorage? secureStorage})
+      : _secureStorage = secureStorage ?? const FlutterSecureStorage();
+
+  // For testing
+  PreferencesService.test(this._secureStorage);
+
+  Future<String?> _safeRead(String key) async {
+    try {
+      return await _secureStorage.read(key: key);
+    } catch (e) {
+      // Log as a warning instead of a massive error stack trace.
+      SecurityLogger.logInfo("PreferencesService: Corrupted key detected for $key. Clearing and returning default. ($e)");
+      // Attempt to clear the corrupted key so it doesn't throw next time.
+      try {
+        await _secureStorage.delete(key: key);
+      } catch (_) {}
+      return null;
+    }
+  }
+
+  Future<void> _safeWrite(String key, String value) async {
+    try {
+      await _secureStorage.write(key: key, value: value);
+    } catch (e, stack) {
+      SecurityLogger.logError("PreferencesService: Failed to write $key", error: e, stackTrace: stack);
+    }
+  }
+
+  Future<void> _safeDelete(String key) async {
+    try {
+      await _secureStorage.delete(key: key);
+    } catch (e, stack) {
+      SecurityLogger.logError("PreferencesService: Failed to delete $key", error: e, stackTrace: stack);
+    }
+  }
+
+  Future<bool> isBiometricEnabled() async {
+    final value = await _safeRead(_biometricEnabledKey);
+    return value == 'true';
+  }
+
+  Future<void> setBiometricEnabled(bool enabled) async {
+    await _safeWrite(_biometricEnabledKey, enabled.toString());
+  }
+
+  Future<bool> isNotificationsEnabled() async {
+    final value = await _safeRead(_notificationsEnabledKey);
+    return value == 'true';
+  }
+
+  Future<void> setNotificationsEnabled(bool enabled) async {
+    await _safeWrite(_notificationsEnabledKey, enabled.toString());
+  }
+
+  Future<TimeOfDay> getNotificationTime() async {
+    final value = await _safeRead(_notificationTimeKey);
+    if (value != null) {
+      final parts = value.split(':');
+      if (parts.length == 2) {
+        return TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 20,
+          minute: int.tryParse(parts[1]) ?? 0,
+        );
+      }
+    }
+    return const TimeOfDay(hour: 20, minute: 0);
+  }
+
+  Future<void> setNotificationTime(TimeOfDay time) async {
+    final value = '${time.hour}:${time.minute}';
+    await _safeWrite(_notificationTimeKey, value);
+  }
+
+  Future<bool> isCloudSyncEnabled() async {
+    final value = await _safeRead(_cloudSyncEnabledKey);
+    return value == 'true';
+  }
+
+  Future<void> setCloudSyncEnabled(bool enabled) async {
+    await _safeWrite(_cloudSyncEnabledKey, enabled.toString());
+  }
+
+  Future<DateTime?> getLastSyncTime() async {
+    final value = await _safeRead(_lastSyncTimeKey);
+    if (value != null) {
+      return DateTime.tryParse(value);
+    }
+    return null;
+  }
+
+  Future<void> setLastSyncTime(DateTime? time) async {
+    if (time == null) {
+      await _safeDelete(_lastSyncTimeKey);
+    } else {
+      await _safeWrite(_lastSyncTimeKey, time.toIso8601String());
+    }
+  }
+
+  Future<bool> isRecoveryPassphraseSet() async {
+    final value = await _safeRead(_recoveryPassphraseSetKey);
+    return value == 'true';
+  }
+
+  Future<void> setRecoveryPassphraseSet(bool set) async {
+    await _safeWrite(_recoveryPassphraseSetKey, set.toString());
+  }
+
+  Future<String?> getRecoverySalt() async {
+    return await _safeRead(_recoverySaltKey);
+  }
+
+  Future<void> setRecoverySalt(String? salt) async {
+    if (salt == null) {
+      await _safeDelete(_recoverySaltKey);
+    } else {
+      await _safeWrite(_recoverySaltKey, salt);
+    }
+  }
+}

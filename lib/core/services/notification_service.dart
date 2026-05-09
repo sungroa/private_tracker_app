@@ -28,7 +28,7 @@ class NotificationService {
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
 
-    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('ic_launcher');
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('ic_notification');
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false, 
       requestBadgePermission: false, 

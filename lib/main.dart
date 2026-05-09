@@ -74,6 +74,7 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
         Provider.value(value: sl.authService),
         Provider.value(value: sl.preferencesService),
         Provider.value(value: sl.notificationService),
+        Provider.value(value: sl.appLinks),
         Provider.value(value: sl.keyStorage),
         Provider.value(value: sl.dbManager),
         Provider.value(value: sl.backupService),

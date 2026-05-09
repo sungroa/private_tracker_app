@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../domain/usecases/sync_data_use_case.dart';
 import '../../core/services/preferences_service.dart';
@@ -56,12 +57,12 @@ class CloudSyncProvider with ChangeNotifier {
     _isRecoveryEnabled = await _prefs.isRecoveryPassphraseSet();
     _lastSyncTime = await _prefs.getLastSyncTime();
     
-    if (_isGoogleDriveEnabled) {
-      await checkRecoveryStatus();
-    }
-    
     _isInitialized = true;
     notifyListeners();
+
+    if (_isGoogleDriveEnabled) {
+      unawaited(checkRecoveryStatus());
+    }
   }
 
   /// Checks the cloud for an existing recovery salt.
