@@ -39,6 +39,15 @@ class CycleStatsCalculator {
     return totalDays / completedLogs.length;
   }
 
+  /// Filters out abnormal cycle lengths using the Interquartile Range (IQR) method.
+  /// 
+  /// **Why**: Cycle lengths can occasionally be highly irregular due to illness, 
+  /// stress, or mislogged data. If included, these extreme outliers would skew the 
+  /// exponential moving average and cause wild inaccuracies in future predictions.
+  /// 
+  /// **How**: Calculates the Q1 (25th percentile) and Q3 (75th percentile). Any 
+  /// cycle length falling below `Q1 - 1.5 * IQR` or above `Q3 + 1.5 * IQR` is dropped.
+  /// A minimum of 4 cycles is required to establish statistical quartiles.
   static List<int> filterOutliers(List<int> lengths) {
     if (lengths.length < 4) return lengths;
 

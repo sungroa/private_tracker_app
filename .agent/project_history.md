@@ -33,3 +33,25 @@
 - [x] Hotfix: Resolve Android 12 `android:exported` build error.
 - [x] Bug Fix: Resolve "Restore Backup" crash by refactoring file picking logic.
 - [x] Codebase Cleanup: Resolve analysis issues, fix test hangs, and improve documentation.
+- [x] Fix: Moved `GoogleSignIn.instance.initialize()` to `main()`. Removed stale-auth guard from `authenticate()`.
+- [x] Fix: `uploadEncryptedBackup` now writes to `appProperties` + `properties` + `description`.
+- [x] Fix: `checkRecoveryStatus()` now logs errors instead of swallowing them.
+- [x] Fix: Secondary error in `SyncDataUseCase` catch block is now logged.
+- [x] Fix Startup Hang: Removed `await checkRecoveryStatus()` from `CloudSyncProvider.init()` critical path.
+- [x] Fix BadPaddingException Crash: Migrated non-sensitive settings to `SharedPreferences`.
+- [x] Fix Missing AppLinks Provider: Added missing `Provider.value(value: sl.appLinks)` to `main.dart`.
+- [x] Fix Local Notifications Crash (PERMANENT): R8 resource shrinker fix.
+- [x] Fix UI Sync Stale State: Updated `HomePage` refresh button to trigger all data providers.
+- [x] Fix Stale PreferencesService Test: Rewrote `preferences_service_test.dart`.
+- [x] Add Wipe Diagnostic Logs (WIPE-DIAG-1 through 7)
+- [x] Fix Silent Auth Prompt: Refactored `authenticate()` in `GoogleDriveSyncRepository` to cache `GoogleSignInAccount`.
+- [x] Fix Sync-Before-Passphrase Friction: Guard `sync()` in `toggleGoogleDrive`.
+- [x] Add Change Passphrase: `changePassphrase(old, new)` in provider + dialog.
+- [x] Fix UI Lie: Remove "CANNOT be reset" message.
+- [x] Fix AppInitializer Race: `init()` awaits `checkRecoveryStatus`. AppInitializer guarded.
+- [x] Orphan Key Recovery: `isOrphanKey` + `overwriteCloudWithLocal()` + card UI.
+- [x] Fix data-write provider guards (Bug C): Added guards in all 3 providers.
+- [x] Fix sync() loop (Bug C root fix).
+- [x] Add diagnostic logging for recovery state flags.
+- [x] Disable SYNC NOW during recovery.
+- [x] Fix Bug D root cause: Force `_isRecoveryEnabled=false` on `recoveryRequired`.

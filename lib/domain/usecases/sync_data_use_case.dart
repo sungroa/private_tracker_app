@@ -188,7 +188,13 @@ class SyncDataUseCase {
 
 /// Background worker for merging data using Last-Write-Wins (LWW).
 /// 
-/// (C1) This function runs on a separate isolate and handles ONLY serializable types.
+/// **Isolate Boundary**: This function executes on a separate background thread via `Isolate.run`.
+/// This is critical because decrypting/parsing large payloads and merging hundreds of logs 
+/// can cause jank on the main Flutter UI thread.
+/// 
+/// **Constraint**: Because it crosses the isolate boundary, the `params` map and return value 
+/// must only contain primitive/serializable types (String, int, basic Lists/Maps). Complex 
+/// classes or connections (like database handles) cannot be passed.
 Map<String, dynamic> _mergeDataWorkerSer(Map<String, dynamic> params) {
   final local = params['local'] as Map<String, dynamic>;
   final cloud = params['cloud'] as Map<String, dynamic>;
@@ -210,7 +216,13 @@ Map<String, dynamic> _mergeDataWorkerSer(Map<String, dynamic> params) {
   };
 }
 
-/// Helper to merge two lists of record Maps using LWW based on updatedAt.
+/// Helper to merge two lists of record Maps using Last-Write-Wins (LWW) based on `updatedAt`.
+///
+/// **Conflict Resolution Strategy**:
+/// 1. The cloud state is loaded as the baseline.
+/// 2. Local records are iterated. If a local record doesn't exist in the cloud, it's added.
+/// 3. If a record exists in both, their `updatedAt` timestamps are compared. The newer record wins.
+/// 4. In the extremely rare case of exact millisecond ties, a deterministic tie-breaker is applied.
 List<dynamic> _mergeRecordsSer({
   required List<dynamic> local,
   required List<dynamic> cloud,
@@ -236,9 +248,9 @@ List<dynamic> _mergeRecordsSer({
       if (localUpdate.isAfter(cloudUpdate)) {
         merged[id] = localRecord;
       } else if (localUpdate.isAtSameMomentAs(cloudUpdate)) {
-        // (N2) Tie-breaker: deterministic fallback (using string comparison of updatedAt raw strings or content)
-        // Corrected: id.compareTo(id) was always 0. We compare the raw updatedAt strings
-        // or just pick one deterministically if timestamps are identical.
+        // **Deterministic Tie-Breaker**: If timestamps are perfectly identical, we must
+        // ensure all devices resolve the conflict in the exact same way to avoid infinite
+        // sync loops. We use the string hash of the unique UUID as the arbiter.
         if ((localRecord['id'] as String).hashCode > (cloudRecord['id'] as String).hashCode) {
            merged[id] = localRecord;
         }
