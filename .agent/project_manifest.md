@@ -1,10 +1,10 @@
 # 🧭 Project Manifest: Private Tracker
 
 ## 📊 Session Data
-- **Last Updated:** 2026-05-09T23:05:00Z
-- **Session ID:** `1372f709-3eb4-44ec-8220-d9a063f3e82d`
+- **Last Updated:** 2026-05-10T10:25:00Z
+- **Session ID:** `19425d98-fb5d-4d21-92d0-3edb2f393279`
 - **Session Health:** NOMINAL
-- **Context Budget:** ~5% — NOMINAL
+- **Context Budget:** ~10% — NOMINAL
 
 ## 🎯 Objectives & Constraints
 - **Primary Objective:** Fix cloud sync password friction + add passphrase update flow.
@@ -17,7 +17,7 @@
 ## 🛠️ Validation & State
 - **fast_validation_command:** `flutter analyze`
 - **full_validation_command:** `flutter test`
-- **Verification Token:** Pass: `flutter analyze` = No issues. Codebase cleaned of tautological docs; meaningful architectural docs added to 5 core files.
+- **Verification Token:** Pass: `flutter test` = All tests passed. Key rotation logic fixed.
 
 ## 🐛 Confirmed Remaining Bugs (Post-Commit e3c7ad0)
 **Bug C — FIXED:** `_triggerSync()` guards in all 3 providers + `sync()` top-level early-return for `requiresRecoveryPrompt || isOrphanKey`.
@@ -29,6 +29,12 @@
 - Fix: On `recoveryRequired` catch: force `_isRecoveryEnabled=false` + fetch real salt from `PreferencesService` as fallback
 - Fix: `restoreRecovery()` resolves `'pending'` sentinel via `PreferencesService.getRecoverySalt()` so passphrase entry can derive the real key
 - **Next step**: Physical verification — launch app, open Settings, confirm orange RECOVER CLOUD DATA card appears
+
+**Bug E — FIXED (Salt mismatch during passphrase rotation):**
+- When changing passphrase, `changePassphrase` rotated the local salt and called `syncUseCase.execute()`.
+- `execute()` fetched the *old* cloud metadata, saw a salt mismatch, and threw a generic exception, breaking the key rotation flow and leaving the user in a broken state.
+- Fix: Modified `changePassphrase` to `execute()` *before* rotating to sync any pending changes, and then use a new `forceFullUpload()` method to overwrite the cloud state with the new key/salt without checking for mismatches.
+- Fix: Ensured that if a salt mismatch *does* occur (e.g. from another device), it correctly throws a `recoveryRequired` exception, and `CloudSyncProvider` fetches the latest salt from the cloud so the recovery prompt can derive the correct key.
 
 ## 🔎 Analysis Findings (Session 67eafd1e)
 See: `brain/67eafd1e.../cloud_sync_analysis.md`

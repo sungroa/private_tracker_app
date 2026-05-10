@@ -69,7 +69,8 @@ class SyncDataUseCase {
         SecurityLogger.logInfo("Sync Cycle: New cloud salt detected. Storing locally.");
         await _metadata.setRecoverySalt(currentCloudSalt);
       } else if (currentCloudSalt != null && localSalt != null && currentCloudSalt != localSalt) {
-        throw CloudSyncException("Recovery salt mismatch between local and cloud.");
+        SecurityLogger.logInfo("Sync Cycle: Recovery salt mismatch detected. Triggering recovery prompt.");
+        throw CloudSyncException(CloudSyncException.recoveryRequired, "Recovery salt mismatch between local and cloud.");
       }
 
       final lastSyncChecksum = await _metadata.getLastSyncChecksum();
@@ -183,6 +184,12 @@ class SyncDataUseCase {
     );
     await _metadata.setLastSyncChecksum(checksum);
     await _metadata.clearLocalModifiedFlag();
+  }
+
+  /// Performs a full upload of the local database to the cloud.
+  /// Intended for use after key rotation.
+  Future<void> forceFullUpload() async {
+    await _performFullUpload();
   }
 }
 
