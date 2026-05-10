@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'dart:io' show Platform;
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin;
@@ -20,7 +21,7 @@ class NotificationService {
     // Get device timezone
     try {
       final dynamic locationData = await FlutterTimezone.getLocalTimezone();
-      String timeZoneName = locationData is String ? locationData : locationData.toString();
+      final String timeZoneName = locationData is String ? locationData : locationData.identifier;
       tz.setLocalLocation(tz.getLocation(timeZoneName));
       debugPrint('[PrivacyTracker.Notifications] Timezone set to: $timeZoneName');
     } catch (e) {
@@ -116,20 +117,25 @@ class NotificationService {
 
   /// Requests permissions (for iOS and Android 13+).
   Future<bool> requestPermissions() async {
-    final AndroidFlutterLocalNotificationsPlugin? androidPlugin =
-        _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (Platform.isAndroid) {
+      final AndroidFlutterLocalNotificationsPlugin? androidPlugin =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      
+      final bool? androidGranted = await androidPlugin?.requestNotificationsPermission();
+      
+      // On Android < 13, requestNotificationsPermission returns null (implicitly granted).
+      return (androidGranted ?? true);
+    } else if (Platform.isIOS) {
+      final bool? iosGranted = await _notificationsPlugin
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+      return iosGranted ?? false;
+    }
     
-    final bool? androidGranted = await androidPlugin?.requestNotificationsPermission();
-    final bool? exactAlarmsGranted = await androidPlugin?.requestExactAlarmsPermission();
-
-    final bool? iosGranted = await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(
-          alert: true,
-          badge: true,
-          sound: true,
-        );
-
-    return (androidGranted ?? false) || (exactAlarmsGranted ?? false) || (iosGranted ?? false);
+    return false;
   }
 }
