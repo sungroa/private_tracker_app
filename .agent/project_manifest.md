@@ -19,8 +19,6 @@
 - None currently.
 
 ## 📋 Next Steps
-- [ ] **Fix #8 (LOW)**: `_isSyncing` Completer-based mutex (deferred, very low probability).
-- [ ] **Documentation Cleanup**: Clean up `README.md`, `DEVELOPMENT.md`, and generate code docstrings.
 
 ## 🚫 Dead Ends / Blockers
 - None currently.
