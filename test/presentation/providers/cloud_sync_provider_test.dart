@@ -156,6 +156,7 @@ void main() {
       when(() => mockSyncUseCase.verifyCloudDecrypt(any(), any())).thenAnswer((_) async => {});
       when(() => mockSyncUseCase.setRecoverySalt(any())).thenAnswer((_) async => {});
       when(() => mockSyncUseCase.execute()).thenAnswer((_) async => false);
+      when(() => mockSyncUseCase.forceFullUpload()).thenAnswer((_) async => {});
 
       await provider.init();
       await provider.changePassphrase('oldPass123', 'newPass456');
@@ -164,6 +165,7 @@ void main() {
       verify(() => mockSyncUseCase.verifyCloudDecrypt(fakePayload, any())).called(1);
       verify(() => mockKeyStorage.setCloudSyncKey(any())).called(1);
       verify(() => mockSyncUseCase.execute()).called(1);
+      verify(() => mockSyncUseCase.forceFullUpload()).called(1);
     });
 
     test('changePassphrase sets error when old passphrase is wrong', () async {

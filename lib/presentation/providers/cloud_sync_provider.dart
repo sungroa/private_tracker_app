@@ -193,7 +193,13 @@ class CloudSyncProvider with ChangeNotifier {
       // parseCloudBackup throws on bad key — this is intentional verification.
       await _syncUseCase.verifyCloudDecrypt(cloudPayload, oldKey);
 
-      SecurityLogger.logInfo("Cloud Sync: Old passphrase verified. Rotating to new passphrase...");
+      SecurityLogger.logInfo("Cloud Sync: Old passphrase verified. Syncing before key rotation...");
+
+      // --- Step 2.5: Ensure we are fully synced before rotating ---
+      // We must merge any pending cloud changes first so we don't overwrite them.
+      await _syncUseCase.execute();
+
+      SecurityLogger.logInfo("Cloud Sync: Rotating to new passphrase...");
 
       // --- Step 3: Key rotation — generate new salt + key, re-upload ---
       final newSalt = KeyDerivationUtil.generateSalt();
@@ -208,7 +214,7 @@ class CloudSyncProvider with ChangeNotifier {
       _isRecoveryEnabled = true;
 
       // Force a re-upload with the new key/salt so cloud is immediately consistent.
-      await _syncUseCase.execute();
+      await _syncUseCase.forceFullUpload();
 
       SecurityLogger.logInfo("Cloud Sync: Passphrase changed successfully.");
     } catch (e) {
@@ -369,9 +375,11 @@ class CloudSyncProvider with ChangeNotifier {
         // true and the orange recovery card appears in Settings.
         _isRecoveryEnabled = false;
         await _prefs.setRecoveryPassphraseSet(false);
-        // If checkRecoveryStatus() found no salt in Drive metadata, fall back
-        // to the salt stored in PreferencesService (the SyncDataUseCase found it
-        // in local sync metadata, so the prefs-layer copy likely exists too).
+        
+        // Fetch the latest salt from cloud so the recovery prompt uses the correct salt
+        // for key derivation (especially critical if passphrase was rotated on another device).
+        await checkRecoveryStatus();
+        
         if (_pendingRecoverySalt == null) {
           _pendingRecoverySalt = await _prefs.getRecoverySalt() ?? 'pending';
           SecurityLogger.logInfo(
