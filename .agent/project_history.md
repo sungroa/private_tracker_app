@@ -55,3 +55,9 @@
 - [x] Add diagnostic logging for recovery state flags.
 - [x] Disable SYNC NOW during recovery.
 - [x] Fix Bug D root cause: Force `_isRecoveryEnabled=false` on `recoveryRequired`.
+- [x] Feature: Triple-Redundant Recovery Discovery (appProperties, properties, description).
+- [x] Feature: Reset Cloud Sync (Permanent Cloud Wipe + Local State Reset).
+- [x] Feature: Biometric-Protected Destructive Operations.
+- [x] Feature: Idempotent Authentication Flow (Silent-First).
+- [x] Fix Bug E (Salt Mismatch during passphrase rotation): Modified `changePassphrase` to `execute()` before rotating, then `forceFullUpload()`.
+- [x] Fix Bug E (Recovery Prompt fallback): Ensured salt mismatch throws `recoveryRequired` and fetches the latest salt.
