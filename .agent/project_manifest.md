@@ -1,25 +1,27 @@
 # 🧭 Project Manifest: Private Tracker
 
 ## 📊 Session Data
-- **Last Updated:** 2026-05-10T11:00:30Z
-- **Session ID:** `3b3ddb43-ce48-4b3b-ae29-1c8d0377dee6`
+- **Last Updated:** 2026-05-13T15:25:00+09:00
+- **Session ID:** `bbc67404-d80f-459c-b054-6daf8b32045c`
 - **Session Health:** NOMINAL
-- **Context Budget:** ~25% — NOMINAL
+- **Context Budget:** ~15% — NOMINAL
 
 ## 🎯 Objectives & Constraints
-- **Primary Objective:** Fix cloud sync password friction + add passphrase update flow.
-- **Constraints:** Zero tech debt, mandatory testing, clean architecture.
+- **Primary Objective:** Make full privacy policy available in-app without direct file references.
+- **Constraints:** Zero tech debt, mandatory testing, clean architecture, no mention of `PRIVACY_POLICY.md`.
 
 ## 🛠️ Validation & State
 - **fast_validation_command:** `flutter analyze`
 - **full_validation_command:** `flutter test`
-- **Verification Token:** Pass: `flutter test` = All 117 tests passed. Timezone initialization fixed.
-
-## 🐛 Confirmed Remaining Bugs
-- None currently.
+- **Verification Token:** `No issues found!`
 
 ## 📋 Next Steps
-- Validate reminders setting toggle explicitly on user device.
+- [x] Obtain user approval for the implementation plan.
+- [x] Create `PrivacyPolicyPage` widget.
+- [x] Embed privacy policy text.
+- [x] Integrate into `SecuritySummarySheet`. (Updated: Bypassed and removed summary sheet)
+- [x] Add regression tests.
+
 
 ## 🚫 Dead Ends / Blockers
 - None currently.

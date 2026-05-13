@@ -136,9 +136,9 @@ void main() {
 
       final csvString = await storageService.exportDataToCsv();
       
-      expect(csvString, contains('Log Type,Start Date/Date,End Date,Symptoms,Mood Rating,BBT,Fluid,LH Test,Notes'));
-      expect(csvString, contains('Cycle,2026-03-01,,,,,,,Cycle note'));
-      expect(csvString, contains('Symptom,2026-03-05,,Cramps; Fatigue,3,,,,Symptom note'));
+      expect(csvString, contains('Date,Type,End Date,Symptoms,Mood,Flow,BBT,Fluid,LH Test,Notes,Last Updated,ID'));
+      expect(csvString, contains('2026-03-01,Cycle,,,,3/5,,,,Cycle note'));
+      expect(csvString, contains('2026-03-05,Symptom,,Cramps; Fatigue,3,,,,,Symptom note'));
     });
 
     test('saveTag and deleteTag should work', () async {

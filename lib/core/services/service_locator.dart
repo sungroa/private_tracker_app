@@ -35,6 +35,7 @@ import '../../domain/usecases/save_symptom_log_use_case.dart';
 import '../../domain/usecases/sync_data_use_case.dart';
 import 'app_initializer.dart';
 import 'auth_service.dart';
+import 'notification_orchestrator.dart';
 import 'notification_service.dart';
 import 'preferences_service.dart';
 import 'package:app_links/app_links.dart';
@@ -64,6 +65,9 @@ class ServiceLocator {
   
   /// Orchestrates local push notifications (period reminders, etc).
   late final NotificationService notificationService;
+  
+  /// High-level logic for scheduling data-driven notifications.
+  late final NotificationOrchestrator notificationOrchestrator;
   
   /// Handles deep links for partner connection and invitations.
   late final AppLinks appLinks;
@@ -178,6 +182,10 @@ class ServiceLocator {
     authService = auth ?? AuthService();
     preferencesService = prefs ?? PreferencesService();
     notificationService = notifications ?? NotificationService();
+    notificationOrchestrator = NotificationOrchestrator(
+      notificationService: notificationService,
+      preferencesService: preferencesService,
+    );
     appLinks = customAppLinks ?? AppLinks();
 
     // 2. Data Access Layer

@@ -65,6 +65,7 @@ class EncryptedStorageService {
     return _exportService.exportDataToCsv(
       cycleEvents: await _cycleDataSource.getCycleLogs(),
       symptomLogs: await _symptomDataSource.getSymptomLogs(),
+      customTags: await _tagDataSource.getCustomTags(),
     );
   }
 
