@@ -43,7 +43,18 @@ class TagProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _tags = await _getUseCase.execute();
+      final rawTags = await _getUseCase.execute();
+      
+      // Safety deduplication: if the data layer has duplicates (e.g. before 
+      // migration finishes), we ensure the UI only shows unique names.
+      final seenNames = <String>{};
+      _tags = rawTags.where((tag) {
+        final normalized = tag.name.trim().toLowerCase();
+        if (seenNames.contains(normalized)) return false;
+        seenNames.add(normalized);
+        return true;
+      }).toList();
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {

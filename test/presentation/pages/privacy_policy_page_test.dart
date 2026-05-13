@@ -54,11 +54,14 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.lightTheme,
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => PrivacyPolicyPage.show(context),
-                child: const Text('Open'),
+          home: DefaultAssetBundle(
+            bundle: MockAssetBundle(),
+            child: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => PrivacyPolicyPage.show(context),
+                  child: const Text('Open'),
+                ),
               ),
             ),
           ),
