@@ -6,6 +6,7 @@ import 'core/services/preferences_service.dart';
 import 'core/services/app_initializer.dart';
 import 'core/services/service_locator.dart';
 import 'core/services/app_lifecycle_manager.dart';
+import 'core/services/notification_orchestrator.dart';
 import 'presentation/pages/home_page.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/widgets/authentication_overlay.dart';
@@ -102,6 +103,7 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
         Provider.value(value: sl.deleteCycleLogUseCase),
         Provider.value(value: sl.cloudSync),
         Provider.value(value: sl.syncUseCase),
+        Provider.value(value: sl.notificationOrchestrator),
         ChangeNotifierProvider(
           create: (context) => CloudSyncProvider(
             syncUseCase: context.read<SyncDataUseCase>(),
@@ -110,14 +112,16 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
             cloudSync: context.read<CloudSyncInterface>(),
           ),
         ),
-        ChangeNotifierProxyProvider<CloudSyncProvider, CycleProvider>(
+        ChangeNotifierProxyProvider2<CloudSyncProvider, NotificationOrchestrator, CycleProvider>(
           create: (context) => CycleProvider(
             context.read<GetCycleLogsUseCase>(),
             context.read<SaveCycleLogUseCase>(),
             context.read<DeleteCycleLogUseCase>(),
           ),
-          update: (context, cloudSync, cycleProvider) =>
-              cycleProvider!..attachSyncProvider(cloudSync),
+          update: (context, cloudSync, notificationOrchestrator, cycleProvider) =>
+              cycleProvider!
+                ..attachSyncProvider(cloudSync)
+                ..attachNotificationOrchestrator(notificationOrchestrator),
         ),
         ChangeNotifierProxyProvider<CloudSyncProvider, SymptomProvider>(
           create: (context) => SymptomProvider(

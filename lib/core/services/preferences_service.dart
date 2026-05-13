@@ -10,6 +10,13 @@ class PreferencesService {
   static const String _lastSyncTimeKey = 'last_sync_time';
   static const String _recoveryPassphraseSetKey = 'is_recovery_passphrase_set';
   static const String _recoverySaltKey = 'recovery_salt';
+  
+  static const String _periodReminderEnabledKey = 'is_period_reminder_enabled';
+  static const String _periodReminderOffsetKey = 'period_reminder_offset';
+  static const String _periodReminderTimeKey = 'period_reminder_time';
+  static const String _fertilityReminderEnabledKey = 'is_fertility_reminder_enabled';
+  static const String _fertilityReminderOffsetKey = 'fertility_reminder_offset';
+  static const String _fertilityReminderTimeKey = 'fertility_reminder_time';
 
   PreferencesService();
 
@@ -124,5 +131,83 @@ class PreferencesService {
     } else {
       await _safeWrite(_recoverySaltKey, salt);
     }
+  }
+  
+  // --- Period Reminder ---
+
+  Future<bool> isPeriodReminderEnabled() async {
+    final value = await _safeRead(_periodReminderEnabledKey);
+    return value == 'true';
+  }
+
+  Future<void> setPeriodReminderEnabled(bool enabled) async {
+    await _safeWrite(_periodReminderEnabledKey, enabled.toString());
+  }
+
+  Future<int> getPeriodReminderOffset() async {
+    final value = await _safeRead(_periodReminderOffsetKey);
+    return int.tryParse(value ?? '1') ?? 1;
+  }
+
+  Future<void> setPeriodReminderOffset(int offset) async {
+    await _safeWrite(_periodReminderOffsetKey, offset.toString());
+  }
+
+  Future<TimeOfDay> getPeriodReminderTime() async {
+    final value = await _safeRead(_periodReminderTimeKey);
+    if (value != null) {
+      final parts = value.split(':');
+      if (parts.length == 2) {
+        return TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 9,
+          minute: int.tryParse(parts[1]) ?? 0,
+        );
+      }
+    }
+    return const TimeOfDay(hour: 9, minute: 0);
+  }
+
+  Future<void> setPeriodReminderTime(TimeOfDay time) async {
+    final value = '${time.hour}:${time.minute}';
+    await _safeWrite(_periodReminderTimeKey, value);
+  }
+
+  // --- Fertility Reminder ---
+
+  Future<bool> isFertilityReminderEnabled() async {
+    final value = await _safeRead(_fertilityReminderEnabledKey);
+    return value == 'true';
+  }
+
+  Future<void> setFertilityReminderEnabled(bool enabled) async {
+    await _safeWrite(_fertilityReminderEnabledKey, enabled.toString());
+  }
+
+  Future<int> getFertilityReminderOffset() async {
+    final value = await _safeRead(_fertilityReminderOffsetKey);
+    return int.tryParse(value ?? '1') ?? 1;
+  }
+
+  Future<void> setFertilityReminderOffset(int offset) async {
+    await _safeWrite(_fertilityReminderOffsetKey, offset.toString());
+  }
+
+  Future<TimeOfDay> getFertilityReminderTime() async {
+    final value = await _safeRead(_fertilityReminderTimeKey);
+    if (value != null) {
+      final parts = value.split(':');
+      if (parts.length == 2) {
+        return TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 9,
+          minute: int.tryParse(parts[1]) ?? 0,
+        );
+      }
+    }
+    return const TimeOfDay(hour: 9, minute: 0);
+  }
+
+  Future<void> setFertilityReminderTime(TimeOfDay time) async {
+    final value = '${time.hour}:${time.minute}';
+    await _safeWrite(_fertilityReminderTimeKey, value);
   }
 }

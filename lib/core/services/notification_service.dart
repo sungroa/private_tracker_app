@@ -8,6 +8,10 @@ import 'dart:io' show Platform;
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin;
 
+  static const int dailyReminderId = 100;
+  static const int periodReminderId = 200;
+  static const int fertilityReminderId = 300;
+
   NotificationService({
     FlutterLocalNotificationsPlugin? notificationsPlugin,
   }) : _notificationsPlugin = notificationsPlugin ?? FlutterLocalNotificationsPlugin();
@@ -59,7 +63,15 @@ class NotificationService {
           importance: Importance.max,
         ),
       );
-      debugPrint('[PrivacyTracker.Notifications] Notification channel created.');
+      await androidPlugin.createNotificationChannel(
+        const AndroidNotificationChannel(
+          'prediction_reminder_channel',
+          'Prediction Reminders',
+          description: 'Reminders for upcoming period or fertility windows',
+          importance: Importance.max,
+        ),
+      );
+      debugPrint('[PrivacyTracker.Notifications] Notification channels created.');
     }
     debugPrint('[PrivacyTracker.Notifications] Initialization complete.');
   }
@@ -108,6 +120,57 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time, // This makes it recur daily
     );
+  }
+
+  /// Schedules a single notification at a specific date and time.
+  Future<void> scheduleSingleNotification({
+    required int id,
+    required DateTime date,
+    required TimeOfDay time,
+    required String title,
+    required String body,
+  }) async {
+    final tz.TZDateTime scheduledDate = tz.TZDateTime(
+      tz.local,
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+
+    // Don't schedule if the date is in the past
+    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) {
+      debugPrint('[PrivacyTracker.Notifications] Skipping notification $id: Scheduled date is in the past.');
+      return;
+    }
+
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'prediction_reminder_channel',
+      'Prediction Reminders',
+      channelDescription: 'Reminders for upcoming period or fertility windows',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(),
+    );
+
+    await _notificationsPlugin.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
+  }
+
+  /// Cancels a specific notification by ID.
+  Future<void> cancelNotification(int id) async {
+    await _notificationsPlugin.cancel(id: id);
   }
 
   /// Cancels all pending notifications.

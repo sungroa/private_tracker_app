@@ -11,8 +11,9 @@ class DataExportService {
   Future<String> exportDataToCsv({
     required List<CycleLog> cycleEvents,
     required List<SymptomLog> symptomLogs,
+    required List<CustomTag> customTags,
   }) async {
-    return Isolate.run(() => _generateCsv(cycleEvents, symptomLogs));
+    return Isolate.run(() => _generateCsv(cycleEvents, symptomLogs, customTags));
   }
 
   /// Aggregates all user logs and tags into a JSON-ready map for cloud sync or backup.
@@ -31,40 +32,80 @@ class DataExportService {
   }
 }
 
-String _generateCsv(List<CycleLog> cycleEvents, List<SymptomLog> symptomLogs) {
+String _generateCsv(List<CycleLog> cycleEvents, List<SymptomLog> symptomLogs, List<CustomTag> customTags) {
   final List<List<dynamic>> rows = [];
-  rows.add(['Log Type', 'Start Date/Date', 'End Date', 'Symptoms', 'Mood Rating', 'BBT', 'Fluid', 'LH Test', 'Notes']);
   
-  for (var log in cycleEvents) {
-    rows.add([
-      'Cycle',
-      log.startDate.toIso8601String().split('T')[0],
-      log.endDate?.toIso8601String().split('T')[0] ?? '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      log.notes ?? '',
-    ]);
-  }
+  // (N3) Journal-friendly header: Date first, then Type, then data points.
+  rows.add([
+    'Date', 
+    'Type', 
+    'End Date', 
+    'Symptoms', 
+    'Mood', 
+    'Flow', 
+    'BBT', 
+    'Fluid', 
+    'LH Test', 
+    'Notes', 
+    'Last Updated', 
+    'ID'
+  ]);
   
-  for (var log in symptomLogs) {
-    rows.add([
-      'Symptom',
-      log.date.toIso8601String().split('T')[0],
-      '',
-      log.symptoms.join('; '),
-      log.moodRating.toString(),
-      log.basalBodyTemperature?.toString() ?? '',
-      log.cervicalFluidType ?? '',
-      log.lhTestPositive == true ? 'Positive' : (log.lhTestPositive == false ? 'Negative' : ''),
-      log.notes ?? '',
-    ]);
+  // Combine all logs into a single list for chronological sorting
+  final List<_ExportItem> items = [
+    ...cycleEvents.map((e) => _ExportItem(e.startDate, 'Cycle', e)),
+    ...symptomLogs.map((s) => _ExportItem(s.date, 'Symptom', s)),
+  ];
+  
+  // Sort by date descending (newest first) for a "Journal" experience
+  items.sort((a, b) => b.date.compareTo(a.date));
+  
+  for (var item in items) {
+    if (item.data is CycleLog) {
+      final log = item.data as CycleLog;
+      rows.add([
+        log.startDate.toIso8601String().split('T')[0],
+        'Cycle',
+        log.endDate?.toIso8601String().split('T')[0] ?? '',
+        '', // Symptoms
+        '', // Mood
+        '${log.flowIntensity}/5', 
+        '', // BBT
+        '', // Fluid
+        '', // LH Test
+        log.notes ?? '',
+        log.updatedAt.toIso8601String(),
+        log.id,
+      ]);
+    } else if (item.data is SymptomLog) {
+      final log = item.data as SymptomLog;
+      rows.add([
+        log.date.toIso8601String().split('T')[0],
+        'Symptom',
+        '', // End Date
+        log.symptoms.join('; '),
+        log.moodRating.toString(),
+        '', // Flow
+        log.basalBodyTemperature?.toString() ?? '',
+        log.cervicalFluidType ?? '',
+        log.lhTestPositive == true ? 'Positive' : (log.lhTestPositive == false ? 'Negative' : ''),
+        log.notes ?? '',
+        log.updatedAt.toIso8601String(),
+        log.id,
+      ]);
+    }
   }
   
   return _manualToCsv(rows);
 }
+
+class _ExportItem {
+  final DateTime date;
+  final String type;
+  final dynamic data;
+  _ExportItem(this.date, this.type, this.data);
+}
+
 
 String _manualToCsv(List<List<dynamic>> rows) {
   // (W1/W10) Manual CSV implementation to ensure zero-dependency domain logic 

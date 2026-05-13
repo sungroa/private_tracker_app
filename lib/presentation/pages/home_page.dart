@@ -4,7 +4,7 @@ import '../theme/app_theme.dart';
 import 'tracking_calendar_page.dart';
 import 'summary_trends_page.dart';
 import 'settings_page.dart';
-import '../sheets/security_summary_sheet.dart';
+import 'privacy_policy_page.dart';
 import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
 import '../providers/symptom_provider.dart';
@@ -90,7 +90,7 @@ class _HomePageState extends State<HomePage> {
             child: IconButton(
               onPressed: () {
                 HapticFeedback.lightImpact();
-                SecuritySummarySheet.show(context);
+                PrivacyPolicyPage.show(context);
               },
               icon: Icon(Icons.security_rounded, color: primary.withValues(alpha: 0.6), size: 22),
             ),

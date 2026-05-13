@@ -28,6 +28,9 @@ class MockPreferencesService extends Mock implements PreferencesService {}
 class MockPathProviderPlatform extends Mock with MockPlatformInterfaceMixin implements PathProviderPlatform {}
 class MockNotificationService extends Mock implements NotificationService {}
 
+class FakeDateTime extends Fake implements DateTime {}
+class FakeTimeOfDay extends Fake implements TimeOfDay {}
+
 void main() {
   late Directory tempDir;
   late MockFlutterSecureStorage mockSecureStorage;
@@ -35,6 +38,11 @@ void main() {
   late MockAuthService mockAuthService;
   late MockPreferencesService mockPreferencesService;
   late MockNotificationService mockNotificationService;
+
+  setUpAll(() {
+    registerFallbackValue(FakeDateTime());
+    registerFallbackValue(FakeTimeOfDay());
+  });
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('provider_scope_test');
@@ -52,6 +60,14 @@ void main() {
     mockNotificationService = MockNotificationService();
 
     when(() => mockNotificationService.initialize()).thenAnswer((_) async {});
+    when(() => mockNotificationService.cancelNotification(any())).thenAnswer((_) async {});
+    when(() => mockNotificationService.scheduleSingleNotification(
+      id: any(named: 'id'),
+      date: any(named: 'date'),
+      time: any(named: 'time'),
+      title: any(named: 'title'),
+      body: any(named: 'body'),
+    )).thenAnswer((_) async {});
 
     // Mock AppLinks stream
     when(() => mockAppLinks.uriLinkStream).thenAnswer((_) => const Stream<Uri>.empty());
@@ -61,6 +77,14 @@ void main() {
     when(() => mockPreferencesService.isCloudSyncEnabled()).thenAnswer((_) async => false);
     when(() => mockPreferencesService.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
     when(() => mockPreferencesService.getLastSyncTime()).thenAnswer((_) async => null);
+    when(() => mockPreferencesService.isNotificationsEnabled()).thenAnswer((_) async => false);
+    when(() => mockPreferencesService.getNotificationTime()).thenAnswer((_) async => const TimeOfDay(hour: 20, minute: 0));
+    when(() => mockPreferencesService.isPeriodReminderEnabled()).thenAnswer((_) async => false);
+    when(() => mockPreferencesService.getPeriodReminderOffset()).thenAnswer((_) async => 1);
+    when(() => mockPreferencesService.getPeriodReminderTime()).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
+    when(() => mockPreferencesService.isFertilityReminderEnabled()).thenAnswer((_) async => false);
+    when(() => mockPreferencesService.getFertilityReminderOffset()).thenAnswer((_) async => 1);
+    when(() => mockPreferencesService.getFertilityReminderTime()).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
 
     // Open unencrypted box for PartnerModePage
     await Hive.openBox('partner_data');

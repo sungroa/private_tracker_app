@@ -5,10 +5,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import '../providers/cloud_sync_provider.dart';
+import '../providers/cycle_provider.dart';
 import '../../data/storage/encrypted_storage_service.dart';
 import '../../data/storage/backup_orchestrator.dart';
 import '../../data/services/export_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/notification_orchestrator.dart';
 import '../../core/services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../../core/services/preferences_service.dart';
@@ -29,6 +31,15 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _hardwareSupported = false;
   bool _notificationsEnabled = false;
   TimeOfDay _reminderTime = const TimeOfDay(hour: 20, minute: 0);
+  
+  bool _periodReminderEnabled = false;
+  int _periodReminderOffset = 1;
+  TimeOfDay _periodReminderTime = const TimeOfDay(hour: 9, minute: 0);
+
+  bool _fertilityReminderEnabled = false;
+  int _fertilityReminderOffset = 1;
+  TimeOfDay _fertilityReminderTime = const TimeOfDay(hour: 9, minute: 0);
+
   CloudSyncProvider? _syncProvider;
 
   @override
@@ -110,12 +121,26 @@ class _SettingsPageState extends State<SettingsPage> {
     final notifications = await prefs.isNotificationsEnabled();
     final time = await prefs.getNotificationTime();
     
+    final periodEnabled = await prefs.isPeriodReminderEnabled();
+    final periodOffset = await prefs.getPeriodReminderOffset();
+    final periodTime = await prefs.getPeriodReminderTime();
+
+    final fertilityEnabled = await prefs.isFertilityReminderEnabled();
+    final fertilityOffset = await prefs.getFertilityReminderOffset();
+    final fertilityTime = await prefs.getFertilityReminderTime();
+    
     if (mounted) {
       setState(() {
         _hardwareSupported = supported;
         _biometricEnabled = biometric;
         _notificationsEnabled = notifications;
         _reminderTime = time;
+        _periodReminderEnabled = periodEnabled;
+        _periodReminderOffset = periodOffset;
+        _periodReminderTime = periodTime;
+        _fertilityReminderEnabled = fertilityEnabled;
+        _fertilityReminderOffset = fertilityOffset;
+        _fertilityReminderTime = fertilityTime;
       });
     }
   }
@@ -180,8 +205,9 @@ class _SettingsPageState extends State<SettingsPage> {
         return;
       }
       await _scheduleReminder();
+      await _triggerOrchestrator();
     } else {
-      await notificationService.cancelAllNotifications();
+      await notificationService.cancelNotification(NotificationService.dailyReminderId);
     }
 
     if (!mounted) return;
@@ -200,13 +226,93 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _selectTime() async {
+    final TimeOfDay? picked = await _showTimePicker(_reminderTime);
+    if (picked != null && picked != _reminderTime) {
+      if (!mounted) return;
+      setState(() => _reminderTime = picked);
+      await context.read<PreferencesService>().setNotificationTime(picked);
+      if (_notificationsEnabled) {
+        await _scheduleReminder();
+      }
+    }
+  }
+
+  Future<void> _updatePeriodOffset(int value) async {
+    final prefs = context.read<PreferencesService>();
+    await prefs.setPeriodReminderOffset(value);
+    setState(() => _periodReminderOffset = value);
+    await _triggerOrchestrator();
+  }
+
+  Future<void> _updateFertilityOffset(int value) async {
+    final prefs = context.read<PreferencesService>();
+    await prefs.setFertilityReminderOffset(value);
+    setState(() => _fertilityReminderOffset = value);
+    await _triggerOrchestrator();
+  }
+
+  Future<void> _togglePeriodReminder(bool value) async {
+    HapticFeedback.selectionClick();
+    final prefs = context.read<PreferencesService>();
+    await prefs.setPeriodReminderEnabled(value);
+    setState(() => _periodReminderEnabled = value);
+    await _triggerOrchestrator();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(value ? 'Period reminders enabled' : 'Period reminders disabled'),
+          backgroundColor: AppTheme.primaryColor,
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleFertilityReminder(bool value) async {
+    HapticFeedback.selectionClick();
+    final prefs = context.read<PreferencesService>();
+    await prefs.setFertilityReminderEnabled(value);
+    setState(() => _fertilityReminderEnabled = value);
+    await _triggerOrchestrator();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(value ? 'Fertility reminders enabled' : 'Fertility reminders disabled'),
+          backgroundColor: AppTheme.primaryColor,
+        ),
+      );
+    }
+  }
+
+  Future<void> _selectPeriodTime() async {
+    final TimeOfDay? picked = await _showTimePicker(_periodReminderTime);
+    if (picked != null && picked != _periodReminderTime) {
+      if (!mounted) return;
+      setState(() => _periodReminderTime = picked);
+      await context.read<PreferencesService>().setPeriodReminderTime(picked);
+      await _triggerOrchestrator();
+    }
+  }
+
+  Future<void> _selectFertilityTime() async {
+    final TimeOfDay? picked = await _showTimePicker(_fertilityReminderTime);
+    if (picked != null && picked != _fertilityReminderTime) {
+      if (!mounted) return;
+      setState(() => _fertilityReminderTime = picked);
+      await context.read<PreferencesService>().setFertilityReminderTime(picked);
+      await _triggerOrchestrator();
+    }
+  }
+
+  Future<TimeOfDay?> _showTimePicker(TimeOfDay initialTime) async {
     HapticFeedback.lightImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
-    final TimeOfDay? picked = await showTimePicker(
+    return await showTimePicker(
       context: context,
-      initialTime: _reminderTime,
+      initialTime: initialTime,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -218,15 +324,12 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       },
     );
+  }
 
-    if (picked != null && picked != _reminderTime) {
-      if (!mounted) return;
-      setState(() => _reminderTime = picked);
-      await context.read<PreferencesService>().setNotificationTime(picked);
-      if (_notificationsEnabled) {
-        await _scheduleReminder();
-      }
-    }
+  Future<void> _triggerOrchestrator() async {
+    final orchestrator = context.read<NotificationOrchestrator>();
+    final trends = context.read<CycleProvider>().trends;
+    await orchestrator.updateScheduledReminders(trends);
   }
 
   Future<void> _handleCreateBackup() async {
@@ -1015,6 +1118,131 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
+          
+          const SizedBox(height: 16),
+          Container(
+              decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
+              child: Column(
+                children: [
+                  _buildSettingsItem(
+                    icon: Icons.calendar_month_rounded,
+                    iconColor: primary,
+                    title: "Period Reminder",
+                    subtitle: "Warning before period starts",
+                    isDark: isDark,
+                    trailing: Switch.adaptive(
+                      value: _periodReminderEnabled,
+                      onChanged: _togglePeriodReminder,
+                      activeThumbColor: primary,
+                      activeTrackColor: primary.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  if (_periodReminderEnabled) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(left: 64),
+                      child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                    ),
+                    _buildSettingsItem(
+                      icon: Icons.history_rounded,
+                      iconColor: primary,
+                      title: "Advance Warning",
+                      subtitle: "$_periodReminderOffset day${_periodReminderOffset > 1 ? 's' : ''} before",
+                      isDark: isDark,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
+                            onPressed: _periodReminderOffset > 0 ? () => _updatePeriodOffset(_periodReminderOffset - 1) : null,
+                            color: primary,
+                          ),
+                          Text("$_periodReminderOffset", style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+                            onPressed: _periodReminderOffset < 7 ? () => _updatePeriodOffset(_periodReminderOffset + 1) : null,
+                            color: primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 64),
+                      child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                    ),
+                    _buildSettingsItem(
+                      icon: Icons.access_time_rounded,
+                      iconColor: primary,
+                      title: "Reminder Time",
+                      subtitle: "At ${_periodReminderTime.format(context)}",
+                      isDark: isDark,
+                      onTap: _selectPeriodTime,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
+              child: Column(
+                children: [
+                  _buildSettingsItem(
+                    icon: Icons.spa_rounded,
+                    iconColor: primary,
+                    title: "Fertility Reminder",
+                    subtitle: "Warning before fertile window",
+                    isDark: isDark,
+                    trailing: Switch.adaptive(
+                      value: _fertilityReminderEnabled,
+                      onChanged: _toggleFertilityReminder,
+                      activeThumbColor: primary,
+                      activeTrackColor: primary.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  if (_fertilityReminderEnabled) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(left: 64),
+                      child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                    ),
+                    _buildSettingsItem(
+                      icon: Icons.history_rounded,
+                      iconColor: primary,
+                      title: "Advance Warning",
+                      subtitle: "$_fertilityReminderOffset day${_fertilityReminderOffset > 1 ? 's' : ''} before",
+                      isDark: isDark,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
+                            onPressed: _fertilityReminderOffset > 0 ? () => _updateFertilityOffset(_fertilityReminderOffset - 1) : null,
+                            color: primary,
+                          ),
+                          Text("$_fertilityReminderOffset", style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+                            onPressed: _fertilityReminderOffset < 7 ? () => _updateFertilityOffset(_fertilityReminderOffset + 1) : null,
+                            color: primary,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 64),
+                      child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                    ),
+                    _buildSettingsItem(
+                      icon: Icons.access_time_rounded,
+                      iconColor: primary,
+                      title: "Reminder Time",
+                      subtitle: "At ${_fertilityReminderTime.format(context)}",
+                      isDark: isDark,
+                      onTap: _selectFertilityTime,
+                    ),
+                  ],
+                ],
+              ),
+            ),
           const SizedBox(height: 32),
 
           _buildSectionHeader("Cloud Synchronization", isDark),

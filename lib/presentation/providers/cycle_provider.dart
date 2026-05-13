@@ -8,6 +8,7 @@ import '../../domain/usecases/save_cycle_log_use_case.dart';
 import '../../domain/usecases/delete_cycle_log_use_case.dart';
 import '../../core/utils/security_logger.dart';
 import '../../core/utils/date_time_extensions.dart';
+import '../../core/services/notification_orchestrator.dart';
 import 'cloud_sync_provider.dart';
 
 /// State management provider for menstruation cycle data and predictions.
@@ -21,6 +22,7 @@ class CycleProvider extends ChangeNotifier {
   final SaveCycleLogUseCase _saveCycleUseCase;
   final DeleteCycleLogUseCase _deleteCycleUseCase;
   CloudSyncProvider? _cloudSync;
+  NotificationOrchestrator? _notificationOrchestrator;
   
   /// The raw list of all cycle entries.
   List<CycleLog> _cycleEvents = [];
@@ -48,6 +50,11 @@ class CycleProvider extends ChangeNotifier {
   /// Allows late binding of the sync provider to avoid circular dependency.
   void attachSyncProvider(CloudSyncProvider cloudSync) {
     _cloudSync = cloudSync;
+  }
+
+  /// Allows late binding of the notification orchestrator.
+  void attachNotificationOrchestrator(NotificationOrchestrator orchestrator) {
+    _notificationOrchestrator = orchestrator;
   }
 
   /// Explicit initialization to avoid constructor side-effects.
@@ -98,6 +105,9 @@ class CycleProvider extends ChangeNotifier {
       
       _isLoading = false;
       notifyListeners();
+      
+      // Update prediction-based notifications
+      unawaited(_notificationOrchestrator?.updateScheduledReminders(_trends) ?? Future.value());
     } catch (e, stack) {
       SecurityLogger.logError("CycleProvider.loadEvents", error: e, stackTrace: stack);
       _errorMessage = "Failed to load cycle data.";

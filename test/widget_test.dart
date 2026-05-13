@@ -19,6 +19,9 @@ class MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 class MockAppLinks extends Mock implements AppLinks {}
 class MockNotificationService extends Mock implements NotificationService {}
 
+class FakeDateTime extends Fake implements DateTime {}
+class FakeTimeOfDay extends Fake implements TimeOfDay {}
+
 void main() {
   group('App smoke tests', () {
     late Directory tempDir;
@@ -28,6 +31,11 @@ void main() {
     late MockAppLinks mockAppLinks;
     late MockNotificationService mockNotificationService;
     late LocalDatabaseManager dbManager;
+
+    setUpAll(() {
+      registerFallbackValue(FakeDateTime());
+      registerFallbackValue(FakeTimeOfDay());
+    });
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('hive_smoke_test');
@@ -43,6 +51,14 @@ void main() {
 
       // Mock Storage Services
       when(() => mockNotificationService.initialize()).thenAnswer((_) async {});
+      when(() => mockNotificationService.cancelNotification(any())).thenAnswer((_) async {});
+      when(() => mockNotificationService.scheduleSingleNotification(
+        id: any(named: 'id'),
+        date: any(named: 'date'),
+        time: any(named: 'time'),
+        title: any(named: 'title'),
+        body: any(named: 'body'),
+      )).thenAnswer((_) async {});
       when(() => mockKeyStorage.getOrCreateEncryptionKey()).thenAnswer((_) async => List<int>.filled(32, 0));
       when(() => mockAppLinks.uriLinkStream).thenAnswer((_) => const Stream<Uri>.empty());
 
@@ -52,6 +68,14 @@ void main() {
       when(() => mockPreferencesService.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
       when(() => mockPreferencesService.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockAuthService.isHardwareSupported()).thenAnswer((_) async => false);
+      when(() => mockPreferencesService.isNotificationsEnabled()).thenAnswer((_) async => false);
+      when(() => mockPreferencesService.getNotificationTime()).thenAnswer((_) async => const TimeOfDay(hour: 20, minute: 0));
+      when(() => mockPreferencesService.isPeriodReminderEnabled()).thenAnswer((_) async => false);
+      when(() => mockPreferencesService.getPeriodReminderOffset()).thenAnswer((_) async => 1);
+      when(() => mockPreferencesService.getPeriodReminderTime()).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
+      when(() => mockPreferencesService.isFertilityReminderEnabled()).thenAnswer((_) async => false);
+      when(() => mockPreferencesService.getFertilityReminderOffset()).thenAnswer((_) async => 1);
+      when(() => mockPreferencesService.getFertilityReminderTime()).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
     });
 
     tearDown(() async {
