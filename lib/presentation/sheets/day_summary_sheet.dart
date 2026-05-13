@@ -75,105 +75,103 @@ class DaySummarySheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             
-            // Replaced ListView(shrinkWrap: true) with Column + padding for efficiency
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (!hasAnyData)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 32),
-                      child: Center(
-                        child: Text(
-                          "No data logged or predicted for this day.",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: isDark ? Colors.white54 : Colors.black54,
-                            fontSize: 15,
-                            fontFamily: AppTheme.fontFamily,
+            // Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!hasAnyData)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: Text(
+                            "No data logged or predicted for this day.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: isDark ? Colors.white54 : Colors.black54,
+                              fontSize: 15,
+                              fontFamily: AppTheme.fontFamily,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  
-                  if (isPredictedBleeding || isPredictedFertility) ...[
-                    _SectionHeader(title: "Predictions", isDark: isDark),
-                    if (isPredictedBleeding)
+                    
+                    if (isPredictedBleeding || isPredictedFertility) ...[
+                      _SectionHeader(title: "Predictions", isDark: isDark),
+                      if (isPredictedBleeding)
+                        _SummaryItem(
+                          icon: Icons.water_drop_outlined,
+                          color: Colors.redAccent,
+                          title: "Predicted Period",
+                          isDark: isDark,
+                        ),
+                      if (isPredictedFertility)
+                        _SummaryItem(
+                          icon: Icons.filter_vintage_rounded,
+                          color: Colors.indigoAccent,
+                          title: "Fertile Window",
+                          isDark: isDark,
+                        ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    if (cycleLog != null) ...[
+                      _SectionHeader(title: "Cycle Data", isDark: isDark),
                       _SummaryItem(
-                        icon: Icons.water_drop_outlined,
+                        icon: Icons.water_drop_rounded,
                         color: Colors.redAccent,
-                        title: "Predicted Period",
+                        title: "Flow Intensity",
+                        subtitle: cycleLog!.flowIntensityDisplayName,
                         isDark: isDark,
                       ),
-                    if (isPredictedFertility)
-                      _SummaryItem(
-                        icon: Icons.filter_vintage_rounded,
-                        color: Colors.indigoAccent,
-                        title: "Fertile Window",
-                        isDark: isDark,
-                      ),
-                    const SizedBox(height: 16),
-                  ],
+                      if (cycleLog!.notes?.isNotEmpty ?? false)
+                        _NotesBox(notes: cycleLog!.notes!, isDark: isDark),
+                      const SizedBox(height: 16),
+                    ],
 
-                  if (cycleLog != null) ...[
-                    _SectionHeader(title: "Cycle Data", isDark: isDark),
-                    _SummaryItem(
-                      icon: Icons.water_drop_rounded,
-                      color: Colors.redAccent,
-                      title: "Flow Intensity",
-                      subtitle: cycleLog!.flowIntensityDisplayName,
-                      isDark: isDark,
-                    ),
-                    if (cycleLog!.notes?.isNotEmpty ?? false)
-                      _SummaryItem(
-                        icon: Icons.notes_rounded,
-                        color: Colors.grey,
-                        title: "Notes",
-                        subtitle: cycleLog!.notes,
-                        isDark: isDark,
-                      ),
-                    const SizedBox(height: 16),
+                    if (symptomLog != null) ...[
+                      _SectionHeader(title: "Daily Log", isDark: isDark),
+                      if (symptomLog!.symptoms.isNotEmpty)
+                        _SummaryItem(
+                          icon: Icons.accessibility_new_rounded,
+                          color: Colors.purpleAccent,
+                          title: "Symptoms",
+                          subtitle: symptomLog!.symptomsSummary,
+                          isDark: isDark,
+                        ),
+                      if (symptomLog!.moodRating != SymptomLog.neutralMood)
+                        _SummaryItem(
+                          icon: Icons.mood_rounded,
+                          color: Colors.teal,
+                          title: "Mood",
+                          subtitle: symptomLog!.moodDisplayName,
+                          isDark: isDark,
+                        ),
+                      if (symptomLog!.lhTestPositive == true)
+                        _SummaryItem(
+                          icon: Icons.star_rounded,
+                          color: Colors.pinkAccent,
+                          title: "Ovulation Test",
+                          subtitle: "Positive",
+                          isDark: isDark,
+                        ),
+                      if (symptomLog!.basalBodyTemperature != null)
+                        _SummaryItem(
+                          icon: Icons.thermostat_rounded,
+                          color: Colors.orangeAccent,
+                          title: "Temperature",
+                          subtitle: "${symptomLog!.basalBodyTemperature}°",
+                          isDark: isDark,
+                        ),
+                      if (symptomLog!.notes?.isNotEmpty ?? false)
+                        _NotesBox(notes: symptomLog!.notes!, isDark: isDark),
+                      const SizedBox(height: 16),
+                    ],
                   ],
-
-                  if (symptomLog != null) ...[
-                    _SectionHeader(title: "Daily Log", isDark: isDark),
-                    if (symptomLog!.symptoms.isNotEmpty)
-                      _SummaryItem(
-                        icon: Icons.accessibility_new_rounded,
-                        color: Colors.purpleAccent,
-                        title: "Symptoms",
-                        subtitle: symptomLog!.symptomsSummary,
-                        isDark: isDark,
-                      ),
-                    if (symptomLog!.moodRating != SymptomLog.neutralMood)
-                      _SummaryItem(
-                        icon: Icons.mood_rounded,
-                        color: Colors.teal,
-                        title: "Mood",
-                        subtitle: symptomLog!.moodDisplayName,
-                        isDark: isDark,
-                      ),
-                    if (symptomLog!.lhTestPositive == true)
-                      _SummaryItem(
-                        icon: Icons.star_rounded,
-                        color: Colors.pinkAccent,
-                        title: "Ovulation Test",
-                        subtitle: "Positive",
-                        isDark: isDark,
-                      ),
-                    if (symptomLog!.basalBodyTemperature != null)
-                      _SummaryItem(
-                        icon: Icons.thermostat_rounded,
-                        color: Colors.orangeAccent,
-                        title: "Temperature",
-                        subtitle: "${symptomLog!.basalBodyTemperature}°",
-                        isDark: isDark,
-                      ),
-                    const SizedBox(height: 16),
-                  ],
-                ],
+                ),
               ),
             ),
             
@@ -222,6 +220,52 @@ class DaySummarySheet extends StatelessWidget {
             const SizedBox(height: 16),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _NotesBox extends StatelessWidget {
+  final String notes;
+  final bool isDark;
+
+  const _NotesBox({required this.notes, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(top: 4, bottom: 8),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.notes_rounded, 
+            size: 16, 
+            color: isDark ? Colors.white38 : Colors.black38
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              notes,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: isDark ? Colors.white70 : Colors.black87,
+                fontFamily: AppTheme.fontFamily,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

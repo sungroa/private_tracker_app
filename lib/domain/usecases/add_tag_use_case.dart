@@ -19,7 +19,15 @@ class AddTagUseCase {
   /// Executes the addition of a tag with [name].
   /// 
   /// Automatically generates a UUID v4 and a fresh [updatedAt] timestamp.
+  /// Does not add the tag if a tag with the same name already exists.
   Future<void> execute(String name) async {
+    final existingTags = await _repository.getTags();
+    final normalizedNewName = name.trim().toLowerCase();
+    
+    if (existingTags.any((tag) => tag.name.trim().toLowerCase() == normalizedNewName)) {
+      return;
+    }
+
     // New tags are initialized with a modern timestamp and unique ID
     final tag = CustomTag(
       id: const Uuid().v4(),
