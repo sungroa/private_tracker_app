@@ -1,28 +1,9 @@
-import '../models/cycle_log.dart';
-
 /// Engine responsible for projecting future menstruation and fertility events.
 /// 
 /// 💼 **Domain Context**: Encapsulates the mathematical models used for 
 /// temporal projections. It implements standard fertility awareness protocols,
 /// assuming a statistical luteal phase of 14 days.
 class PredictionEngine {
-  /// Predicts the next period start date based on historical average cycle length.
-  /// 
-  /// [logs] The historical cycle data.
-  /// [avgLength] The calculated average cycle length for the user.
-  /// 
-  /// Returns the estimated start date of the next period, or null if no data is available.
-  static DateTime? predictNextPeriod(List<CycleLog> logs, double avgLength) {
-    if (logs.isEmpty) return null;
-    
-    // Sort logs to ensure we're using the most recent entry
-    final latest = List<CycleLog>.from(logs)
-      ..sort((a, b) => b.startDate.compareTo(a.startDate));
-    
-    // Naive prediction: Start of last period + Average Cycle Length
-    return latest.first.startDate.add(Duration(days: avgLength.round()));
-  }
-
   /// Projects the fertile window for the upcoming cycle.
   /// 
   /// [nextPeriodStart] The predicted start date of the next period.
