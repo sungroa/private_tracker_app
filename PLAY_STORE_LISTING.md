@@ -9,59 +9,59 @@ This document contains the metadata required for the Google Play Store listing.
 
 ## 📝 Short Description
 *Limit: 80 characters*
-> Premium, privacy-first period tracker with zero-knowledge encryption & ARIMA.
+> Secure, privacy-first period tracker with zero-knowledge encryption & ARIMA.
 
-**Character Count**: 78 / 80
+**Character Count**: 75 / 80
 
 ---
 
 ## 📖 Full Description
 *Limit: 4,000 characters*
 
-# 🌸 Private Tracker: The Gold Standard for Privacy-First Health
+<b>🌸 Private Tracker: Secure & Private Health Tracking</b>
 
-Experience a new level of health tracking where **you** own your data. Private Tracker is a premium, luxury-grade cycle and fertility application built for those who refuse to compromise on privacy or aesthetics.
+Experience a new level of health tracking where <b>you</b> own your data. Private Tracker is a high-quality cycle and fertility application built for those who refuse to compromise on privacy or aesthetics.
 
-## 🔒 Uncompromising Privacy
-In an era of data harvesting, Private Tracker stands alone. 
+<b>🔒 Uncompromising Privacy</b>
+Private Tracker is designed for absolute privacy in an era of data harvesting.
 
-*   **Zero-Knowledge Encryption**: Your health data is encrypted locally on your device with keys that only you hold. We have no access to your logs.
-*   **Secure Cloud Sync**: Sync across devices via Google Drive or iCloud using record-level, end-to-end encryption. Your data is invisible to cloud providers.
-*   **No Ads, No Trackers**: We don't sell your data because we never see it. No third-party trackers, no invasive analytics.
+• <b>Zero-Knowledge Encryption</b>: Your health data is encrypted locally on your device with keys that only you hold. We have no access to your logs.
+• <b>Secure Cloud Sync</b>: Sync across devices via Google Drive or iCloud using record-level, end-to-end encryption. Your data is invisible to cloud providers.
+• <b>No Ads, No Trackers</b>: We don't sell your data because we never see it. No third-party trackers, no invasive analytics.
 
-## 📈 Advanced Biological Forecasting
+<b>📈 Advanced Biological Forecasting</b>
 Go beyond simple averages. Private Tracker uses sophisticated "Cold Start to Hybrid ARIMA" statistical models to predict your body's unique rhythms.
 
-*   **Precision Predictions**: Highly accurate forecasting for period starts and fertility windows.
-*   **Background Computation**: Heavy statistical processing is offloaded to background isolates to ensure a smooth, lag-free experience.
+• <b>Precision Predictions</b>: Highly accurate forecasting for period starts and fertility windows.
+• <b>Background Computation</b>: Heavy statistical processing is offloaded to background isolates to ensure a smooth, lag-free experience.
 
-## 💎 Premium Design & Experience
+<b>💎 Premium Design & Experience</b>
 Health tracking should be a delight, not a chore.
 
-*   **Glassmorphic UI**: A stunning, modern interface with smooth micro-animations and low-latency interactions.
-*   **Customizable Notifications**: Set personalized reminders for your period and fertility windows on your own schedule.
+• <b>Glassmorphic UI</b>: A stunning, modern interface with smooth micro-animations and low-latency interactions.
+• <b>Customizable Notifications</b>: Set personalized reminders for your period and fertility windows on your own schedule.
 
-## 📄 Comprehensive Data Export
+<b>📄 Comprehensive Data Export</b>
 Empower your healthcare journey with professional-grade data.
 
-*   **Journal-Style Exports**: Generate comprehensive, human-readable CSV reports of your symptoms, moods, and cycles.
-*   **Healthcare Ready**: Perfect for sharing with doctors or maintaining a permanent physical record.
+• <b>Journal-Style Exports</b>: Generate comprehensive, human-readable CSV reports of your symptoms, moods, and cycles.
+• <b>Healthcare Ready</b>: Perfect for sharing with doctors or maintaining a permanent physical record.
 
-## 🧪 Detailed Daily Logging
+<b>🧪 Detailed Daily Logging</b>
 Track every nuance of your health with ease:
-*   Flow Intensity & Period Logs
-*   Symptoms & Custom Tags
-*   Mood Tracking (1-5 Rating)
-*   Basal Body Temperature (BBT)
-*   Cervical Fluid & LH (Ovulation) Tests
-*   Daily Journaling & Notes
+• Flow Intensity & Period Logs
+• Symptoms & Custom Tags
+• Mood Tracking (1-5 Rating)
+• Basal Body Temperature (BBT)
+• Cervical Fluid & LH (Ovulation) Tests
+• Daily Journaling & Notes
 
 Join others who trust Private Tracker for a secure, beautiful, and precise health tracking experience.
 
 ---
 *Built with Flutter for industrial-grade stability and technical excellence.*
 
-**Character Count**: ~2,400 / 4,000
+<b>Character Count</b>: ~2,500 / 4,000
 
 ---
 
