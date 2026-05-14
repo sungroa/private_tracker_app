@@ -55,7 +55,7 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(width: 12),
             Text(
-              "Cycle Tracker",
+              "Private Tracker",
               style: TextStyle(
                 color: primary,
                 fontWeight: FontWeight.w800,

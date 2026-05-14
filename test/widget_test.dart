@@ -11,6 +11,7 @@ import 'package:private_tracker_app/data/storage/local_database_manager.dart';
 import 'package:private_tracker_app/presentation/pages/home_page.dart';
 import 'package:private_tracker_app/core/services/service_locator.dart';
 import 'package:private_tracker_app/core/services/notification_service.dart';
+import 'package:private_tracker_app/domain/repositories/donation_repository.dart';
 import 'package:app_links/app_links.dart';
 
 class MockAuthService extends Mock implements AuthService {}
@@ -18,6 +19,7 @@ class MockPreferencesService extends Mock implements PreferencesService {}
 class MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 class MockAppLinks extends Mock implements AppLinks {}
 class MockNotificationService extends Mock implements NotificationService {}
+class MockDonationRepository extends Mock implements IDonationRepository {}
 
 class FakeDateTime extends Fake implements DateTime {}
 class FakeTimeOfDay extends Fake implements TimeOfDay {}
@@ -30,6 +32,7 @@ void main() {
     late MockSecureKeyStorage mockKeyStorage;
     late MockAppLinks mockAppLinks;
     late MockNotificationService mockNotificationService;
+    late MockDonationRepository mockDonationRepository;
     late LocalDatabaseManager dbManager;
 
     setUpAll(() {
@@ -47,6 +50,7 @@ void main() {
       mockKeyStorage = MockSecureKeyStorage();
       mockAppLinks = MockAppLinks();
       mockNotificationService = MockNotificationService();
+      mockDonationRepository = MockDonationRepository();
       dbManager = LocalDatabaseManager();
 
       // Mock Storage Services
@@ -76,6 +80,9 @@ void main() {
       when(() => mockPreferencesService.isFertilityReminderEnabled()).thenAnswer((_) async => false);
       when(() => mockPreferencesService.getFertilityReminderOffset()).thenAnswer((_) async => 1);
       when(() => mockPreferencesService.getFertilityReminderTime()).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
+      when(() => mockKeyStorage.getSupporterStatus()).thenAnswer((_) async => false);
+      when(() => mockDonationRepository.isSupporterStream).thenAnswer((_) => const Stream<bool>.empty());
+      when(() => mockDonationRepository.isSupporter()).thenAnswer((_) async => false);
     });
 
     tearDown(() async {
@@ -96,6 +103,7 @@ void main() {
           db: dbManager,
           customAppLinks: mockAppLinks,
           notifications: mockNotificationService,
+          donations: mockDonationRepository,
         );
 
         await tester.pumpWidget(PrivacyTrackerApp(
@@ -112,7 +120,7 @@ void main() {
           // Real-time pump to let microtasks work
           await tester.pump(const Duration(milliseconds: 100));
           
-          if (find.text('Cycle Tracker').evaluate().isNotEmpty) {
+          if (find.text('Private Tracker').evaluate().isNotEmpty) {
             found = true;
             break;
           }
@@ -134,8 +142,8 @@ void main() {
           debugPrint("FINAL Available text in tree: $allText");
         }
         
-        expect(found, isTrue, reason: "Cycle Tracker should be found after initialization.");
-        expect(find.text('Cycle Tracker'), findsOneWidget);
+        expect(found, isTrue, reason: "Private Tracker should be found after initialization.");
+        expect(find.text('Private Tracker'), findsOneWidget);
         expect(find.byType(HomePage), findsOneWidget);
       });
     });

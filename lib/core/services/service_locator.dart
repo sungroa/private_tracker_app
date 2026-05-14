@@ -178,6 +178,7 @@ class ServiceLocator {
     CycleDataSource? cycleDs,
     SymptomDataSource? symptomDs,
     TagDataSource? tagDs,
+    IDonationRepository? donations,
     AppLinks? customAppLinks,
     String? serverClientId,
   }) {
@@ -230,7 +231,7 @@ class ServiceLocator {
     tagRepository = TagRepositoryImpl(tagDataSource);
     syncMetadataRepository = SyncMetadataRepositoryImpl(dbManager);
     dataSourceRepository = DataSourceRepositoryImpl(encryptedStorage, backupOrchestrator);
-    donationRepository = PlayBillingDonationRepository(keyStorage);
+    donationRepository = donations ?? PlayBillingDonationRepository(keyStorage);
 
     // 5. Use Cases
     getCycleLogsUseCase = GetCycleLogsUseCase(cycleRepository, symptomRepository);

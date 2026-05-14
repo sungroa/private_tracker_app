@@ -13,7 +13,7 @@
     <uses-permission android:name="com.android.vending.BILLING" />
 
    <application
-        android:label="Private Tracker App"
+        android:label="Private Tracker"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
