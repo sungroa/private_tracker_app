@@ -1,19 +1,25 @@
 # 🧭 Project Manifest: Private Tracker
 
 ## 📊 Session Data
-- **Last Updated:** 2026-05-14T11:20:00+09:00
-- **Session ID:** `d153c0ed-d611-4293-aa2e-187327b0df0b`
+- **Last Updated:** 2026-05-14T10:50:00+09:00
+- **Session ID:** `cfa849bc-4d24-4317-9ba4-2fe681e2b34b`
 - **Session Health:** NOMINAL
-- **Context Budget:** ~35% (Turn 1)
+- **Context Budget:** ~25% (Turn 2)
 
 ## 🎯 Objectives & Constraints
-- **Primary Objective:** Debug sync errors following package name change.
-- **Constraints:** Zero tech debt, maintain local data integrity.
+- **Primary Objective:** Implement optional donation flow using Google Play Billing.
+- **Constraints:** Zero tech debt, clean architecture, secure local persistence, high-fidelity UI.
 
 ## 🛠️ Validation & State
 - **fast_validation_command:** `flutter analyze`
 - **full_validation_command:** `flutter test`
-- **Verification Token:** `Analytic validation passed with minor lints.`
+- **Verification Token:** `Analytic validation passed with minor info lints.`
+
+- [x] Phase 1: Environment Setup (Install dependencies)
+- [x] Phase 2: Domain Layer (DonationProduct, IDonationRepository)
+- [x] Phase 3: Data Layer (PlayBillingDonationRepository)
+- [x] Phase 4: presentation Layer (DonationProvider, DonationSheet)
+- [x] Phase 5: Verification & Polishing
 
 - [x] Phase 1: Diagnose Sync Failure
 - [ ] Phase 2: User updates Google Cloud Console with new SHA-1/Package ID

@@ -8,6 +8,7 @@ import '../../core/utils/security_logger.dart';
 class SecureKeyStorage {
   static const String _encryptionKeyName = 'hive_encryption_key_v1';
   static const String _cloudKeyName = 'cloud_sync_encryption_key_v1';
+  static const String _supporterStatusKey = 'supporter_status_v1';
   
   /// Timeout for secure storage operations to prevent app hangs.
   static const Duration _storageTimeout = Duration(seconds: 3);
@@ -123,6 +124,23 @@ class SecureKeyStorage {
   /// Deletes the cloud sync encryption key from secure storage.
   Future<void> deleteCloudSyncKey() async {
     await _secureStorage.delete(key: _cloudKeyName)
+        .timeout(_storageTimeout);
+  }
+
+  /// Securely retrieves the user's supporter status.
+  Future<bool> getSupporterStatus() async {
+    try {
+      final value = await _secureStorage.read(key: _supporterStatusKey)
+          .timeout(_storageTimeout);
+      return value == 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Securely persists the user's supporter status.
+  Future<void> setSupporterStatus(bool isSupporter) async {
+    await _secureStorage.write(key: _supporterStatusKey, value: isSupporter.toString())
         .timeout(_storageTimeout);
   }
 }
