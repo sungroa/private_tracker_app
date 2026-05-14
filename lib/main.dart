@@ -38,14 +38,15 @@ class StorageConfig {
 /// The OAuth2 server/web client ID for Google Sign-In.
 /// Required by both [GoogleSignIn.instance.initialize] and [ServiceLocator.setup].
 const _kGoogleServerClientId =
-    '971903019211-ftmfmqm9994pnhd777hktjm6tmi8a152.apps.googleusercontent.com';
+    '91334741072-tho8bdqobd4knpn6gk5furdt2jnq5rbu.apps.googleusercontent.com';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // google_sign_in v7 mandates initialize() be awaited ONCE before any
   // API calls and before runApp().
-  await GoogleSignIn.instance.initialize(serverClientId: _kGoogleServerClientId);
+  await GoogleSignIn.instance
+      .initialize(serverClientId: _kGoogleServerClientId);
 
   // Initialize Service Locator with default implementations
   ServiceLocator().setup(
@@ -69,7 +70,7 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
   @override
   Widget build(BuildContext context) {
     final sl = widget.serviceLocator ?? ServiceLocator();
-    
+
     return MultiProvider(
       providers: [
         Provider.value(value: sl.appInitializer),
@@ -120,16 +121,18 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
             cloudSync: context.read<CloudSyncInterface>(),
           ),
         ),
-        ChangeNotifierProxyProvider2<CloudSyncProvider, NotificationOrchestrator, CycleProvider>(
+        ChangeNotifierProxyProvider2<CloudSyncProvider,
+            NotificationOrchestrator, CycleProvider>(
           create: (context) => CycleProvider(
             context.read<GetCycleLogsUseCase>(),
             context.read<SaveCycleLogUseCase>(),
             context.read<DeleteCycleLogUseCase>(),
           ),
-          update: (context, cloudSync, notificationOrchestrator, cycleProvider) =>
-              cycleProvider!
-                ..attachSyncProvider(cloudSync)
-                ..attachNotificationOrchestrator(notificationOrchestrator),
+          update:
+              (context, cloudSync, notificationOrchestrator, cycleProvider) =>
+                  cycleProvider!
+                    ..attachSyncProvider(cloudSync)
+                    ..attachNotificationOrchestrator(notificationOrchestrator),
         ),
         ChangeNotifierProxyProvider<CloudSyncProvider, SymptomProvider>(
           create: (context) => SymptomProvider(
@@ -168,7 +171,9 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: isDark ? PremiumGradients.darkBackground : PremiumGradients.lightBackground,
+                      colors: isDark
+                          ? PremiumGradients.darkBackground
+                          : PremiumGradients.lightBackground,
                     ),
                   ),
                 ),
@@ -180,7 +185,8 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
                     height: 400,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppTheme.primaryColor.withValues(alpha: isDark ? 0.08 : 0.04),
+                      color: AppTheme.primaryColor
+                          .withValues(alpha: isDark ? 0.08 : 0.04),
                     ),
                   ),
                 ),
@@ -196,8 +202,8 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
 }
 
 /// A dedicated security wrapper that handles biometric authentication.
-/// 
-/// Initialization [AppInitializer] is triggered only after successful 
+///
+/// Initialization [AppInitializer] is triggered only after successful
 /// authentication to ensure data remains locked until verified.
 class AppLockWrapper extends StatefulWidget {
   final Widget child;
@@ -221,7 +227,7 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
   Future<void> _checkInitialAuth() async {
     final prefs = context.read<PreferencesService>();
     _useBiometric = await prefs.isBiometricEnabled();
-    
+
     if (!_useBiometric) {
       await _completeSequence();
     } else {
@@ -280,7 +286,9 @@ class _LoadingScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isDark ? PremiumGradients.darkBackground : PremiumGradients.lightBackground,
+            colors: isDark
+                ? PremiumGradients.darkBackground
+                : PremiumGradients.lightBackground,
           ),
         ),
         child: Center(
@@ -294,7 +302,8 @@ class _LoadingScreen extends StatelessWidget {
               SizedBox(
                 width: 40,
                 height: 40,
-                child: CircularProgressIndicator(color: primary, strokeWidth: 3),
+                child:
+                    CircularProgressIndicator(color: primary, strokeWidth: 3),
               ),
             ],
           ),
@@ -339,4 +348,3 @@ class _BrandingText extends StatelessWidget {
     );
   }
 }
-
