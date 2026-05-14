@@ -76,6 +76,7 @@ android {
         release {
             // Use the release signing config if key.properties exists, otherwise fallback to debug.
             signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }
