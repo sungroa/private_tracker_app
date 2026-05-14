@@ -36,6 +36,9 @@ class DonationProvider extends ChangeNotifier {
 
     try {
       _products = await _repository.getDonationProducts();
+      if (_products.isEmpty) {
+        _error = "Billing services are currently unavailable or the product catalog is empty.";
+      }
     } catch (e) {
       _error = "Failed to load products. Please check your internet connection.";
     } finally {

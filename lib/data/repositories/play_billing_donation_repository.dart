@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../domain/models/donation_product.dart';
 import '../../domain/repositories/donation_repository.dart';
@@ -36,10 +37,20 @@ class PlayBillingDonationRepository implements IDonationRepository {
   @override
   Future<List<DonationProduct>> getDonationProducts() async {
     final bool available = await _iap.isAvailable();
-    if (!available) return [];
+    if (!available) {
+      debugPrint("PrivacyTracker.Donations: InAppPurchase is NOT available on this device.");
+      return [];
+    }
 
     final ProductDetailsResponse response = await _iap.queryProductDetails(_productIds);
-    if (response.error != null || response.productDetails.isEmpty) {
+    if (response.error != null) {
+      debugPrint("PrivacyTracker.Donations: Failed to query products: ${response.error!.message}");
+      return [];
+    }
+
+    if (response.productDetails.isEmpty) {
+      debugPrint("PrivacyTracker.Donations: No products found for IDs: $_productIds. "
+                 "Check if they are active in the Google Play Console.");
       return [];
     }
 
