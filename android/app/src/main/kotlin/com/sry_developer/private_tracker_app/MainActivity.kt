@@ -1,4 +1,4 @@
-package com.sungroa.private_tracker_app
+package com.sry_developer.private_tracker_app
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

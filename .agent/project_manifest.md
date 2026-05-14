@@ -1,14 +1,14 @@
 # 🧭 Project Manifest: Private Tracker
 
 ## 📊 Session Data
-- **Last Updated:** 2026-05-14T10:05:00+09:00
-- **Session ID:** `0cf5e5f9-18f9-45bf-aea1-fdbf866ed5aa`
+- **Last Updated:** 2026-05-14T10:55:00+09:00
+- **Session ID:** `6692ac71-96ad-4553-8d21-d30ccfb25150`
 - **Session Health:** NOMINAL
-- **Context Budget:** ~45% (Turn 3)
+- **Context Budget:** ~25% (Turn 1)
 
 ## 🎯 Objectives & Constraints
-- **Primary Objective:** Fix keyboard overlap in logging sheets on Android.
-- **Constraints:** Zero tech debt, maintain architectural clarity, responsive UI.
+- **Primary Objective:** Rename app package to `com.sry_developer.private_tracker_app` and set app name to "Private Tracker App".
+- **Constraints:** Zero tech debt, cross-platform consistency, maintain local data integrity where possible.
 
 ## 🛠️ Validation & State
 - **fast_validation_command:** `flutter analyze`
@@ -21,6 +21,7 @@
 - [x] Phase 4: Integration & Testing
 - [x] Phase 5: Final Verification
 - [x] Phase 6: Fix Keyboard Overlap in Logging Sheets
+- [x] Phase 7: App Renaming and Package ID Change
 
 ## 🚫 Dead Ends / Blockers
 - None.
