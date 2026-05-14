@@ -10,7 +10,7 @@ A premium, privacy-focused health and cycle tracking application built with Flut
 - **📈 Advanced Trends**: Isolate-powered "Cold Start to Hybrid ARIMA" statistical forecasting for period and fertility windows.
 - **🔄 Secure Cloud Sync**: Multi-provider support (Google Drive / iCloud) with record-level Last-Write-Wins (LWW) conflict resolution.
 - **🔔 Personalized Notifications**: Configurable reminder schedules for period predictions and fertility windows.
-- **📄 Medical-Grade Export**: Comprehensive, journal-style CSV data export for easy sharing with healthcare providers.
+- **📄 Comprehensive Export**: Detailed, journal-style CSV data export for easy sharing with healthcare providers.
 - **💎 Premium UI**: Glassmorphic design with smooth micro-animations and low-latency calendar interactions.
 - **🧪 Industrial Grade**: 100% test coverage for domain logic and high-fidelity persistence audits.
 
