@@ -13,7 +13,7 @@ import 'cloud_sync_provider.dart';
 
 /// State management provider for menstruation cycle data and predictions.
 /// 
-/// [CycleProvider] has been refactored to follow "Zero Technical Debt" principles:
+/// [CycleProvider] has been refactored to follow "Technical Excellence" principles:
 /// 1. Zero constructor side-effects.
 /// 2. Presentation-layer specific optimizations (calendar mapping).
 /// 3. Async state handling with safety guards.

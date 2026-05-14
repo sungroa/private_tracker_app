@@ -1,6 +1,6 @@
 /// Centralized registry for all Hive-related constants.
 /// 
-/// This ensures "Zero Technical Debt" by eliminating magic numbers (adapter IDs) 
+/// This ensures "Technical Excellence" by eliminating magic numbers (adapter IDs) 
 /// and hardcoded box names scattered across the data layer.
 class HiveRegistry {
   // --- Adapter Type IDs ---

@@ -5,7 +5,7 @@ import 'preferences_service.dart';
 
 /// Orchestrates complex, data-driven notifications based on cycle predictions.
 /// 
-/// Following "Zero Technical Debt" principles, this decouples notification 
+/// Following "Technical Excellence" principles, this decouples notification 
 /// scheduling logic from both the domain model and the UI layer.
 class NotificationOrchestrator {
   final NotificationService _notificationService;

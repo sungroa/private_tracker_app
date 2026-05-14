@@ -5,7 +5,7 @@ import 'package:private_tracker_app/domain/models/custom_tag.dart';
 
 /// Centralized factory for creating domain models in tests.
 /// 
-/// Following "Zero Technical Debt" principles, this ensures that tests 
+/// Following "Technical Excellence" principles, this ensures that tests 
 /// don't break every time a new required field is added to a domain model.
 class TestModelFactory {
   static const _uuid = Uuid();

@@ -27,7 +27,7 @@ class CycleLog {
 
   /// Creates a [CycleLog] with validation.
   /// 
-  /// Following "Zero Technical Debt" principles, the constructor is now "pure".
+  /// Following "Technical Excellence" principles, the constructor is now "pure".
   /// ID generation and timestamping should be handled by a factory or the 
   /// repository layer before instantiation.
   CycleLog({

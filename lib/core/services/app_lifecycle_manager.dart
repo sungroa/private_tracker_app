@@ -8,7 +8,7 @@ import 'package:private_tracker_app/core/utils/security_logger.dart';
 
 /// Manages application-level lifecycle events and deep links.
 /// 
-/// Following "Zero Technical Debt" principles, this decouples UI-level 
+/// Following "Technical Excellence" principles, this decouples UI-level 
 /// navigation orchestration from the main App widget.
 class AppLifecycleManager extends StatefulWidget {
   final Widget child;
