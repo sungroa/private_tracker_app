@@ -28,7 +28,7 @@ void main() {
         SymptomLog(
           id: 's1',
           date: DateTime(2026, 3, 3),
-          symptoms: ['Cramps', 'Headache'],
+          symptoms: const ['Cramps', 'Headache'],
           moodRating: 2,
           basalBodyTemperature: 98.2,
           cervicalFluidType: 'Sticky',
@@ -39,7 +39,7 @@ void main() {
         SymptomLog(
           id: 's2',
           date: DateTime(2026, 3, 10),
-          symptoms: ['Bloating'],
+          symptoms: const ['Bloating'],
           moodRating: 4,
           updatedAt: DateTime(2026, 3, 10, 9),
         ),

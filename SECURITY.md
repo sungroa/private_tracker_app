@@ -34,8 +34,9 @@ When synchronizing data to Google Drive or iCloud, we use an additional layer of
 Private Tracker contains **zero** third-party analytics (no Firebase Analytics, no Mixpanel, etc.). We do not track user behavior or app usage patterns.
 
 ### PII Leakage Prevention
-Our logging system (`SecurityLogger`) is designed to prevent Personally Identifiable Information (PII) from entering system logs:
+Our logging strategy is designed to prevent Personally Identifiable Information (PII) from entering system logs:
 - **Filtered Logs**: Production logs never include raw health data or encryption keys.
+- **Diagnostic Tags**: We use `dart:developer` logging with the `PrivacyTracker.Prediction` tag for forecasting auditability. These logs contain only statistical metadata and timing information, never user content.
 - **Event-Only Logging**: We only log structural events (e.g., "Backup Successfully Restored") rather than content events.
 
 ### Biometric Lock

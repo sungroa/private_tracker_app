@@ -36,6 +36,8 @@ graph TD
 - **Key Files**: 
   - `models/`: Immutable business entities using `@immutable`.
   - `calculators/`: Logic for predictions and trends analysis.
+    - **ARIMA Pipeline**: `CycleLengthForecaster` implements a "Cold Start to Hybrid ARIMA" engine. It uses simple averages for early tracking and transitions to an **ARIMA(1,1,1)** model with grid-search MLE parameter estimation for established datasets (n >= 8).
+    - **Outlier Resilience**: Biological clamping (21-45 days) and median-based imputation ensure forecasting stability against "logging noise" (e.g., spotting).
 
 ### 2. Data Layer (`lib/data/`)
 - **Content**: Persistence implementations, DTOs, and External Service clients.
@@ -106,3 +108,29 @@ A feature is considered **Incomplete** if it lacks associated tests.
 
 - **Service Locator**: We use `GetIt` (in `service_locator.dart`) for dependency injection of repositories and use cases.
 - **App Initializer**: `lib/core/services/app_initializer.dart` coordinates the parallel startup of storage, providers, and initial sync.
+
+---
+
+## 📝 In-App Documentation
+
+To ensure privacy and transparency, the app's **Privacy Policy** and other legal docs are maintained as Markdown files in `assets/docs/`. These are bundled with the app and rendered at runtime using the `flutter_markdown` package.
+
+---
+
+## 🔍 Diagnostic Logging & Auditability
+
+While we prioritize privacy, we use `dart:developer` for high-fidelity diagnostic logging in development and production environments.
+
+- **Tags**: We use specific tags (e.g., `PrivacyTracker.Prediction`) to allow filtering via `adb logcat`.
+- **PII Protection**: Logs are strictly architectural and statistical. No raw health data, notes, or encryption keys are ever emitted to the system log.
+
+---
+
+## 🛠 Troubleshooting & Release
+
+### Cloud Sync (Release Build)
+If Google Sign-In returns a `canceled` error in Release mode, it is likely a SHA-1 fingerprint mismatch.
+
+1.  **Copy Release SHA-1**: Find the SHA-1 of your release keystore.
+2.  **Google Cloud Console**: Add the SHA-1 to your **OAuth 2.0 Client ID** at the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+3.  **Propagation**: Wait ~10 minutes for Google's servers to sync. No app re-build is required.
