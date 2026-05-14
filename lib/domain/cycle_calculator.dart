@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'models/cycle_log.dart';
 import 'calculators/cycle_length_forecaster.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
@@ -52,16 +53,30 @@ class CycleCalculator {
     // 2. Fallback to historical Hybrid ARIMA pipeline
     final lengths = <int>[];
     for (int i = 0; i < sortedCycleEvents.length - 1; i++) {
-      lengths.add(
-        sortedCycleEvents[i].startDate.difference(sortedCycleEvents[i + 1].startDate).inDays,
-      );
+      final length = sortedCycleEvents[i].startDate.difference(sortedCycleEvents[i + 1].startDate).inDays;
+      
+      // Data Cleaning: Ignore "micro-cycles" < 15 days which are likely logging errors 
+      // or mid-cycle spotting, as they aggressively skew ARIMA/Average models.
+      if (length >= 15) {
+        lengths.add(length);
+      } else {
+        developer.log('Ignoring micro-cycle length: $length days (likely spotting or duplicate log)', name: 'PrivacyTracker.Prediction');
+      }
+    }
+
+    if (lengths.isEmpty) {
+      developer.log('No valid cycle history after filtering, using default 28.', name: 'PrivacyTracker.Prediction');
+      return sortedCycleEvents.first.startDate.add(const Duration(days: defaultCycleLength));
     }
 
     // Forecaster expects oldest to newest
     final chronologicalLengths = lengths.reversed.toList();
     final predictedLength = CycleLengthForecaster.predictNextLength(chronologicalLengths);
 
-    return sortedCycleEvents.first.startDate.add(Duration(days: predictedLength));
+    final nextPeriod = sortedCycleEvents.first.startDate.add(Duration(days: predictedLength));
+    developer.log('Calculated Next Period: ${nextPeriod.toIso8601String()} (Length: $predictedLength)', name: 'PrivacyTracker.Prediction');
+
+    return nextPeriod;
   }
 
   /// Implements the Sympto-Thermal Method "3-over-6 rule" to confirm ovulation.
