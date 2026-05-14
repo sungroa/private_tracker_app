@@ -34,9 +34,9 @@ class DonationSheet extends StatelessWidget {
               borderRadius: 32,
               borderColor: Colors.white.withValues(alpha: isDark ? 0.05 : 0.2),
             ),
-            child: Column(
+            child: const Column(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 _DragHandle(),
                 SizedBox(height: 24),
                 _Header(),
