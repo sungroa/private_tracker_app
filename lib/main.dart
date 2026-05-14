@@ -15,6 +15,8 @@ import 'presentation/providers/cycle_provider.dart';
 import 'presentation/providers/symptom_provider.dart';
 import 'presentation/providers/tag_provider.dart';
 import 'presentation/providers/cloud_sync_provider.dart';
+import 'presentation/providers/donation_provider.dart';
+import 'domain/repositories/donation_repository.dart';
 import 'domain/usecases/get_cycle_logs_use_case.dart';
 import 'domain/usecases/save_cycle_log_use_case.dart';
 import 'domain/usecases/delete_cycle_log_use_case.dart';
@@ -104,6 +106,12 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
         Provider.value(value: sl.cloudSync),
         Provider.value(value: sl.syncUseCase),
         Provider.value(value: sl.notificationOrchestrator),
+        Provider.value(value: sl.donationRepository),
+        ChangeNotifierProvider(
+          create: (context) => DonationProvider(
+            context.read<IDonationRepository>(),
+          ),
+        ),
         ChangeNotifierProvider(
           create: (context) => CloudSyncProvider(
             syncUseCase: context.read<SyncDataUseCase>(),

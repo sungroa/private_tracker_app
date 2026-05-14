@@ -4,6 +4,7 @@ import '../../data/repositories/data_source_repository_impl.dart';
 import '../../data/repositories/symptom_log_repository_impl.dart';
 import '../../data/repositories/sync_metadata_repository_impl.dart';
 import '../../data/repositories/tag_repository_impl.dart';
+import '../../data/repositories/play_billing_donation_repository.dart';
 import '../../data/storage/backup_orchestrator.dart';
 import '../../data/storage/backup_restore_service.dart';
 import '../../data/storage/data_export_service.dart';
@@ -21,6 +22,7 @@ import '../../domain/repositories/data_source_repository.dart';
 import '../../domain/repositories/symptom_log_repository.dart';
 import '../../domain/repositories/sync_metadata_repository.dart';
 import '../../domain/repositories/tag_repository.dart';
+import '../../domain/repositories/donation_repository.dart';
 import '../../domain/services/cloud_sync_interface.dart';
 import '../../domain/services/partner_sharing_service.dart';
 import '../../domain/usecases/add_tag_use_case.dart';
@@ -124,6 +126,9 @@ class ServiceLocator {
   /// Unified access point for complex data export/import operations.
   late final IDataSourceRepository dataSourceRepository;
 
+  /// Repository for managing donations and supporter status.
+  late final IDonationRepository donationRepository;
+
   // --- Domain Use Cases ---
   
   /// Core use case for fetching and predicting cycle trends.
@@ -225,6 +230,7 @@ class ServiceLocator {
     tagRepository = TagRepositoryImpl(tagDataSource);
     syncMetadataRepository = SyncMetadataRepositoryImpl(dbManager);
     dataSourceRepository = DataSourceRepositoryImpl(encryptedStorage, backupOrchestrator);
+    donationRepository = PlayBillingDonationRepository(keyStorage);
 
     // 5. Use Cases
     getCycleLogsUseCase = GetCycleLogsUseCase(cycleRepository, symptomRepository);

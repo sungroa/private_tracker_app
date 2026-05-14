@@ -5,6 +5,7 @@ import 'tracking_calendar_page.dart';
 import 'summary_trends_page.dart';
 import 'settings_page.dart';
 import 'privacy_policy_page.dart';
+import '../sheets/donation_sheet.dart';
 import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
 import '../providers/symptom_provider.dart';
@@ -65,6 +66,13 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
         actions: [
+          IconButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              DonationSheet.show(context);
+            },
+            icon: Icon(Icons.favorite_rounded, color: primary.withValues(alpha: 0.8), size: 22),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 0.0),
             child: IconButton(
