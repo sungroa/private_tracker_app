@@ -1,0 +1,103 @@
+--------- beginning of main
+05-14 14:42:14.572  8340  8340 I Zygote  : Process 8340 created for com.sry_developer.private_tracker_app
+05-14 14:42:14.572  8340  8340 I ate_tracker_app: Using CollectorTypeCMC GC.
+05-14 14:42:14.580  8340  8340 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+05-14 14:42:14.613  8340  8340 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.extensions.jar
+05-14 14:42:14.613  8340  8340 D ApplicationLoaders: Returning zygote-cached class loader: /system_ext/framework/androidx.window.sidecar.jar
+05-14 14:42:14.618  8340  8340 W ate_tracker_app: Failed to find entry 'classes.dex': Entry not found
+05-14 14:42:14.621  8340  8340 W ate_tracker_app: Failed to find entry 'classes.dex': Entry not found
+05-14 14:42:14.623  8340  8340 W ate_tracker_app: Failed to find entry 'classes.dex': Entry not found
+05-14 14:42:14.625  8340  8340 W ate_tracker_app: Failed to find entry 'classes.dex': Entry not found
+05-14 14:42:14.626  8340  8340 D nativeloader: Configuring clns-9 for other apk /data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/base.apk:/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/split_config.arm64_v8a.apk:/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/split_config.en.apk:/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/split_config.es.apk:/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/split_config.xxhdpi.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/lib/arm64:/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/base.apk!/lib/arm64-v8a:/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/sp
+05-14 14:42:14.659  8340  8340 V GraphicsEnvironment: Currently set values for:
+05-14 14:42:14.659  8340  8340 V GraphicsEnvironment:   angle_gl_driver_selection_pkgs=[com.android.angle]
+05-14 14:42:14.659  8340  8340 V GraphicsEnvironment:   angle_gl_driver_selection_values=[angle]
+05-14 14:42:14.659  8340  8340 V GraphicsEnvironment: com.sry_developer.private_tracker_app is not listed in per-application setting
+05-14 14:42:14.659  8340  8340 V GraphicsEnvironment: No special selections for ANGLE, returning default driver choice
+05-14 14:42:14.659  8340  8340 V GraphicsEnvironment: Neither updatable production driver nor prerelease driver is supported.
+05-14 14:42:14.743  8340  8340 D LicenseClient: Connecting to the licensing service...
+05-14 14:42:14.760  8340  8340 D LicenseClient: Connected to the licensing service.
+05-14 14:42:14.764  8340  8364 D LicenseClient: Sending request to license reporting service...
+05-14 14:42:14.771  8340  8364 D LicenseClient: Request to licensing reporting service sent.
+05-14 14:42:20.044  8340  8445 D ProfileInstaller: Installing profile for com.sry_developer.private_tracker_app
+--------- beginning of system
+05-14 14:42:20.636  8340  8446 I DisplayManager: Choreographer implicitly registered for the refresh rate.
+05-14 14:42:20.640  8340  8446 D vulkan  : searching for layers in '/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/lib/arm64'
+05-14 14:42:20.640  8340  8446 D vulkan  : searching for layers in '/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/base.apk!/lib/arm64-v8a'
+05-14 14:42:20.640  8340  8446 D vulkan  : searching for layers in '/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/split_config.arm64_v8a.apk!/lib/arm64-v8a'
+05-14 14:42:20.642  8340  8446 D vulkan  : searching for layers in '/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/split_config.en.apk!/lib/arm64-v8a'
+05-14 14:42:20.642  8340  8446 D vulkan  : searching for layers in '/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/split_config.es.apk!/lib/arm64-v8a'
+05-14 14:42:20.642  8340  8446 D vulkan  : searching for layers in '/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/split_config.xxhdpi.apk!/lib/arm64-v8a'
+05-14 14:42:20.667  8340  8340 D CompatChangeReporter: Compat change id reported: 377864165; UID 10410; state: ENABLED
+05-14 14:42:20.667  8340  8340 D DesktopExperienceFlags: Toggle override initialized to: false
+05-14 14:42:20.667  8340  8340 D DesktopModeFlags: Toggle override initialized to: OVERRIDE_UNSET
+05-14 14:42:20.690  8340  8454 D nativeloader: Load /data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/split_config.arm64_v8a.apk!/lib/arm64-v8a/libflutter.so using class loader ns clns-9 (caller=/data/app/~~5wBbcReXcfmPWFcpJuB6iw==/com.sry_developer.private_tracker_app-sLtOAfOFazFWzTR0dRBrWA==/base.apk): ok
+05-14 14:42:20.740  8340  8456 I flutter : [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+05-14 14:42:20.715  8340  8340 W ate_tracker_app: type=1400 audit(0.0:202825): avc:  denied  { read } for  name="max_map_count" dev="proc" ino=25346229 scontext=u:r:untrusted_app:s0:c154,c257,c512,c768 tcontext=u:object_r:proc_max_map_count:s0 tclass=file permissive=0 app=com.sry_developer.private_tracker_app
+05-14 14:42:20.857  8340  8340 D com.llfbandit.app_links: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 xflg=0x4 pkg=com.sry_developer.private_tracker_app cmp=com.sry_developer.private_tracker_app/.MainActivity }
+05-14 14:42:20.871  8340  8340 I ContentCaptureHelper: Setting logging level to OFF
+05-14 14:42:20.907  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 AuthService: Starting biometric authentication prompt...
+05-14 14:42:20.913  8340  8340 D WindowOnBackDispatcher: setTopOnBackInvokedCallback (unwrapped): android.app.Activity$$ExternalSyntheticLambda0@a7c6731
+05-14 14:42:20.916  8340  8340 I WindowExtensionsImpl: Initializing Window Extensions, vendor API level=9, activity embedding enabled=true
+05-14 14:42:20.920  8340  8340 D VRI[MainActivity]: WindowInsets changed: 1080x2424 statusBars:[0,152,0,0] navigationBars:[0,0,0,126] mandatorySystemGestures:[0,184,0,126] 
+05-14 14:42:21.042  8340  8340 D WindowOnBackDispatcher: setTopOnBackInvokedCallback (unwrapped): d.p@26c8050
+05-14 14:42:21.043  8340  8340 D WindowOnBackDispatcher: setTopOnBackInvokedCallback (unwrapped): android.app.Activity$$ExternalSyntheticLambda0@a7c6731
+05-14 14:42:21.049  8340  8340 D WindowLayoutComponentImpl: Register WindowLayoutInfoListener on Context=com.sry_developer.private_tracker_app.MainActivity@b32fcb6, of which baseContext=android.app.ContextImpl@e1a11ac
+05-14 14:42:23.064  8340  8340 D WindowOnBackDispatcher: setTopOnBackInvokedCallback (unwrapped): d.p@26c8050
+05-14 14:42:23.066  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 AuthService: Authentication request completed. Result: true
+05-14 14:42:23.068  8340  8340 D WindowOnBackDispatcher: setTopOnBackInvokedCallback (unwrapped): android.app.Activity$$ExternalSyntheticLambda0@a7c6731
+05-14 14:42:23.094  8340  8340 I flutter : [PrivacyTracker.Notifications] Initializing NotificationService...
+05-14 14:42:23.125  8340  8340 I flutter : [PrivacyTracker.Notifications] Timezone set to: Asia/Seoul
+05-14 14:42:23.126  8340  8340 I flutter : [PrivacyTracker.Notifications] Orchestrator: Period reminder disabled or no prediction, cancelling.
+05-14 14:42:23.136  8340  8340 I flutter : [PrivacyTracker.Notifications] Orchestrator: Fertility reminder disabled or no prediction, cancelling.
+05-14 14:42:23.137  8340  8340 D InsetsController: hide(ime())
+05-14 14:42:23.137  8340  8340 I ImeTracker: com.sry_developer.private_tracker_app:591c6a41: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+05-14 14:42:23.141  8340  8340 I flutter : [PrivacyTracker.Notifications] Notification channels created.
+05-14 14:42:23.141  8340  8340 I flutter : [PrivacyTracker.Notifications] Initialization complete.
+05-14 14:42:23.141  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 Google Drive: Refreshing authentication session...
+05-14 14:42:23.141  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 Google Drive: Attempting lightweight sign-in...
+05-14 14:42:24.261  8340  8530 I CredManProvService: GetCredentialResponse error returned from framework
+05-14 14:42:25.272  8340  8344 W ate_tracker_app: userfaultfd: MOVE ioctl seems unsupported: Connection timed out
+05-14 14:42:27.823  8340  8575 I CredManProvService: GetCredentialResponse error returned from framework
+05-14 14:42:27.825  8340  8340 I flutter : [PrivacyTracker.Security] 🚨 Google Drive: Authentication failed
+05-14 14:42:27.825  8340  8340 I flutter : [PrivacyTracker.Security] 🛑 Error: GoogleSignInException(code GoogleSignInExceptionCode.unknownError, [28444] Developer console is not set up correctly., null)
+05-14 14:42:27.825  8340  8340 I flutter : [PrivacyTracker.Security] 🚨 Cloud Sync: Background recovery check failed (non-fatal)
+05-14 14:42:27.825  8340  8340 I flutter : [PrivacyTracker.Security] 🛑 Error: CloudSyncException: Failed to authenticate with cloud storage (Original error: GoogleSignInException(code GoogleSignInExceptionCode.unknownError, [28444] Developer console is not set up correctly., null))
+05-14 14:42:27.825  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 Cloud Sync: Init complete. isCloudEnabled=true, isRecoveryEnabled=false, pendingRecoverySalt=null, requiresRecoveryPrompt=false, isOrphanKey=false
+05-14 14:42:27.825  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 Cloud Sync: Initiating background synchronization...
+05-14 14:42:27.825  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 Sync Cycle: Starting authentication phase...
+05-14 14:42:27.825  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 Google Drive: Refreshing authentication session...
+05-14 14:42:27.825  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 Google Drive: Attempting lightweight sign-in...
+05-14 14:42:27.875  8340  8340 D InsetsController: hide(ime())
+05-14 14:42:27.875  8340  8340 I ImeTracker: com.sry_developer.private_tracker_app:6c489a07: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+05-14 14:42:28.371  8340  8576 I CredManProvService: GetCredentialResponse error returned from framework
+05-14 14:42:31.708  8340  8595 I CredManProvService: GetCredentialResponse error returned from framework
+05-14 14:42:31.709  8340  8340 I flutter : [PrivacyTracker.Security] 🚨 Google Drive: Authentication failed
+05-14 14:42:31.709  8340  8340 I flutter : [PrivacyTracker.Security] 🛑 Error: GoogleSignInException(code GoogleSignInExceptionCode.unknownError, [28444] Developer console is not set up correctly., null)
+05-14 14:42:31.709  8340  8340 I flutter : [PrivacyTracker.Security] 🚨 Sync Cycle: CRITICAL FAILURE
+05-14 14:42:31.709  8340  8340 I flutter : [PrivacyTracker.Security] 🛑 Error: CloudSyncException: Failed to authenticate with cloud storage (Original error: GoogleSignInException(code GoogleSignInExceptionCode.unknownError, [28444] Developer console is not set up correctly., null))
+05-14 14:42:31.709  8340  8340 I flutter : [PrivacyTracker.Security] 🚨 Sync Cycle: Secondary error during recovery analysis (non-fatal)
+05-14 14:42:31.709  8340  8340 I flutter : [PrivacyTracker.Security] 🛑 Error: CloudSyncException: Not authenticated. Call authenticate() first
+05-14 14:42:31.709  8340  8340 I flutter : [PrivacyTracker.Security] 🚨 Cloud Sync: Orchestration failure
+05-14 14:42:31.709  8340  8340 I flutter : [PrivacyTracker.Security] 🛑 Error: CloudSyncException: Not authenticated. Call authenticate() first
+05-14 14:42:31.744  8340  8340 D InsetsController: hide(ime())
+05-14 14:42:31.744  8340  8340 I ImeTracker: com.sry_developer.private_tracker_app:dda1b276: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+05-14 14:42:39.248  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 Cloud Sync: Initiating background synchronization...
+05-14 14:42:39.248  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 Sync Cycle: Starting authentication phase...
+05-14 14:42:39.248  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 Google Drive: Refreshing authentication session...
+05-14 14:42:39.248  8340  8340 I flutter : [PrivacyTracker.Security] 🔵 Google Drive: Attempting lightweight sign-in...
+05-14 14:42:39.958  8340  8605 I CredManProvService: GetCredentialResponse error returned from framework
+05-14 14:42:43.474  8340  8613 I CredManProvService: GetCredentialResponse error returned from framework
+05-14 14:42:43.476  8340  8340 I flutter : [PrivacyTracker.Security] 🚨 Google Drive: Authentication failed
+05-14 14:42:43.476  8340  8340 I flutter : [PrivacyTracker.Security] 🛑 Error: GoogleSignInException(code GoogleSignInExceptionCode.unknownError, [28444] Developer console is not set up correctly., null)
+05-14 14:42:43.476  8340  8340 I flutter : [PrivacyTracker.Security] 🚨 Sync Cycle: CRITICAL FAILURE
+05-14 14:42:43.476  8340  8340 I flutter : [PrivacyTracker.Security] 🛑 Error: CloudSyncException: Failed to authenticate with cloud storage (Original error: GoogleSignInException(code GoogleSignInExceptionCode.unknownError, [28444] Developer console is not set up correctly., null))
+05-14 14:42:43.476  8340  8340 I flutter : [PrivacyTracker.Security] 🚨 Sync Cycle: Secondary error during recovery analysis (non-fatal)
+05-14 14:42:43.476  8340  8340 I flutter : [PrivacyTracker.Security] 🛑 Error: CloudSyncException: Not authenticated. Call authenticate() first
+05-14 14:42:43.476  8340  8340 I flutter : [PrivacyTracker.Security] 🚨 Cloud Sync: Orchestration failure
+05-14 14:42:43.476  8340  8340 I flutter : [PrivacyTracker.Security] 🛑 Error: CloudSyncException: Not authenticated. Call authenticate() first
+05-14 14:42:43.518  8340  8340 D InsetsController: hide(ime())
+05-14 14:42:43.518  8340  8340 I ImeTracker: com.sry_developer.private_tracker_app:e6cf4176: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+05-14 14:43:04.349  8340  8479 I TRuntime.CctTransportBackend: Making request to: https://firebaselogging.googleapis.com/v0cc/log/batch?format=json_proto3
+05-14 14:43:04.474  8340  8340 W JobService: onNetworkChanged() not implemented in com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService. Must override in a subclass.
+05-14 14:43:04.733  8340  8479 I TRuntime.CctTransportBackend: Status Code: 200

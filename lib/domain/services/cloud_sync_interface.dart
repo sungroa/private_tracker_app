@@ -62,4 +62,7 @@ abstract class CloudSyncInterface {
   /// 
   /// Returns a map of properties, or null if no backup exists.
   Future<Map<String, String?>?> fetchLatestCloudMetadata();
+
+  /// (W11) Disconnects the current user session and clears local auth tokens.
+  Future<void> signOut();
 }
