@@ -322,6 +322,9 @@ class CloudSyncProvider with ChangeNotifier {
       } else {
         SecurityLogger.logInfo("Cloud Sync: Recovery passphrase required. Deferring sync until passphrase is entered.");
       }
+    } else {
+      // (W13) Force a clean sign-out when disabling so the next attempt starts fresh.
+      await _cloudSync.signOut();
     }
   }
 

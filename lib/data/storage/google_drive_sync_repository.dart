@@ -78,7 +78,7 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
         authHeaders = await _cachedAccount!.authorizationClient
             .authorizationHeaders([scope], promptIfNecessary: false);
         if (authHeaders == null) {
-          SecurityLogger.logInfo("Google Drive: Cached token expired. Fetching fresh account...");
+          SecurityLogger.logInfo("Google Drive: Cached token expired or insufficient. Fetching fresh account...");
           _cachedAccount = null; // invalidate stale cache
         }
       }
@@ -97,20 +97,31 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
           account = await _googleSignIn.authenticate(scopeHint: [scope]);
         }
 
-        SecurityLogger.logInfo(
-            "Google Drive: Account obtained. Fetching authorization headers...");
+        if (account != null) {
+          SecurityLogger.logInfo(
+              "Google Drive: Account obtained. Fetching authorization headers...");
 
-        // promptIfNecessary: false is critical — prevents Credential Manager UI
-        // from appearing during background syncs triggered by edits/startup.
-        authHeaders = await account.authorizationClient
-            .authorizationHeaders([scope], promptIfNecessary: false);
+          // Attempt to fetch headers with the requested scope.
+          authHeaders = await account.authorizationClient
+              .authorizationHeaders([scope], promptIfNecessary: false);
+
+          if (authHeaders == null) {
+            // (W12) Fallback: If headers are missing despite an account, it likely means 
+            // the scope wasn't granted yet. Retry with a full authorization prompt.
+            SecurityLogger.logInfo("Google Drive: Silent headers failed. Retrying with full authorization...");
+            if (account != null) {
+              final auth = await account.authorizationClient.authorizeScopes([scope]);
+              // Construct headers manually as authorizationHeaders is not defined on GoogleSignInClientAuthorization
+              authHeaders = {
+                'Authorization': 'Bearer ${auth.accessToken}',
+              };
+            }
+          }
+        }
 
         if (authHeaders == null) {
-          // The account exists but headers couldn't be fetched silently.
-          // Rather than show UI (promptIfNecessary: true), throw so the caller
-          // can retry or surface a non-modal error. This preserves the
-          // silent-only contract for background operations.
-          SecurityLogger.logError("Google Drive: Unable to obtain auth headers silently.");
+          // Still null? This is a fatal auth error.
+          SecurityLogger.logError("Google Drive: Unable to obtain auth headers.");
           throw CloudSyncException(CloudSyncException.authHeadersMissing);
         }
 
@@ -336,5 +347,16 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
     _authClient = null;
     _driveApi = null;
     _cachedAccount = null;
+  }
+
+  @override
+  Future<void> signOut() async {
+    try {
+      SecurityLogger.logInfo("Google Drive: Signing out and clearing tokens...");
+      await _googleSignIn.signOut();
+      dispose();
+    } catch (e) {
+      SecurityLogger.logError("Google Drive: Sign out failed", error: e);
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
+import 'package:googleapis/drive/v3.dart' as drive;
 import 'core/services/auth_service.dart';
 import 'core/services/preferences_service.dart';
 import 'core/services/app_initializer.dart';
@@ -45,8 +46,9 @@ void main() async {
 
   // google_sign_in v7 mandates initialize() be awaited ONCE before any
   // API calls and before runApp().
-  await GoogleSignIn.instance
-      .initialize(serverClientId: _kGoogleServerClientId);
+  await GoogleSignIn.instance.initialize(
+    serverClientId: _kGoogleServerClientId,
+  );
 
   // Initialize Service Locator with default implementations
   ServiceLocator().setup(
