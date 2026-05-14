@@ -1,14 +1,14 @@
 # 🧭 Project Manifest: Private Tracker
 
 ## 📊 Session Data
-- **Last Updated:** 2026-05-14T09:30:30+09:00
-- **Session ID:** `8f1f3269-8885-4ccc-bf28-62e0dafde95e`
+- **Last Updated:** 2026-05-14T09:55:00+09:00
+- **Session ID:** `4b5c902b-6414-4946-8804-8d4f6628dc01`
 - **Session Health:** NOMINAL
-- **Context Budget:** ~60% (Turn 3)
+- **Context Budget:** ~30% (Turn 2)
 
 ## 🎯 Objectives & Constraints
-- **Primary Objective:** Refactor and upgrade cycle prediction logic to "Cold Start to Hybrid ARIMA" pipeline.
-- **Constraints:** Zero tech debt, mandatory testing, clean architecture, on-device only, minimize dependency bloat.
+- **Primary Objective:** Update and synchronize all project documentation with the current state of the app.
+- **Constraints:** Zero tech debt, maintain architectural clarity, remove redundancy.
 
 ## 🛠️ Validation & State
 - **fast_validation_command:** `flutter analyze`
@@ -35,3 +35,5 @@
 - **Deterministic IDs for Default Data**: When seeding default records that may be synced across devices, always use deterministic IDs (e.g., UUID v5 based on name) to prevent duplication during merge operations.
 - **Isolate-Safe Deduplication**: When merging data in background isolates, ID-based deduplication is standard, but name-based deduplication should be enforced at the domain/provider layer for user-facing categories.
 - **Clean Architecture & Domain Logic**: Complex prediction logic should be encapsulated in specialized domain calculators (e.g., `CycleLengthForecaster`) to keep `UseCase` and `Calculator` classes focused.
+- **Documentation Consolidation**: Centralizing troubleshooting guides (e.g., Release SHA-1 fixes) and legal docs (assets/docs/) reduces maintenance overhead and prevents state divergence.
+- **Diagnostic Logging without PII**: Using specific tags like `PrivacyTracker.Prediction` with `dart:developer` allows for production auditability of complex algorithms while maintaining a strict zero-knowledge privacy stance.

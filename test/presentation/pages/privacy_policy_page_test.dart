@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/presentation/pages/privacy_policy_page.dart';
 import 'package:private_tracker_app/presentation/theme/app_theme.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 
 class MockAssetBundle extends Fake implements AssetBundle {
   @override
