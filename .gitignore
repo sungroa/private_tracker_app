@@ -49,3 +49,6 @@ app.*.map.json
 
 # Coverage files
 coverage/
+
+# Agent internal files
+.agent/
