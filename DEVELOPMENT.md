@@ -1,6 +1,6 @@
 # Engineering & Development Guide
 
-This guide provides a deep dive into the technical standards and architectural patterns of the Private Tracker App.
+This guide provides a deep dive into the technical standards and architectural patterns of the Private Tracker.
 
 ## 🏛 Clean Architecture Standards
 

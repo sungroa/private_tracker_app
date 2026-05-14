@@ -18,6 +18,7 @@ import 'package:private_tracker_app/data/storage/partner_storage_service.dart';
 import 'package:private_tracker_app/presentation/pages/home_page.dart';
 import 'package:private_tracker_app/core/services/service_locator.dart';
 import 'package:private_tracker_app/core/services/notification_service.dart';
+import 'package:private_tracker_app/domain/repositories/donation_repository.dart';
 import 'package:app_links/app_links.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
@@ -27,6 +28,7 @@ class MockAuthService extends Mock implements AuthService {}
 class MockPreferencesService extends Mock implements PreferencesService {}
 class MockPathProviderPlatform extends Mock with MockPlatformInterfaceMixin implements PathProviderPlatform {}
 class MockNotificationService extends Mock implements NotificationService {}
+class MockDonationRepository extends Mock implements IDonationRepository {}
 
 class FakeDateTime extends Fake implements DateTime {}
 class FakeTimeOfDay extends Fake implements TimeOfDay {}
@@ -38,6 +40,7 @@ void main() {
   late MockAuthService mockAuthService;
   late MockPreferencesService mockPreferencesService;
   late MockNotificationService mockNotificationService;
+  late MockDonationRepository mockDonationRepository;
 
   setUpAll(() {
     registerFallbackValue(FakeDateTime());
@@ -58,6 +61,7 @@ void main() {
     mockAuthService = MockAuthService();
     mockPreferencesService = MockPreferencesService();
     mockNotificationService = MockNotificationService();
+    mockDonationRepository = MockDonationRepository();
 
     when(() => mockNotificationService.initialize()).thenAnswer((_) async {});
     when(() => mockNotificationService.cancelNotification(any())).thenAnswer((_) async {});
@@ -85,12 +89,15 @@ void main() {
     when(() => mockPreferencesService.isFertilityReminderEnabled()).thenAnswer((_) async => false);
     when(() => mockPreferencesService.getFertilityReminderOffset()).thenAnswer((_) async => 1);
     when(() => mockPreferencesService.getFertilityReminderTime()).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
+    when(() => mockDonationRepository.isSupporterStream).thenAnswer((_) => const Stream<bool>.empty());
+    when(() => mockDonationRepository.isSupporter()).thenAnswer((_) async => false);
 
     // Open unencrypted box for PartnerModePage
     await Hive.openBox('partner_data');
     
     final key = Hive.generateSecureKey();
     when(() => mockSecureStorage.read(key: any(named: 'key'))).thenAnswer((_) async => base64UrlEncode(key));
+    when(() => mockSecureStorage.read(key: 'supporter_status_v1')).thenAnswer((_) async => 'false');
     when(() => mockSecureStorage.write(key: any(named: 'key'), value: any(named: 'value'))).thenAnswer((_) async => {});
   });
 
@@ -139,6 +146,7 @@ void main() {
         prefs: mockPreferencesService,
         customAppLinks: mockAppLinks,
         notifications: mockNotificationService,
+        donations: mockDonationRepository,
       );
 
       await tester.pumpWidget(PrivacyTrackerApp(
