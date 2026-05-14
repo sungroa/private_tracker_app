@@ -145,7 +145,7 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
       child: AppLifecycleManager(
         navigatorKey: _navigatorKey,
         child: MaterialApp(
-          title: 'Private Tracker',
+          title: 'Private Tracker App',
           navigatorKey: _navigatorKey,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,

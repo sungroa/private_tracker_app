@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.sungroa.private_tracker_app">
+    package="com.sry_developer.private_tracker_app">
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
@@ -12,7 +12,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
    <application
-        android:label="private_tracker_app"
+        android:label="Private Tracker App"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
