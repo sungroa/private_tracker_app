@@ -53,7 +53,10 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Container(
-      height: screenHeight * 0.8, // Fixed height for consistency
+      constraints: BoxConstraints(
+        maxHeight: screenHeight * 0.9, // Slightly taller to give more room
+      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.backgroundDarkColor : AppTheme.backgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
