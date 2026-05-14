@@ -41,7 +41,7 @@ Health tracking should be a delight, not a chore.
 *   **Glassmorphic UI**: A stunning, modern interface with smooth micro-animations and low-latency interactions.
 *   **Customizable Notifications**: Set personalized reminders for your period and fertility windows on your own schedule.
 
-## 📄 Medical-Grade Data Export
+## 📄 Comprehensive Data Export
 Empower your healthcare journey with professional-grade data.
 
 *   **Journal-Style Exports**: Generate comprehensive, human-readable CSV reports of your symptoms, moods, and cycles.
@@ -73,7 +73,7 @@ Welcome to Private Tracker! Our initial release features:
 - Advanced ARIMA-powered period and fertility forecasting.
 - Premium glassmorphic UI with micro-animations.
 - Comprehensive daily logging for symptoms, mood, BBT, and LH tests.
-- Medical-grade CSV exports.
+- Comprehensive CSV exports.
 - Personalized reminder notifications.
 
 **Character Count**: 415 / 500
