@@ -1,5 +1,5 @@
 import 'models/cycle_log.dart';
-import 'calculators/cycle_stats_calculator.dart';
+import 'calculators/cycle_length_forecaster.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
 
@@ -49,7 +49,7 @@ class CycleCalculator {
       return sortedCycleEvents.first.startDate.add(const Duration(days: defaultCycleLength));
     }
 
-    // 2. Fallback to historical weighted average
+    // 2. Fallback to historical Hybrid ARIMA pipeline
     final lengths = <int>[];
     for (int i = 0; i < sortedCycleEvents.length - 1; i++) {
       lengths.add(
@@ -57,10 +57,11 @@ class CycleCalculator {
       );
     }
 
-    final filteredLengths = CycleStatsCalculator.filterOutliers(lengths);
-    final averageLength = CycleStatsCalculator.calculateWeightedAverage(filteredLengths);
+    // Forecaster expects oldest to newest
+    final chronologicalLengths = lengths.reversed.toList();
+    final predictedLength = CycleLengthForecaster.predictNextLength(chronologicalLengths);
 
-    return sortedCycleEvents.first.startDate.add(Duration(days: averageLength));
+    return sortedCycleEvents.first.startDate.add(Duration(days: predictedLength));
   }
 
   /// Implements the Sympto-Thermal Method "3-over-6 rule" to confirm ovulation.

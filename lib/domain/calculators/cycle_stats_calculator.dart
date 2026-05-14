@@ -1,12 +1,11 @@
-import 'dart:math';
 import '../models/cycle_log.dart';
+import 'cycle_length_forecaster.dart';
 
 /// Statistical utilities for menstruation cycle data analysis.
 /// 
-/// 💼 **Domain Context**: This calculator handles the heavy mathematical lifting
-/// for long-term data trends. It utilizes statistical methodologies like
-/// Interquartile Range (IQR) for outlier filtering and Exponential Decay for
-/// weighted averages.
+/// 💼 **Domain Context**: This calculator handles the aggregation of historical 
+/// data for long-term trends. It delegates complex forecasting logic to 
+/// [CycleLengthForecaster] to ensure consistency between displays and projections.
 class CycleStatsCalculator {
   static const int defaultCycleLength = 28;
 
@@ -23,8 +22,9 @@ class CycleStatsCalculator {
       );
     }
 
-    final filteredLengths = filterOutliers(lengths);
-    return calculateWeightedAverage(filteredLengths).toDouble();
+    // Forecaster expects oldest to newest
+    final chronologicalLengths = lengths.reversed.toList();
+    return CycleLengthForecaster.predictNextLength(chronologicalLengths).toDouble();
   }
 
   static double calculateAveragePeriodDuration(List<CycleLog> logs) {
@@ -37,50 +37,5 @@ class CycleStatsCalculator {
     }
 
     return totalDays / completedLogs.length;
-  }
-
-  /// Filters out abnormal cycle lengths using the Interquartile Range (IQR) method.
-  /// 
-  /// **Why**: Cycle lengths can occasionally be highly irregular due to illness, 
-  /// stress, or mislogged data. If included, these extreme outliers would skew the 
-  /// exponential moving average and cause wild inaccuracies in future predictions.
-  /// 
-  /// **How**: Calculates the Q1 (25th percentile) and Q3 (75th percentile). Any 
-  /// cycle length falling below `Q1 - 1.5 * IQR` or above `Q3 + 1.5 * IQR` is dropped.
-  /// A minimum of 4 cycles is required to establish statistical quartiles.
-  static List<int> filterOutliers(List<int> lengths) {
-    if (lengths.length < 4) return lengths;
-
-    final sorted = List<int>.from(lengths)..sort();
-    final n = sorted.length;
-
-    final q1 = sorted[(n / 4).floor()];
-    final q3 = sorted[(n * 3 / 4).floor()];
-    final iqr = q3 - q1;
-
-    final lowerBound = q1 - 1.5 * iqr;
-    final upperBound = q3 + 1.5 * iqr;
-
-    return lengths.where((l) => l >= lowerBound && l <= upperBound).toList();
-  }
-
-  /// Calculates a weighted average using exponential decay.
-  /// More recent values (lower index) receive higher weight.
-  /// Uses a decay factor of 0.85 so all data contributes,
-  /// but recent cycles dominate the prediction.
-  static int calculateWeightedAverage(List<int> lengths, {double decayFactor = 0.85}) {
-    if (lengths.isEmpty) return defaultCycleLength;
-
-    double weightedSum = 0;
-    double totalWeight = 0;
-
-    for (int i = 0; i < lengths.length; i++) {
-      final weight = pow(decayFactor, i);
-      weightedSum += lengths[i] * weight;
-      totalWeight += weight;
-    }
-
-    if (totalWeight == 0) return defaultCycleLength;
-    return (weightedSum / totalWeight).round();
   }
 }
