@@ -21,7 +21,7 @@ class AnalysedCycles {
 
 /// Use case for retrieving and analyzing cycle logs.
 /// 
-/// [GetCycleLogsUseCase] ensures "Zero Technical Debt" by:
+/// [GetCycleLogsUseCase] ensures "Technical Excellence" by:
 /// 1. Orchestrating asynchronous data fetching.
 /// 2. Offloading CPU-intensive calculations to background Isolates.
 /// 3. Maintaining strict layer separation.

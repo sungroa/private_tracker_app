@@ -16,7 +16,7 @@ A premium, privacy-focused health and cycle tracking application built with Flut
 
 ## 🏗️ Technical Architecture
 
-This project follows **Clean Architecture** principles to ensure long-term maintainability and zero technical debt.
+This project follows **Clean Architecture** principles to ensure long-term maintainability and technical excellence.
 
 - **Layered Decoupling**: 
     - **Presentation**: Flutter + Provider (Selective Rebuilds).
@@ -48,7 +48,7 @@ flutter run
 ```
 
 ## 🧪 Testing State
-We maintain a strict "Zero Technical Debt" policy. No PR should be merged without passing all tests:
+We maintain a strict commitment to technical excellence. No PR should be merged without passing all tests:
 ```bash
 # Run all tests with expanded output
 flutter test --reporter expanded

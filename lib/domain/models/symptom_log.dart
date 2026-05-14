@@ -36,7 +36,7 @@ class SymptomLog {
 
   /// Creates a [SymptomLog] with validation.
   /// 
-  /// Following "Zero Technical Debt" principles, the constructor is now "pure".
+  /// Following "Technical Excellence" principles, the constructor is now "pure".
   SymptomLog({
     required this.id,
     required this.date,

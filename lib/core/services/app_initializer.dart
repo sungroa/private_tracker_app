@@ -11,7 +11,7 @@ import 'package:provider/provider.dart';
 
 /// Service responsible for coordinated application initialization.
 /// 
-/// [AppInitializer] follows "Zero Technical Debt" by:
+/// [AppInitializer] follows "Technical Excellence" by:
 /// 1. Orchestrating async startup tasks outside the UI tree.
 /// 2. Ensuring thread-safe initialization of storage and providers.
 /// 3. Providing a unified hook for app-wide data warm-up.

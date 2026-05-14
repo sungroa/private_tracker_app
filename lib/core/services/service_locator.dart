@@ -44,7 +44,7 @@ import 'package:app_links/app_links.dart';
 
 /// A simple service locator to manage application dependencies.
 /// 
-/// Following "Zero Technical Debt" principles, this centralizes dependency 
+/// Following "Technical Excellence" principles, this centralizes dependency 
 /// orchestration, removing the burden from the UI layer.
 class ServiceLocator {
   static final ServiceLocator _instance = ServiceLocator._internal();

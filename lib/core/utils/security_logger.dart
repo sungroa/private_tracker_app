@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 /// A privacy-conscious logger that ensures sensitive information is not exposed
 /// in production environments.
 /// 
-/// [SecurityLogger] follows "Zero Technical Debt" standards:
+/// [SecurityLogger] follows "Technical Excellence" standards:
 /// 1. Uses [developer.log] instead of [debugPrint] for better integration with DevTools.
 /// 2. Strictly segments sensitive context.
 /// 3. Ensures zero PII (Personally Identifiable Information) in non-debug environments.

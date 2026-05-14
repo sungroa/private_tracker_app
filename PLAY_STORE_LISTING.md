@@ -59,7 +59,7 @@ Track every nuance of your health with ease:
 Join others who trust Private Tracker for a secure, beautiful, and precise health tracking experience.
 
 ---
-*Built with Flutter for industrial-grade stability and zero technical debt.*
+*Built with Flutter for industrial-grade stability and technical excellence.*
 
 **Character Count**: ~2,400 / 4,000
 

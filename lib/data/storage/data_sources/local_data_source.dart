@@ -3,7 +3,7 @@ import '../local_database_manager.dart';
 
 /// Base class for local data sources to standardize Hive box interactions.
 /// 
-/// Refactored to [Future]-based API to ensure "Zero Technical Debt":
+/// Refactored to [Future]-based API to ensure "Technical Excellence":
 /// 1. Adheres to asynchronous repository patterns.
 /// 2. Decouples implementation from the specific in-memory nature of Hive.
 abstract class LocalDataSource<T> {
