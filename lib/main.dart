@@ -38,7 +38,7 @@ class StorageConfig {
 /// The OAuth2 server/web client ID for Google Sign-In.
 /// Required by both [GoogleSignIn.instance.initialize] and [ServiceLocator.setup].
 const _kGoogleServerClientId =
-    '91334741072-tho8bdqobd4knpn6gk5furdt2jnq5rbu.apps.googleusercontent.com';
+    '91334741072-9lq2diq654mnv7nvdiaes0tqeha7sh1v.apps.googleusercontent.com';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
