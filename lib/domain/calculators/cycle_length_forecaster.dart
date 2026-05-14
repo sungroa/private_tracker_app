@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:developer' as developer;
 import 'package:collection/collection.dart';
 
 /// Specialized calculator for menstruation cycle length forecasting.
@@ -96,12 +97,19 @@ class CycleLengthForecaster {
     }
 
     // 4. ARIMA Forecasting
+    int prediction;
     try {
-      return _arimaForecast(cleanedHistory).round();
+      prediction = _arimaForecast(cleanedHistory).round();
     } catch (e) {
       // Fallback: 12.5% Trimmed Mean of the lookback window
-      return _calculateTrimmedMean(lookbackDouble, 0.125).round();
+      prediction = _calculateTrimmedMean(lookbackDouble, 0.125).round();
     }
+
+    // Safety Clamp: Ensure predictions remain within biological norms
+    final clamped = prediction.clamp(minBiologicalCycle, maxBiologicalCycle);
+    
+    developer.log('Pipeline: n=${history.length}, Raw Prediction=$prediction, Clamped=$clamped', name: 'PrivacyTracker.Prediction');
+    return clamped;
   }
 
   /// Simple ARIMA(1, 1, 1) or ARIMA(1, 0, 0) implementation.

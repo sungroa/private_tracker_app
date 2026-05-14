@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 /// Engine responsible for projecting future menstruation and fertility events.
 /// 
 /// 💼 **Domain Context**: Encapsulates the mathematical models used for 
@@ -20,6 +22,10 @@ class PredictionEngine {
     final ovulation = nextPeriodStart.subtract(const Duration(days: 14));
     
     // Generate the 6-day window (5 days leading up + ovulation day)
-    return List.generate(6, (i) => ovulation.subtract(Duration(days: 5 - i)));
+    final window = List.generate(6, (i) => ovulation.subtract(Duration(days: 5 - i)));
+
+    developer.log('Fertile Window: ${window.first.toIso8601String()} to ${window.last.toIso8601String()}', name: 'PrivacyTracker.Prediction');
+    
+    return window;
   }
 }
