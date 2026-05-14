@@ -1,28 +1,29 @@
 # 🧭 Project Manifest: Private Tracker
 
 ## 📊 Session Data
-- **Last Updated:** 2026-05-14T11:20:00+09:00
-- **Session ID:** `d153c0ed-d611-4293-aa2e-187327b0df0b`
+- **Last Updated:** 2026-05-14T11:27:00+09:00
+- **Session ID:** `cfa849bc-4d24-4317-9ba4-2fe681e2b34b`
 - **Session Health:** NOMINAL
-- **Context Budget:** ~35% (Turn 1)
+- **Context Budget:** ~30% (Turn 3)
 
 ## 🎯 Objectives & Constraints
-- **Primary Objective:** Debug sync errors following package name change.
-- **Constraints:** Zero tech debt, maintain local data integrity.
+- **Primary Objective:** Troubleshoot "No products available" in donation flow.
+- **Constraints:** Zero tech debt, ensure correct platform configuration.
 
 ## 🛠️ Validation & State
 - **fast_validation_command:** `flutter analyze`
 - **full_validation_command:** `flutter test`
-- **Verification Token:** `Analytic validation passed with minor lints.`
+- **Verification Token:** `Troubleshooting products loading.`
 
-- [x] Phase 1: Diagnose Sync Failure
-- [ ] Phase 2: User updates Google Cloud Console with new SHA-1/Package ID
-- [ ] Phase 3: Verify Sync functionality
+- [x] Phase 1: Environment Setup
+- [x] Phase 2: Domain Layer
+- [x] Phase 3: Data Layer
+- [x] Phase 4: presentation Layer
+- [/] Phase 6: Verification & Polishing (Troubleshooting products)
 
 ## 🚫 Dead Ends / Blockers
-- **Google Sign-In Error [28444]:** Caused by missing OAuth 2.0 Client ID for `com.sry_developer.private_tracker_app` in Google Cloud Console.
+- None.
 
 ## 💡 Learnings
-- **Google Sign-In [28444]**: This error code specifically indicates that the Android Client ID for the current package name/SHA-1 pair is missing or misconfigured in the Google Cloud Console.
-- **Gradle Signing Report**: `adb shell pidof` can return multiple PIDs if multiple versions of the app (different package names) are installed and running. Always verify the target PID before running `logcat`.
-- **SHA-1 Consistency**: When changing package names, all cloud-dependent services (Google Drive, Firebase, etc.) must be updated with the new package identifier and corresponding fingerprints.
+- **Google Sign-In [28444]**: Missing OAuth 2.0 Client ID for new package name.
+- **SHA-1 Consistency**: Crucial for cloud services when package name changes.
