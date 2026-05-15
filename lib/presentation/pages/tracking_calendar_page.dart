@@ -8,6 +8,7 @@ import '../widgets/custom_calendar/calendar_grid.dart';
 import '../sheets/unified_logging_sheet.dart';
 import '../sheets/day_summary_sheet.dart';
 import '../sheets/calendar_legend_sheet.dart';
+import '../sheets/month_year_picker_sheet.dart';
 import 'package:provider/provider.dart';
 import '../providers/cycle_provider.dart';
 import '../providers/symptom_provider.dart';
@@ -147,6 +148,23 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
     );
   }
 
+  /// Opens a sheet to manually select a month and year.
+  void _showMonthYearPicker() async {
+    HapticFeedback.mediumImpact();
+    final result = await showModalBottomSheet<DateTime>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => MonthYearPickerSheet(initialDate: _focusedDay),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _focusedDay = DateTime(result.year, result.month);
+      });
+    }
+  }
+
   /// Displays a summary of data for the selected [day].
   /// 
   /// This summary acts as a mid-level navigation point between the calendar
@@ -213,7 +231,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                                 )
                               ],
                             ),
-                            padding: const EdgeInsets.all(20),
+                            padding: EdgeInsets.fromLTRB(20, 20, 20, _isCurrentMonth ? 20 : 60),
                             child: Column(
                               children: [
                                 // Custom Month Header with Navigation Controls
@@ -226,14 +244,21 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                                     ),
                                     Row(
                                       children: [
-                                        Text(
-                                          DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase(),
-                                          style: TextStyle(
-                                            color: primary,
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 15,
-                                            letterSpacing: 1.5,
-                                            fontFamily: AppTheme.fontFamily,
+                                        InkWell(
+                                          onTap: _showMonthYearPicker,
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                            child: Text(
+                                              DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase(),
+                                              style: TextStyle(
+                                                color: primary,
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 15,
+                                                letterSpacing: 1.5,
+                                                fontFamily: AppTheme.fontFamily,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(width: 4),

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
-import 'package:googleapis/drive/v3.dart' as drive;
 import 'core/services/auth_service.dart';
 import 'core/services/preferences_service.dart';
 import 'core/services/app_initializer.dart';
@@ -165,36 +164,8 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
           darkTheme: AppTheme.darkTheme,
           themeMode: ThemeMode.system,
           builder: (context, child) {
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-            return Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isDark
-                          ? PremiumGradients.darkBackground
-                          : PremiumGradients.lightBackground,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: -150,
-                  right: -100,
-                  child: Container(
-                    width: 400,
-                    height: 400,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.primaryColor
-                          .withValues(alpha: isDark ? 0.08 : 0.04),
-                    ),
-                  ),
-                ),
-                if (child != null) child,
-              ],
-            );
+            if (child == null) return const SizedBox.shrink();
+            return child;
           },
           home: const AppLockWrapper(child: HomePage()),
         ),
@@ -289,8 +260,8 @@ class _LoadingScreen extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: isDark
-                ? PremiumGradients.darkBackground
-                : PremiumGradients.lightBackground,
+                ? AppGradients.darkBackground
+                : AppGradients.lightBackground,
           ),
         ),
         child: Center(
