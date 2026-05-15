@@ -192,10 +192,12 @@ class ServiceLocator {
     TagDataSource? tagDs,
     IDonationRepository? donations,
     AppLinks? customAppLinks,
+    CloudSyncInterface? cloudSync,
+    AppInitializer? initializer,
     String? serverClientId,
   }) {
     // 1. Core independent services
-    appInitializer = AppInitializer();
+    appInitializer = initializer ?? AppInitializer();
     clock = SystemClock();
     cycleCalculator = CycleCalculator(clock);
     trendsCalculator = TrendsCalculator(cycleCalculator);
@@ -266,9 +268,9 @@ class ServiceLocator {
     deleteTagUseCase = DeleteTagUseCase(tagRepository);
 
     // 6. Cloud Sync Integration
-    cloudSync = GoogleDriveSyncRepository(serverClientId: serverClientId);
+    this.cloudSync = cloudSync ?? GoogleDriveSyncRepository(serverClientId: serverClientId);
     syncUseCase = SyncDataUseCase(
-      cloudSync: cloudSync,
+      cloudSync: this.cloudSync,
       dataSource: dataSourceRepository,
       metadata: syncMetadataRepository,
       keyProvider: () => keyStorage.getOrCreateCloudSyncKey(),
