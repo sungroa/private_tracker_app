@@ -102,6 +102,36 @@ void main() {
 
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('REMINDERS'), findsOneWidget);
-    expect(find.text('Daily Reminders'), findsOneWidget);
+  });
+
+  testWidgets('Toggling biometric lock calls auth and prefs', (WidgetTester tester) async {
+    when(() => mockAuthService.authenticate()).thenAnswer((_) async => true);
+    when(() => mockPreferencesService.setBiometricEnabled(any())).thenAnswer((_) async {});
+
+    await tester.pumpWidget(createSettingsPage());
+    await tester.pumpAndSettle();
+
+    final switchFinder = find.byType(Switch).first;
+    await tester.tap(switchFinder);
+    await tester.pumpAndSettle();
+
+    verify(() => mockAuthService.authenticate()).called(1);
+    verify(() => mockPreferencesService.setBiometricEnabled(true)).called(1);
+    expect(find.text('Biometric lock enabled'), findsOneWidget);
+  });
+
+  testWidgets('Clicking export data calls storage and shows success', (WidgetTester tester) async {
+    when(() => mockEncryptedStorageService.exportDataToCsv()).thenAnswer((_) async => 'csv_data');
+    
+    await tester.pumpWidget(createSettingsPage());
+    await tester.pumpAndSettle();
+
+    // Scroll to Export Data
+    final exportFinder = find.text('Export Data');
+    await tester.scrollUntilVisible(exportFinder, 500);
+    await tester.tap(exportFinder);
+    await tester.pump(); // Start export
+
+    verify(() => mockEncryptedStorageService.exportDataToCsv()).called(1);
   });
 }

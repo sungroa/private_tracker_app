@@ -41,6 +41,9 @@ import 'notification_orchestrator.dart';
 import 'notification_service.dart';
 import 'preferences_service.dart';
 import 'package:app_links/app_links.dart';
+import 'clock.dart';
+import '../../domain/cycle_calculator.dart';
+import '../../domain/trends_calculator.dart';
 
 /// A simple service locator to manage application dependencies.
 /// 
@@ -73,6 +76,15 @@ class ServiceLocator {
   
   /// Handles deep links for partner connection and invitations.
   late final AppLinks appLinks;
+
+  /// Provides the current time.
+  late final IClock clock;
+  
+  /// Core engine for menstruation cycle predictions.
+  late final CycleCalculator cycleCalculator;
+
+  /// Facade for aggregating cycle trends and statistics.
+  late final TrendsCalculator trendsCalculator;
   
   // --- Storage & Data Infrastructure ---
   
@@ -184,7 +196,10 @@ class ServiceLocator {
   }) {
     // 1. Core independent services
     appInitializer = AppInitializer();
-    partnerSharingService = PartnerSharingService();
+    clock = SystemClock();
+    cycleCalculator = CycleCalculator(clock);
+    trendsCalculator = TrendsCalculator(cycleCalculator);
+    partnerSharingService = PartnerSharingService(cycleCalculator, clock);
     authService = auth ?? AuthService();
     preferencesService = prefs ?? PreferencesService();
     notificationService = notifications ?? NotificationService();
@@ -234,7 +249,11 @@ class ServiceLocator {
     donationRepository = donations ?? PlayBillingDonationRepository(keyStorage);
 
     // 5. Use Cases
-    getCycleLogsUseCase = GetCycleLogsUseCase(cycleRepository, symptomRepository);
+    getCycleLogsUseCase = GetCycleLogsUseCase(
+      cycleRepository, 
+      symptomRepository, 
+      trendsCalculator,
+    );
     saveCycleLogUseCase = SaveCycleLogUseCase(cycleRepository);
     deleteCycleLogUseCase = DeleteCycleLogUseCase(cycleRepository);
     

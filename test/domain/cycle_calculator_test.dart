@@ -1,12 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/domain/cycle_calculator.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
+import 'package:private_tracker_app/core/services/clock.dart';
 import '../helpers/test_model_factory.dart';
 
 void main() {
+  late CycleCalculator calculator;
+
+  setUp(() {
+    calculator = CycleCalculator(SystemClock());
+  });
+
   group('CycleCalculator Tests', () {
     test('predictNextPeriod with empty logs should return null', () {
-      final prediction = CycleCalculator.predictNextPeriod([]);
+      final prediction = calculator.predictNextPeriod([]);
       expect(prediction, isNull);
     });
 
@@ -14,7 +21,7 @@ void main() {
       final start = DateTime.utc(2026, 3, 1);
       final logs = [TestModelFactory.createCycleLog(startDate: start)];
       
-      final prediction = CycleCalculator.predictNextPeriod(logs);
+      final prediction = calculator.predictNextPeriod(logs);
       expect(prediction, start.add(const Duration(days: 28)));
     });
 
@@ -25,7 +32,7 @@ void main() {
         TestModelFactory.createCycleLog(startDate: DateTime.utc(2026, 3, 1)),
       ];
       
-      final prediction = CycleCalculator.predictNextPeriod(logs);
+      final prediction = calculator.predictNextPeriod(logs);
       expect(prediction, DateTime(2026, 4, 28).add(const Duration(days: 29)));
     });
 
@@ -40,7 +47,7 @@ void main() {
         TestModelFactory.createCycleLog(startDate: base),
       ];
       
-      final prediction = CycleCalculator.predictNextPeriod(logs);
+      final prediction = calculator.predictNextPeriod(logs);
       expect(prediction, logs.first.startDate.add(const Duration(days: 28)));
     });
 
@@ -53,18 +60,18 @@ void main() {
         TestModelFactory.createCycleLog(startDate: base),
       ];
       
-      final prediction = CycleCalculator.predictNextPeriod(logs);
+      final prediction = calculator.predictNextPeriod(logs);
       expect(prediction, logs.first.startDate.add(const Duration(days: 28)));
     });
 
     test('isCurrentlyInPeriod should detect active period if no endDate', () {
       final logs = [TestModelFactory.createCycleLog(startDate: DateTime.now())];
-      expect(CycleCalculator.isCurrentlyInPeriod(logs), isTrue);
+      expect(calculator.isCurrentlyInPeriod(logs), isTrue);
     });
 
     test('isCurrentlyInPeriod should expire after 7 days if no endDate', () {
       final logs = [TestModelFactory.createCycleLog(startDate: DateTime.now().subtract(const Duration(days: 8)))];
-      expect(CycleCalculator.isCurrentlyInPeriod(logs), isFalse);
+      expect(calculator.isCurrentlyInPeriod(logs), isFalse);
     });
 
     test('predictNextPeriod with uniform cycles should keep all values through IQR', () {
@@ -78,7 +85,7 @@ void main() {
         TestModelFactory.createCycleLog(startDate: base.add(const Duration(days: 28))),
       ];
       
-      final prediction = CycleCalculator.predictNextPeriod(logs);
+      final prediction = calculator.predictNextPeriod(logs);
       expect(prediction, logs.first.startDate.add(const Duration(days: 28)));
     });
 
@@ -88,7 +95,7 @@ void main() {
           date: DateTime.utc(2026, 3, i + 1),
           basalBodyTemperature: 97.0 + i * 0.1,
         ));
-        expect(CycleCalculator.confirmOvulation(logs), isNull);
+        expect(calculator.confirmOvulation(logs), isNull);
       });
 
       test('confirmOvulation detects valid shift', () {
@@ -101,7 +108,7 @@ void main() {
           logs.add(TestModelFactory.createSymptomLog(date: baseDate.add(Duration(days: i)), basalBodyTemperature: 97.2));
         }
 
-        final result = CycleCalculator.confirmOvulation(logs);
+        final result = calculator.confirmOvulation(logs);
         expect(result, DateTime.utc(2026, 3, 6));
       });
 
@@ -123,7 +130,7 @@ void main() {
           logs.add(TestModelFactory.createSymptomLog(date: baseDate.add(Duration(days: i)), basalBodyTemperature: 97.6));
         }
 
-        final result = CycleCalculator.confirmOvulation(logs);
+        final result = calculator.confirmOvulation(logs);
         expect(result, DateTime.utc(2026, 3, 14));
       });
 
@@ -136,7 +143,7 @@ void main() {
             basalBodyTemperature: (i == 4) ? null : 97.0 + (i >= 6 ? 0.3 : 0),
           ));
         }
-        expect(CycleCalculator.confirmOvulation(logs), isNull);
+        expect(calculator.confirmOvulation(logs), isNull);
       });
     });
 
@@ -153,7 +160,7 @@ void main() {
           symptoms.add(TestModelFactory.createSymptomLog(date: baseDate.add(Duration(days: i)), basalBodyTemperature: 97.2));
         }
 
-        final prediction = CycleCalculator.predictNextPeriod(cycleLogs, symptoms);
+        final prediction = calculator.predictNextPeriod(cycleLogs, symptoms);
         expect(prediction, DateTime.utc(2026, 3, 20));
       });
 
@@ -161,7 +168,7 @@ void main() {
         final cycleLogs = [TestModelFactory.createCycleLog(startDate: DateTime.utc(2026, 3, 1))];
         final symptoms = [TestModelFactory.createSymptomLog(date: DateTime.utc(2026, 3, 1), basalBodyTemperature: 97.0)];
 
-        final prediction = CycleCalculator.predictNextPeriod(cycleLogs, symptoms);
+        final prediction = calculator.predictNextPeriod(cycleLogs, symptoms);
         expect(prediction, DateTime.utc(2026, 3, 1).add(const Duration(days: 28)));
       });
     });

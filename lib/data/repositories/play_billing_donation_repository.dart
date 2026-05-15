@@ -8,7 +8,7 @@ import '../storage/secure_key_storage.dart';
 /// Implementation of [IDonationRepository] using Google Play Billing.
 class PlayBillingDonationRepository implements IDonationRepository {
   final SecureKeyStorage _keyStorage;
-  final InAppPurchase _iap = InAppPurchase.instance;
+  final InAppPurchase _iap;
   
   final StreamController<bool> _supporterController = StreamController<bool>.broadcast();
   late StreamSubscription<List<PurchaseDetails>> _subscription;
@@ -17,7 +17,8 @@ class PlayBillingDonationRepository implements IDonationRepository {
   static const String _subscriptionId = 'support_monthly_tier1';
   static const Set<String> _productIds = {_consumableId, _subscriptionId};
 
-  PlayBillingDonationRepository(this._keyStorage) {
+  PlayBillingDonationRepository(this._keyStorage, {InAppPurchase? iap}) 
+      : _iap = iap ?? InAppPurchase.instance {
     _subscription = _iap.purchaseStream.listen(
       _onPurchaseUpdate,
       onDone: () => _subscription.cancel(),

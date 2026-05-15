@@ -1,8 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/domain/trends_calculator.dart';
+import 'package:private_tracker_app/domain/cycle_calculator.dart';
+import 'package:private_tracker_app/core/services/clock.dart';
 import '../helpers/test_model_factory.dart';
 
 void main() {
+  late TrendsCalculator trendsCalculator;
+
+  setUp(() {
+    final clock = SystemClock();
+    final cycleCalculator = CycleCalculator(clock);
+    trendsCalculator = TrendsCalculator(cycleCalculator);
+  });
+
   group('TrendsCalculator BBT Mapping', () {
     final now = DateTime(2026, 4, 1);
     
@@ -25,14 +35,13 @@ void main() {
       ),
       TestModelFactory.createSymptomLog(
         date: now.subtract(const Duration(days: 2)),
-        symptoms: const ['Headache'],
         moodRating: 2,
         basalBodyTemperature: 36.4,
       ),
     ];
 
     test('should map symptom logs to correct cycle days', () {
-      final trends = TrendsCalculator.calculateTrends(cycleLogs, symptomLogs);
+      final trends = trendsCalculator.calculateTrends(cycleLogs, symptomLogs);
       
       expect(trends.bbtHistory.length, 3);
       
@@ -59,7 +68,7 @@ void main() {
         ), // No BBT
       ];
       
-      final trends = TrendsCalculator.calculateTrends(cycleLogs, logsWithMissingBbt);
+      final trends = trendsCalculator.calculateTrends(cycleLogs, logsWithMissingBbt);
       expect(trends.bbtHistory.length, 3);
     });
 
@@ -77,7 +86,7 @@ void main() {
         ),
       ];
       
-      final trends = TrendsCalculator.calculateTrends(multipleCycles, [...oldLogs, ...symptomLogs]);
+      final trends = trendsCalculator.calculateTrends(multipleCycles, [...oldLogs, ...symptomLogs]);
       
       // Should only have the 3 logs from the current cycle
       expect(trends.bbtHistory.length, 3);

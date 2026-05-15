@@ -16,6 +16,10 @@ export 'models/trends.dart';
 /// a unified [TrendData] object. This allows the presentation layer to access
 /// complex derived data (like predictions and BBT history) through a single entry point.
 class TrendsCalculator {
+  final CycleCalculator _cycleCalculator;
+
+  TrendsCalculator(this._cycleCalculator);
+
   /// Aggregates all necessary trend data from the provided logs.
   /// 
   /// This method performs the following:
@@ -26,14 +30,14 @@ class TrendsCalculator {
   /// 5. Maps temperature data relative to cycle boundaries via [BbtMapper].
   /// 
   /// Returns a [TrendData] object containing the comprehensive analysis.
-  static TrendData calculateTrends(List<CycleLog> cycleLogs, List<SymptomLog> symptomLogs) {
+  TrendData calculateTrends(List<CycleLog> cycleLogs, List<SymptomLog> symptomLogs) {
     // 1. Historical Statistics
     final avgCycleLength = CycleStatsCalculator.calculateAverageCycleLength(cycleLogs);
     final avgPeriodDuration = CycleStatsCalculator.calculateAveragePeriodDuration(cycleLogs);
     
     // 2. Predictive Analysis
     // The [CycleCalculator] is sophisticated, supporting BBT-confirmed ovulation logic.
-    final nextPeriod = CycleCalculator.predictNextPeriod(cycleLogs, symptomLogs);
+    final nextPeriod = _cycleCalculator.predictNextPeriod(cycleLogs, symptomLogs);
     final fertility = PredictionEngine.predictFertilityWindow(nextPeriod);
 
     // 3. Behavioral and Physiological Analysis

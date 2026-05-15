@@ -28,8 +28,13 @@ class AnalysedCycles {
 class GetCycleLogsUseCase {
   final CycleLogRepository _cycleRepository;
   final SymptomLogRepository _symptomRepository;
+  final TrendsCalculator _trendsCalculator;
 
-  GetCycleLogsUseCase(this._cycleRepository, this._symptomRepository);
+  GetCycleLogsUseCase(
+    this._cycleRepository, 
+    this._symptomRepository,
+    this._trendsCalculator,
+  );
 
   /// Executes the use case asynchronously.
   /// 
@@ -47,7 +52,7 @@ class GetCycleLogsUseCase {
     // 2. Perform heavy calculations in a background Isolate (W3)
     // This prevents UI jank regardless of the amount of historical data.
     final trends = await Isolate.run(() {
-      return TrendsCalculator.calculateTrends(logs, symptomLogs);
+      return _trendsCalculator.calculateTrends(logs, symptomLogs);
     });
 
     return AnalysedCycles(

@@ -1,8 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/domain/trends_calculator.dart';
+import 'package:private_tracker_app/domain/cycle_calculator.dart';
+import 'package:private_tracker_app/core/services/clock.dart';
 import '../helpers/test_model_factory.dart';
 
 void main() {
+  late TrendsCalculator trendsCalculator;
+
+  setUp(() {
+    final clock = SystemClock();
+    final cycleCalculator = CycleCalculator(clock);
+    trendsCalculator = TrendsCalculator(cycleCalculator);
+  });
+
   group('TrendsCalculator Tests', () {
     test('calculateAverageCycleLength calculates correctly from multiple logs', () {
       final now = DateTime.now();
@@ -12,7 +22,7 @@ void main() {
         TestModelFactory.createCycleLog(startDate: now.subtract(const Duration(days: 58))), // 28 days ago
       ];
 
-      final trends = TrendsCalculator.calculateTrends(logs, []);
+      final trends = trendsCalculator.calculateTrends(logs, []);
       // Average: (30 + 28) / 2 = 29.0
       expect(trends.averageCycleLength, closeTo(29.0, 0.1));
     });
@@ -31,7 +41,7 @@ void main() {
         ), // 5 days duration (60-56)+1
       ];
 
-      final trends = TrendsCalculator.calculateTrends(logs, []);
+      final trends = trendsCalculator.calculateTrends(logs, []);
       // Average: (6 + 5) / 2 = 5.5
       expect(trends.averagePeriodDuration, closeTo(5.5, 0.1));
     });
@@ -55,7 +65,7 @@ void main() {
         ),
       ];
 
-      final trends = TrendsCalculator.calculateTrends([], logs);
+      final trends = trendsCalculator.calculateTrends([], logs);
       expect(trends.topSymptoms.first.key, 'Cramps');
       expect(trends.topSymptoms.first.value, 3);
       expect(trends.topSymptoms.any((e) => e.key == 'Bloating'), true);
@@ -70,7 +80,7 @@ void main() {
         TestModelFactory.createSymptomLog(date: now.subtract(const Duration(days: 40)), symptoms: const [], moodRating: 1), // Outside range
       ];
 
-      final trends = TrendsCalculator.calculateTrends([], logs);
+      final trends = trendsCalculator.calculateTrends([], logs);
       expect(trends.moodHistory.length, 2);
       expect(trends.moodHistory.first.rating, 4); // Older first (sorted by date)
       expect(trends.moodHistory.last.rating, 5); // Newer last

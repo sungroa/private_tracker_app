@@ -5,6 +5,7 @@ import '../models/shared_phase_data.dart';
 import '../cycle_calculator.dart';
 import '../models/cycle_log.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
+import '../../core/services/clock.dart';
 
 /// Service responsible for encrypting and decrypting data for partner sharing.
 /// 
@@ -12,6 +13,11 @@ import 'package:private_tracker_app/domain/models/symptom_log.dart';
 class PartnerSharingService {
   static const String scheme = 'ptapp';
   static const String host = 'share';
+
+  final CycleCalculator _cycleCalculator;
+  final IClock _clock;
+
+  PartnerSharingService(this._cycleCalculator, this._clock);
 
   /// Generates an encrypted payload and its corresponding decryption key.
   Map<String, String> generateEncryptedPayload({
@@ -23,7 +29,7 @@ class PartnerSharingService {
     }
 
     // 1. Calculate phase data
-    final nextPeriod = CycleCalculator.predictNextPeriod(cycleLogs, symptomLogs);
+    final nextPeriod = _cycleCalculator.predictNextPeriod(cycleLogs, symptomLogs);
     if (nextPeriod == null) {
       throw StateError('Cannot predict next period with current data.');
     }
@@ -37,7 +43,7 @@ class PartnerSharingService {
       nextPeriodDate: nextPeriod,
       fertilityWindowStart: windowStart,
       fertilityWindowEnd: windowEnd,
-      generatedAt: DateTime.now(),
+      generatedAt: _clock.now(),
     );
 
     // 2. Encryption

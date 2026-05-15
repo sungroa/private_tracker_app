@@ -4,6 +4,10 @@ import 'package:private_tracker_app/domain/repositories/cycle_log_repository.dar
 import 'package:private_tracker_app/domain/repositories/symptom_log_repository.dart';
 import 'package:private_tracker_app/domain/usecases/get_cycle_logs_use_case.dart';
 
+import 'package:private_tracker_app/domain/trends_calculator.dart';
+import 'package:private_tracker_app/domain/cycle_calculator.dart';
+import 'package:private_tracker_app/core/services/clock.dart';
+
 class MockCycleLogRepository extends Mock implements CycleLogRepository {}
 class MockSymptomLogRepository extends Mock implements SymptomLogRepository {}
 
@@ -15,7 +19,12 @@ void main() {
   setUp(() {
     mockCycleRepo = MockCycleLogRepository();
     mockSymptomRepo = MockSymptomLogRepository();
-    useCase = GetCycleLogsUseCase(mockCycleRepo, mockSymptomRepo);
+    
+    final clock = SystemClock();
+    final calculator = CycleCalculator(clock);
+    final trendsCalculator = TrendsCalculator(calculator);
+    
+    useCase = GetCycleLogsUseCase(mockCycleRepo, mockSymptomRepo, trendsCalculator);
 
     when(() => mockCycleRepo.getCycleLogs()).thenAnswer((_) async => []);
     when(() => mockSymptomRepo.getSymptomLogs()).thenAnswer((_) async => []);
