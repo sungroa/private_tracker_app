@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_background.dart';
 
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
@@ -25,9 +26,11 @@ class PrivacyPolicyPage extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
-      appBar: AppBar(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -106,6 +109,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             );
           },
         ),
+      ),
       ),
     );
   }

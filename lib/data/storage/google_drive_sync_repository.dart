@@ -97,33 +97,24 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
           account = await _googleSignIn.authenticate(scopeHint: [scope]);
         }
 
-        if (account != null) {
-          SecurityLogger.logInfo(
-              "Google Drive: Account obtained. Fetching authorization headers...");
+        SecurityLogger.logInfo(
+            "Google Drive: Account obtained. Fetching authorization headers...");
 
-          // Attempt to fetch headers with the requested scope.
-          authHeaders = await account.authorizationClient
-              .authorizationHeaders([scope], promptIfNecessary: false);
-
-          if (authHeaders == null) {
-            // (W12) Fallback: If headers are missing despite an account, it likely means 
-            // the scope wasn't granted yet. Retry with a full authorization prompt.
-            SecurityLogger.logInfo("Google Drive: Silent headers failed. Retrying with full authorization...");
-            if (account != null) {
-              final auth = await account.authorizationClient.authorizeScopes([scope]);
-              // Construct headers manually as authorizationHeaders is not defined on GoogleSignInClientAuthorization
-              authHeaders = {
-                'Authorization': 'Bearer ${auth.accessToken}',
-              };
-            }
-          }
-        }
+        // Attempt to fetch headers with the requested scope.
+        authHeaders = await account.authorizationClient
+            .authorizationHeaders([scope], promptIfNecessary: false);
 
         if (authHeaders == null) {
-          // Still null? This is a fatal auth error.
-          SecurityLogger.logError("Google Drive: Unable to obtain auth headers.");
-          throw CloudSyncException(CloudSyncException.authHeadersMissing);
+          // (W12) Fallback: If headers are missing despite an account, it likely means 
+          // the scope wasn't granted yet. Retry with a full authorization prompt.
+          SecurityLogger.logInfo("Google Drive: Silent headers failed. Retrying with full authorization...");
+          final auth = await account.authorizationClient.authorizeScopes([scope]);
+          // Construct headers manually as authorizationHeaders is not defined on GoogleSignInClientAuthorization
+          authHeaders = {
+            'Authorization': 'Bearer ${auth.accessToken}',
+          };
         }
+
 
         // Cache the account so future calls skip Steps 1+2 entirely.
         _cachedAccount = account;

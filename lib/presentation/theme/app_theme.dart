@@ -160,7 +160,7 @@ class AppTheme {
   }
 }
 
-class PremiumGradients {
+class AppGradients {
   static const List<Color> lightBackground = [
     Color(0xFFFFFBFE),
     Color(0xFFFFE0E9), // Gentle soft rose

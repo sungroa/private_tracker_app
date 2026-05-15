@@ -7,6 +7,7 @@ import '../../domain/services/partner_sharing_service.dart';
 import '../providers/cycle_provider.dart';
 import '../providers/symptom_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/glass_background.dart';
 
 class SharePredictionPage extends StatefulWidget {
   const SharePredictionPage({super.key});
@@ -66,10 +67,11 @@ class _SharePredictionPageState extends State<SharePredictionPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
+    return GlassBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -195,7 +197,8 @@ class _SharePredictionPageState extends State<SharePredictionPage> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }
 

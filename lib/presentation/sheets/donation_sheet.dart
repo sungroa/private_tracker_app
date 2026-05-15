@@ -191,7 +191,7 @@ class _ProductCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: product.isSubscription
-                ? PremiumGradients.accentGradient
+                ? AppGradients.accentGradient
                 : [
                     primary.withValues(alpha: 0.1),
                     primary.withValues(alpha: 0.05),

@@ -7,6 +7,7 @@ import '../../domain/models/shared_phase_data.dart';
 import '../../data/storage/partner_storage_service.dart';
 import '../theme/app_theme.dart';
 import 'package:provider/provider.dart';
+import '../widgets/glass_background.dart';
 
 class PartnerModePage extends StatefulWidget {
   final String? initialPayload;
@@ -116,42 +117,44 @@ class _PartnerModePageState extends State<PartnerModePage> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
+    return GlassBackground(
+      child: Scaffold(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.close_rounded, color: primary),
-        ),
-        actions: [
-          if (_data != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: IconButton(
-                onPressed: _resetApp,
-                icon: Icon(Icons.refresh_rounded, color: primary.withValues(alpha: 0.6)),
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: Icon(Icons.close_rounded, color: primary),
+          ),
+          actions: [
+            if (_data != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: IconButton(
+                  onPressed: _resetApp,
+                  icon: Icon(Icons.refresh_rounded, color: primary.withValues(alpha: 0.6)),
+                ),
               ),
+          ],
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (_data == null && !_isScanning) 
+                  _buildEmptyState(isDark, primary)
+                else if (_isScanning)
+                  _buildScanner(isDark, primary)
+                else if (_data != null)
+                  _buildDashboard(isDark, primary),
+                
+                const SizedBox(height: 32),
+              ],
             ),
-        ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_data == null && !_isScanning) 
-                _buildEmptyState(isDark, primary)
-              else if (_isScanning)
-                _buildScanner(isDark, primary)
-              else if (_data != null)
-                _buildDashboard(isDark, primary),
-              
-              const SizedBox(height: 32),
-            ],
           ),
         ),
       ),
