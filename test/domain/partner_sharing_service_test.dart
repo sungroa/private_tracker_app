@@ -1,13 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/domain/services/partner_sharing_service.dart';
 import 'package:private_tracker_app/domain/models/shared_phase_data.dart';
+import 'package:private_tracker_app/domain/cycle_calculator.dart';
+import 'package:private_tracker_app/core/services/clock.dart';
 import '../helpers/test_model_factory.dart';
 
 void main() {
   late PartnerSharingService service;
 
   setUp(() {
-    service = PartnerSharingService();
+    final clock = SystemClock();
+    final cycleCalculator = CycleCalculator(clock);
+    service = PartnerSharingService(cycleCalculator, clock);
   });
 
   group('PartnerSharingService Tests', () {

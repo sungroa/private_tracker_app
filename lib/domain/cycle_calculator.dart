@@ -2,7 +2,7 @@ import 'dart:developer' as developer;
 import 'models/cycle_log.dart';
 import 'calculators/cycle_length_forecaster.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
-
+import '../core/services/clock.dart';
 
 /// Core domain logic for menstruation cycle analysis and predictions.
 /// 
@@ -16,10 +16,14 @@ class CycleCalculator {
   // Average cycle length (default 28 days)
   static const int defaultCycleLength = 28;
 
+  final IClock _clock;
+
+  CycleCalculator(this._clock);
+
   /// Predicts the next period start date based on previous logs.
   /// If [symptomLogs] are provided, it attempts to mathematically confirm ovulation
   /// using the 3-over-6 rule and overrides the average prediction.
-  static DateTime? predictNextPeriod(
+  DateTime? predictNextPeriod(
     List<CycleLog> cycleLogs, [
     List<SymptomLog>? symptomLogs,
     double threshold = 0.2,
@@ -83,7 +87,7 @@ class CycleCalculator {
   /// Scans chronologically for 3 consecutive days where BBT is [threshold] higher
   /// than the maximum of the preceding 6 consecutive days.
   /// Returns the day BEFORE the temperature shift (the confirmed ovulation date).
-  static DateTime? confirmOvulation(List<SymptomLog> logs, {double threshold = 0.2}) {
+  DateTime? confirmOvulation(List<SymptomLog> logs, {double threshold = 0.2}) {
     if (logs.length < 9) return null;
 
     final sorted = List<SymptomLog>.from(logs)
@@ -130,24 +134,25 @@ class CycleCalculator {
   }
 
   /// Calculates the current cycle day (1, 2, 3...)
-  static int currentCycleDay(DateTime lastPeriodStart) {
-    return DateTime.now().difference(lastPeriodStart).inDays + 1;
+  int currentCycleDay(DateTime lastPeriodStart) {
+    return _clock.now().difference(lastPeriodStart).inDays + 1;
   }
 
   /// Checks if the user is currently in their period.
-  static bool isCurrentlyInPeriod(List<CycleLog> logs) {
+  bool isCurrentlyInPeriod(List<CycleLog> logs) {
     if (logs.isEmpty) return false;
     final sortedLogs = List<CycleLog>.from(logs)
       ..sort((a, b) => b.startDate.compareTo(a.startDate));
     final latest = sortedLogs.first;
 
+    final now = _clock.now();
+
     // Period usually lasts 3-7 days if not ended yet
     if (latest.endDate == null) {
-      final daysSinceStart = DateTime.now().difference(latest.startDate).inDays;
+      final daysSinceStart = now.difference(latest.startDate).inDays;
       return daysSinceStart >= 0 && daysSinceStart < 7;
     }
 
-    final now = DateTime.now();
     return now.isAfter(latest.startDate) && now.isBefore(latest.endDate!.add(const Duration(days: 1)));
   }
 }

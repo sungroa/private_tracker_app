@@ -37,6 +37,9 @@ import 'package:private_tracker_app/data/storage/data_sources/symptom_data_sourc
 import 'package:private_tracker_app/data/storage/data_sources/tag_data_source.dart';
 import 'package:uuid/uuid.dart';
 import 'package:private_tracker_app/domain/models/custom_tag.dart';
+import 'package:private_tracker_app/domain/trends_calculator.dart';
+import 'package:private_tracker_app/domain/cycle_calculator.dart';
+import 'package:private_tracker_app/core/services/clock.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
@@ -160,8 +163,11 @@ void main() {
             ChangeNotifierProvider(create: (_) {
               final cycleRepo = CycleLogRepositoryImpl(cycleDataSource);
               final symptomRepo = SymptomLogRepositoryImpl(symptomDataSource);
+              final clock = SystemClock();
+              final calculator = CycleCalculator(clock);
+              final trendsCalculator = TrendsCalculator(calculator);
               return CycleProvider(
-                GetCycleLogsUseCase(cycleRepo, symptomRepo),
+                GetCycleLogsUseCase(cycleRepo, symptomRepo, trendsCalculator),
                 SaveCycleLogUseCase(cycleRepo),
                 DeleteCycleLogUseCase(cycleRepo),
               );
@@ -238,8 +244,11 @@ void main() {
             ChangeNotifierProvider(create: (_) {
               final cycleRepo = CycleLogRepositoryImpl(cycleDataSource);
               final symptomRepo = SymptomLogRepositoryImpl(symptomDataSource);
+              final clock = SystemClock();
+              final calculator = CycleCalculator(clock);
+              final trendsCalculator = TrendsCalculator(calculator);
               return CycleProvider(
-                GetCycleLogsUseCase(cycleRepo, symptomRepo),
+                GetCycleLogsUseCase(cycleRepo, symptomRepo, trendsCalculator),
                 SaveCycleLogUseCase(cycleRepo),
                 DeleteCycleLogUseCase(cycleRepo),
               );

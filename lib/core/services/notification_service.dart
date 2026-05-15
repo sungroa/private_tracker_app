@@ -4,9 +4,11 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'dart:io' show Platform;
+import 'clock.dart';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin;
+  final IClock _clock;
 
   static const int dailyReminderId = 100;
   static const int periodReminderId = 200;
@@ -14,7 +16,9 @@ class NotificationService {
 
   NotificationService({
     FlutterLocalNotificationsPlugin? notificationsPlugin,
-  }) : _notificationsPlugin = notificationsPlugin ?? FlutterLocalNotificationsPlugin();
+    IClock? clock,
+  }) : _notificationsPlugin = notificationsPlugin ?? FlutterLocalNotificationsPlugin(),
+       _clock = clock ?? SystemClock();
 
   /// Initializes the notification service.
   Future<void> initialize() async {
@@ -83,7 +87,7 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
-    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    final tz.TZDateTime now = tz.TZDateTime.from(_clock.now(), tz.local);
     tz.TZDateTime scheduledDate = tz.TZDateTime(
       tz.local,
       now.year,
@@ -140,7 +144,7 @@ class NotificationService {
     );
 
     // Don't schedule if the date is in the past
-    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) {
+    if (scheduledDate.isBefore(tz.TZDateTime.from(_clock.now(), tz.local))) {
       debugPrint('[PrivacyTracker.Notifications] Skipping notification $id: Scheduled date is in the past.');
       return;
     }
