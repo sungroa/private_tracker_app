@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/domain/cycle_calculator.dart';
 import 'package:private_tracker_app/core/services/clock.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
+import 'package:private_tracker_app/core/utils/date_time_extensions.dart';
 import '../helpers/test_model_factory.dart';
 
 class MockClock implements IClock {
@@ -53,7 +54,7 @@ void main() {
       
       final prediction = calculator.predictNextPeriod(logs);
       // Average of 35 and 30 with exponential decay should be > 32.5 (arithmetic mean)
-      expect(prediction!.difference(logs.first.startDate).inDays, greaterThan(32));
+      expect(prediction!.daysDifference(logs.first.startDate), greaterThan(32));
     });
 
     test('Confirmed Ovulation: Override prediction when BBT shift is detected', () {

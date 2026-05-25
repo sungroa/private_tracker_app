@@ -487,6 +487,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
+        scrollable: true,
         title: Text(title, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
         content: Form(
           key: formKey,

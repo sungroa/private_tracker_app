@@ -27,17 +27,17 @@ void main() {
 
     test('predictNextPeriod with multiple logs should use weighted average', () {
       final logs = [
-        TestModelFactory.createCycleLog(startDate: DateTime(2026, 4, 28)),
+        TestModelFactory.createCycleLog(startDate: DateTime.utc(2026, 4, 28)),
         TestModelFactory.createCycleLog(startDate: DateTime.utc(2026, 3, 29)),
         TestModelFactory.createCycleLog(startDate: DateTime.utc(2026, 3, 1)),
       ];
       
       final prediction = calculator.predictNextPeriod(logs);
-      expect(prediction, DateTime(2026, 4, 28).add(const Duration(days: 29)));
+      expect(prediction, DateTime.utc(2026, 4, 28).add(const Duration(days: 29)));
     });
 
     test('predictNextPeriod should filter outliers with IQR', () {
-      final base = DateTime(2026, 1, 1);
+      final base = DateTime.utc(2026, 1, 1);
       final logs = [
         TestModelFactory.createCycleLog(startDate: base.add(const Duration(days: 157))),
         TestModelFactory.createCycleLog(startDate: base.add(const Duration(days: 129))),
@@ -52,7 +52,7 @@ void main() {
     });
 
     test('predictNextPeriod should apply exponential decay weights', () {
-      final base = DateTime(2026, 1, 1);
+      final base = DateTime.utc(2026, 1, 1);
       final logs = [
         TestModelFactory.createCycleLog(startDate: base.add(const Duration(days: 84))),
         TestModelFactory.createCycleLog(startDate: base.add(const Duration(days: 52))),
@@ -75,7 +75,7 @@ void main() {
     });
 
     test('predictNextPeriod with uniform cycles should keep all values through IQR', () {
-      final base = DateTime(2026, 1, 1);
+      final base = DateTime.utc(2026, 1, 1);
       final logs = [
         TestModelFactory.createCycleLog(startDate: base.add(const Duration(days: 168))),
         TestModelFactory.createCycleLog(startDate: base.add(const Duration(days: 140))),

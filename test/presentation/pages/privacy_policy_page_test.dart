@@ -32,10 +32,10 @@ void main() {
       
       // Wait for FutureBuilder to complete
       await tester.pump(); // Start the future
-      await tester.pump(); // Complete the future
+      await tester.pump(const Duration(milliseconds: 100)); // Complete the future
 
       // Verify AppBar title
-      expect(find.text('Privacy Policy'), findsOneWidget);
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('Privacy Policy')), findsOneWidget);
 
       // Verify specific content from PRIVACY_POLICY.md
       // Note: Markdown uses a scrollable internal view.
@@ -68,7 +68,9 @@ void main() {
 
       // Open page
       await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+      await tester.pump(); // start animation and future
+      await tester.pump(const Duration(milliseconds: 500)); // resolve future and dismiss progress indicator
+      await tester.pumpAndSettle(); // settle transition animation
 
       expect(find.byType(PrivacyPolicyPage), findsOneWidget);
 

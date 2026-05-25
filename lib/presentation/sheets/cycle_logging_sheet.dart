@@ -37,7 +37,8 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     _startDate = widget.cycleLog?.startDate ?? widget.selectedDay;
     _endDate = widget.cycleLog?.endDate;
     _flowIntensity = widget.cycleLog?.flowIntensity ?? 3;
-    _notesController = TextEditingController(text: widget.cycleLog?.notes ?? "");
+    _notesController =
+        TextEditingController(text: widget.cycleLog?.notes ?? "");
   }
 
   @override
@@ -58,9 +59,15 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
       lastDate: DateTime(2030),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: isDark 
-              ? ColorScheme.dark(primary: primary, onPrimary: AppTheme.backgroundDarkColor, surface: AppTheme.backgroundDarkColor)
-              : ColorScheme.light(primary: primary, onPrimary: Colors.white, onSurface: primary),
+          colorScheme: isDark
+              ? ColorScheme.dark(
+                  primary: primary,
+                  onPrimary: AppTheme.backgroundDarkColor,
+                  surface: AppTheme.backgroundDarkColor)
+              : ColorScheme.light(
+                  primary: primary,
+                  onPrimary: Colors.white,
+                  onSurface: primary),
         ),
         child: child!,
       ),
@@ -80,15 +87,22 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
       lastDate: DateTime(2030),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: isDark 
-              ? ColorScheme.dark(primary: primary, onPrimary: AppTheme.backgroundDarkColor, surface: AppTheme.backgroundDarkColor)
-              : ColorScheme.light(primary: primary, onPrimary: Colors.white, onSurface: primary),
+          colorScheme: isDark
+              ? ColorScheme.dark(
+                  primary: primary,
+                  onPrimary: AppTheme.backgroundDarkColor,
+                  surface: AppTheme.backgroundDarkColor)
+              : ColorScheme.light(
+                  primary: primary,
+                  onPrimary: Colors.white,
+                  onSurface: primary),
         ),
         child: child!,
       ),
     );
     if (picked != null) setState(() => _endDate = picked);
   }
+
   void _onSave() async {
     if (_isSaving) return;
     HapticFeedback.mediumImpact();
@@ -118,14 +132,18 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
   void _onDelete() async {
     if (widget.cycleLog == null) return;
     HapticFeedback.heavyImpact();
-    
+
     final navigator = Navigator.of(context);
     final provider = context.read<CycleProvider>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Delete Cycle Log?", style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
-        content: const Text("This action cannot be undone and will remove this cycle entry from your history.", style: TextStyle(fontFamily: AppTheme.fontFamily)),
+        title: const Text("Delete Cycle Log?",
+            style: TextStyle(
+                fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+        content: const Text(
+            "This action cannot be undone and will remove this cycle entry from your history.",
+            style: TextStyle(fontFamily: AppTheme.fontFamily)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -134,7 +152,8 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-            child: const Text("Delete", style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text("Delete",
+                style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -153,12 +172,18 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
 
   String _getFlowLabel(int value) {
     switch (value) {
-      case 1: return "Spotting";
-      case 2: return "Light";
-      case 3: return "Moderate";
-      case 4: return "Heavy";
-      case 5: return "Very Heavy";
-      default: return "Moderate";
+      case 1:
+        return "Spotting";
+      case 2:
+        return "Light";
+      case 3:
+        return "Moderate";
+      case 4:
+        return "Heavy";
+      case 5:
+        return "Very Heavy";
+      default:
+        return "Moderate";
     }
   }
 
@@ -179,194 +204,227 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.black.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 24),
           ],
-            Text(
-              widget.cycleLog != null ? "Edit Cycle Log" : "Log Your Cycle",
-              style: TextStyle(
-                color: primary,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
+          Text(
+            widget.cycleLog != null ? "Edit Cycle Log" : "Log Your Cycle",
+            style: TextStyle(
+              color: primary,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              fontFamily: AppTheme.fontFamily,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Date Selection
+          Row(
+            children: [
+              Expanded(
+                child: _DateCard(
+                  label: "Started On",
+                  date: _startDate,
+                  onTap: _selectStartDate,
+                  isDark: isDark,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _DateCard(
+                  label: "Ended On",
+                  date: _endDate,
+                  onTap: _selectEndDate,
+                  isOptional: true,
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          // Flow Intensity Slider
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Flow Intensity",
+                style: TextStyle(
+                  color: primary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
+              Text(
+                _getFlowLabel(_flowIntensity),
+                style: TextStyle(
+                  color: primary.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w700,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: primary,
+              inactiveTrackColor: primary.withValues(alpha: 0.1),
+              thumbColor: primary,
+              overlayColor: primary.withValues(alpha: 0.2),
+              valueIndicatorColor: primary,
+              valueIndicatorTextStyle: TextStyle(
+                  color: isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                  fontWeight: FontWeight.bold),
+            ),
+            child: Slider(
+              value: _flowIntensity.toDouble(),
+              min: 1,
+              max: 5,
+              divisions: 4,
+              label: _getFlowLabel(_flowIntensity),
+              onChanged: (value) {
+                if (value.toInt() != _flowIntensity) {
+                  HapticFeedback.selectionClick();
+                }
+                setState(() => _flowIntensity = value.toInt());
+              },
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            "Notes",
+            style: TextStyle(
+              color: primary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: AppTheme.fontFamily,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _notesController,
+            maxLines: 3,
+            style: TextStyle(
+                fontSize: 14,
                 fontFamily: AppTheme.fontFamily,
+                color: isDark ? Colors.white : Colors.black87),
+            decoration: InputDecoration(
+              hintText: "Add notes about your cycle...",
+              hintStyle: TextStyle(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.3)
+                      : Colors.grey),
+              filled: true,
+              fillColor: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.white.withValues(alpha: 0.5),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.white.withValues(alpha: 0.5)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide(color: primary, width: 1.5),
               ),
             ),
-            const SizedBox(height: 16),
-            // Date Selection
-            Row(
-              children: [
-                Expanded(
-                  child: _DateCard(
-                    label: "Started On",
-                    date: _startDate,
-                    onTap: _selectStartDate,
-                    isDark: isDark,
-                  ),
+          ),
+          const SizedBox(height: 48),
+          SizedBox(
+            width: double.infinity,
+            height: 60,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [AppTheme.primaryDarkColor, AppTheme.accentDarkColor]
+                      : [
+                          AppTheme.primaryColor,
+                          AppTheme.primaryColor.withValues(alpha: 0.8)
+                        ],
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _DateCard(
-                    label: "Ended On",
-                    date: _endDate,
-                    onTap: _selectEndDate,
-                    isOptional: true,
-                    isDark: isDark,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            // Flow Intensity Slider
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Flow Intensity",
-                  style: TextStyle(
-                    color: primary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-                Text(
-                  _getFlowLabel(_flowIntensity),
-                  style: TextStyle(
-                    color: primary.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w700,
-                    fontFamily: AppTheme.fontFamily,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                activeTrackColor: primary,
-                inactiveTrackColor: primary.withValues(alpha: 0.1),
-                thumbColor: primary,
-                overlayColor: primary.withValues(alpha: 0.2),
-                valueIndicatorColor: primary,
-                valueIndicatorTextStyle: TextStyle(color: isDark ? AppTheme.backgroundDarkColor : Colors.white, fontWeight: FontWeight.bold),
+                boxShadow: [
+                  BoxShadow(
+                    color: primary.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  )
+                ],
               ),
-              child: Slider(
-                value: _flowIntensity.toDouble(),
-                min: 1,
-                max: 5,
-                divisions: 4,
-                label: _getFlowLabel(_flowIntensity),
-                onChanged: (value) {
-                  if (value.toInt() != _flowIntensity) {
-                    HapticFeedback.selectionClick();
-                  }
-                  setState(() => _flowIntensity = value.toInt());
-                },
-              ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              "Notes",
-              style: TextStyle(
-                color: primary,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                fontFamily: AppTheme.fontFamily,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _notesController,
-              maxLines: 3,
-              style: TextStyle(fontSize: 14, fontFamily: AppTheme.fontFamily, color: isDark ? Colors.white : Colors.black87),
-              decoration: InputDecoration(
-                hintText: "Add notes about your cycle...",
-                hintStyle: TextStyle(color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.grey),
-                filled: true,
-                fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.5),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide.none,
+              child: ElevatedButton(
+                onPressed: _onSave,
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24)),
+                  elevation: 0,
+                  backgroundColor: Colors.transparent,
+                  foregroundColor:
+                      isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                  shadowColor: Colors.transparent,
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.5)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: primary, width: 1.5),
-                ),
-              ),
-            ),
-            const SizedBox(height: 48),
-            SizedBox(
-              width: double.infinity,
-              height: 60,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  gradient: LinearGradient(
-                    colors: isDark 
-                        ? [AppTheme.primaryDarkColor, AppTheme.accentDarkColor] 
-                        : [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.8)],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primary.withValues(alpha: 0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    )
-                  ],
-                ),
-                child: ElevatedButton(
-                  onPressed: _onSave,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                    elevation: 0,
-                    backgroundColor: Colors.transparent,
-                    foregroundColor: isDark ? AppTheme.backgroundDarkColor : Colors.white,
-                    shadowColor: Colors.transparent,
-                  ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Text(
-                          widget.cycleLog != null ? "Save Changes" : "Add Cycle Log",
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18, fontFamily: AppTheme.fontFamily),
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
-                ),
+                      )
+                    : Text(
+                        widget.cycleLog != null
+                            ? "Save Changes"
+                            : "Add Cycle Log",
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                            fontFamily: AppTheme.fontFamily),
+                      ),
               ),
             ),
-            if (_endDate != null) ...[
-              const SizedBox(height: 12),
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    setState(() => _endDate = null);
-                  },
-                  child: const Text("Still in progress? Clear end date", style: TextStyle(color: Colors.redAccent, fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.w600)),
-                ),
+          ),
+          if (_endDate != null) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  setState(() => _endDate = null);
+                },
+                child: const Text("Still in progress? Clear end date",
+                    style: TextStyle(
+                        color: Colors.redAccent,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.w600)),
               ),
-            ],
-            if (widget.cycleLog != null) ...[
-              const SizedBox(height: 8),
-              Center(
-                child: TextButton(
-                  onPressed: _onDelete,
-                  child: const Text("Delete Cycle Log", style: TextStyle(color: Colors.redAccent, fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
-                ),
+            ),
+          ],
+          if (widget.cycleLog != null) ...[
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton(
+                onPressed: _onDelete,
+                child: const Text("Delete Cycle Log",
+                    style: TextStyle(
+                        color: Colors.redAccent,
+                        fontFamily: AppTheme.fontFamily,
+                        fontWeight: FontWeight.bold)),
               ),
-            ],
+            ),
+          ],
         ],
       ),
     );
@@ -410,7 +468,7 @@ class _DateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -423,7 +481,9 @@ class _DateCard extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.grey[600],
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.5)
+                    : Colors.grey[600],
                 fontWeight: FontWeight.w600,
                 fontFamily: AppTheme.fontFamily,
               ),
@@ -433,7 +493,11 @@ class _DateCard extends StatelessWidget {
               date != null ? DateFormat('MMM d, y').format(date!) : "Not set",
               style: TextStyle(
                 fontSize: 15,
-                color: date != null ? primary : (isDark ? Colors.white.withValues(alpha: 0.2) : Colors.grey[400]),
+                color: date != null
+                    ? primary
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : Colors.grey[400]),
                 fontWeight: FontWeight.w700,
                 fontFamily: AppTheme.fontFamily,
               ),
