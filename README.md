@@ -91,6 +91,24 @@ flutter build apk --release
 flutter build appbundle --release
 ```
 
+#### 📱 Local Testing with Play Store Installed
+
+Debug builds use an `applicationIdSuffix` of `.dev`, which means they install as a **separate app** (`com.sry_developer.private_tracker_app.dev`) alongside the Play Store release version. This avoids the `INSTALL_FAILED_UPDATE_INCOMPATIBLE` signature mismatch error.
+
+```bash
+# Run debug build directly on device (coexists with Play Store version)
+flutter run
+
+# Or build and install manually
+flutter build apk --debug
+adb install build/app/outputs/flutter-apk/app-debug.apk
+
+# View logs specifically for the local debug package
+adb logcat --pid=$(adb shell pidof com.sry_developer.private_tracker_app.dev)
+```
+
+> **Note:** Debug and release builds have separate data sandboxes — your Play Store data is never affected by local testing.
+
 ### iOS
 *Note: Requires macOS and Xcode.*
 ```bash
