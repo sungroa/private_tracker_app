@@ -4,7 +4,7 @@ import '../../../domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
 /// A custom grid-based calendar visualization.
-/// 
+///
 /// [CustomCalendarGrid] renders a monthly view of days, including weekday headers.
 /// it is responsible for calculating the grid layout (offsets, total cells) and
 /// mapping domain data ([calendarEventMap], [symptomMap]) to individual [CalendarDayCell]s.
@@ -42,23 +42,28 @@ class CustomCalendarGrid extends StatelessWidget {
   });
 
   /// Standardizes date keys for map lookups.
-  String _formatKey(DateTime date) => 
+  String _formatKey(DateTime date) =>
       "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
   /// Local check if a day is within the predicted bleeding window.
   bool _isPredictedBleeding(DateTime day) {
     if (predictedNextPeriod == null) return false;
     final dateOnly = DateTime(day.year, day.month, day.day);
-    final start = DateTime(predictedNextPeriod!.year, predictedNextPeriod!.month, predictedNextPeriod!.day);
+    final start = DateTime(predictedNextPeriod!.year,
+        predictedNextPeriod!.month, predictedNextPeriod!.day);
     final end = start.add(const Duration(days: 4));
-    return (dateOnly.isAtSameMomentAs(start) || (dateOnly.isAfter(start) && dateOnly.isBefore(end.add(const Duration(days: 1)))));
+    return (dateOnly.isAtSameMomentAs(start) ||
+        (dateOnly.isAfter(start) &&
+            dateOnly.isBefore(end.add(const Duration(days: 1)))));
   }
 
   /// Local check if a day is within the predicted fertility dates.
   bool _isPredictedFertility(DateTime day) {
     final dateOnly = DateTime(day.year, day.month, day.day);
-    return predictedFertilityDates.any((d) => 
-      d.year == dateOnly.year && d.month == dateOnly.month && d.day == dateOnly.day);
+    return predictedFertilityDates.any((d) =>
+        d.year == dateOnly.year &&
+        d.month == dateOnly.month &&
+        d.day == dateOnly.day);
   }
 
   /// Checks if there is an active menstruation log recorded for this day.
@@ -71,11 +76,13 @@ class CustomCalendarGrid extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // 1. Calculate grid dimensions
-    final daysInMonth = DateUtils.getDaysInMonth(focusedDay.year, focusedDay.month);
-    
+    final daysInMonth =
+        DateUtils.getDaysInMonth(focusedDay.year, focusedDay.month);
+
     // Determine the weekday offset for the 1st of the month.
-    final firstDayOffset = DateUtils.firstDayOffset(focusedDay.year, focusedDay.month, MaterialLocalizations.of(context));
-    
+    final firstDayOffset = DateUtils.firstDayOffset(
+        focusedDay.year, focusedDay.month, MaterialLocalizations.of(context));
+
     // Always render 6 full rows (42 cells) to prevent layout overflow during
     // month transitions. A dynamic 35/42 switch causes a transient frame where
     // the AnimatedContainer padding is mid-animation but the grid height has
@@ -98,13 +105,14 @@ class CustomCalendarGrid extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        
+
         // The Calendar Grid
         // Spacing of 2px (reduced from 4px) ensures each cell is ~44+dp
         // on standard screens, meeting Material touch target guidelines.
         GridView.builder(
           shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(), // Handled by parent ListView
+          physics:
+              const NeverScrollableScrollPhysics(), // Handled by parent ListView
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
             mainAxisSpacing: 2,
@@ -114,36 +122,30 @@ class CustomCalendarGrid extends StatelessWidget {
           itemBuilder: (context, index) {
             final dayNumber = index - firstDayOffset + 1;
             final isInside = dayNumber > 0 && dayNumber <= daysInMonth;
-            
-            if (!isInside) {
-              // Days belonging to the previous or next month (rendered in a subtle grey)
-              final date = DateTime(focusedDay.year, focusedDay.month, dayNumber);
-              return CalendarDayCell(
-                date: date,
-                isOutsideMonth: true,
-                onTap: () => onDaySelected(date),
-              );
-            }
 
-            final currentDay = DateTime(focusedDay.year, focusedDay.month, dayNumber);
-            
+            final currentDay =
+                DateTime(focusedDay.year, focusedDay.month, dayNumber);
+
             // 2. Resolve visualization states
             final bleeding = _isBleeding(currentDay);
             final predictedBleeding = _isPredictedBleeding(currentDay);
             final predictedFertility = _isPredictedFertility(currentDay);
-            
+
             // Calculate span boundaries for the "pill-shaped" multi-day bleeding indicator.
-            final prevBleeding = _isBleeding(currentDay.subtract(const Duration(days: 1)));
-            final nextBleeding = _isBleeding(currentDay.add(const Duration(days: 1)));
+            final prevBleeding =
+                _isBleeding(currentDay.subtract(const Duration(days: 1)));
+            final nextBleeding =
+                _isBleeding(currentDay.add(const Duration(days: 1)));
 
             return CalendarDayCell(
               date: currentDay,
+              isOutsideMonth: !isInside,
               isBleeding: bleeding,
               isPredictedBleeding: predictedBleeding,
               isPredictedFertility: predictedFertility,
               isStartOfSpan: bleeding && !prevBleeding,
               isEndOfSpan: bleeding && !nextBleeding,
-              isSelected: selectedDay != null && 
+              isSelected: selectedDay != null &&
                   selectedDay!.year == currentDay.year &&
                   selectedDay!.month == currentDay.month &&
                   selectedDay!.day == currentDay.day,

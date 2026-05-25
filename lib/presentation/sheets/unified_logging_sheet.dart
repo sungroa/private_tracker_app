@@ -4,14 +4,15 @@ import 'symptom_logging_sheet.dart';
 import 'cycle_logging_sheet.dart';
 import '../../domain/models/cycle_log.dart';
 import '../theme/app_theme.dart';
+import 'dart:math' as math;
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
-
-enum LoggingType { 
+enum LoggingType {
   /// Daily log
-  daily, 
+  daily,
+
   /// Cycle log
-  cycle 
+  cycle
 }
 
 class UnifiedLoggingSheet extends StatefulWidget {
@@ -56,7 +57,12 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
       constraints: BoxConstraints(
         maxHeight: screenHeight * 0.9, // Slightly taller to give more room
       ),
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      padding: EdgeInsets.only(
+        bottom: math.max(
+          MediaQuery.of(context).viewInsets.bottom,
+          MediaQuery.of(context).padding.bottom,
+        ),
+      ),
       decoration: BoxDecoration(
         color: isDark ? AppTheme.backgroundDarkColor : AppTheme.backgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
@@ -76,7 +82,9 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -87,7 +95,9 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.grey.withValues(alpha: 0.08),
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : Colors.grey.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -114,7 +124,7 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
               ),
             ),
           ),
-          
+
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
@@ -178,8 +188,8 @@ class _SwitcherButton extends StatelessWidget {
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected 
-              ? (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white) 
+          color: isSelected
+              ? (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           boxShadow: isSelected && !isDark
@@ -198,9 +208,11 @@ class _SwitcherButton extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: isSelected 
-                  ? (isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor) 
-                  : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[500]),
+              color: isSelected
+                  ? (isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor)
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.4)
+                      : Colors.grey[500]),
             ),
             const SizedBox(width: 8),
             Text(
@@ -208,9 +220,11 @@ class _SwitcherButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected 
-                    ? (isDark ? Colors.white : AppTheme.primaryColor) 
-                    : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[600]),
+                color: isSelected
+                    ? (isDark ? Colors.white : AppTheme.primaryColor)
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.4)
+                        : Colors.grey[600]),
                 fontFamily: AppTheme.fontFamily,
               ),
             ),
