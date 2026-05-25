@@ -73,6 +73,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix ".dev"
+            versionNameSuffix "-dev"
+        }
         release {
             // Use the release signing config if key.properties exists, otherwise fallback to debug.
             signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
