@@ -3,6 +3,7 @@ import 'models/cycle_log.dart';
 import 'calculators/cycle_length_forecaster.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 import '../core/services/clock.dart';
+import '../core/utils/date_time_extensions.dart';
 
 /// Core domain logic for menstruation cycle analysis and predictions.
 /// 
@@ -46,18 +47,31 @@ class CycleCalculator {
       final confirmedOvulation = confirmOvulation(currentCycleEvents, threshold: threshold);
       if (confirmedOvulation != null) {
         // STM standard: Luteal phase is consistently ~14 days
-        return confirmedOvulation.add(const Duration(days: 14));
+        return confirmedOvulation.isUtc
+            ? DateTime.utc(
+                confirmedOvulation.year,
+                confirmedOvulation.month,
+                confirmedOvulation.day + 14,
+              )
+            : DateTime(
+                confirmedOvulation.year,
+                confirmedOvulation.month,
+                confirmedOvulation.day + 14,
+              );
       }
     }
 
     if (sortedCycleEvents.length < 2) {
-      return sortedCycleEvents.first.startDate.add(const Duration(days: defaultCycleLength));
+      final start = sortedCycleEvents.first.startDate;
+      return start.isUtc
+          ? DateTime.utc(start.year, start.month, start.day + defaultCycleLength)
+          : DateTime(start.year, start.month, start.day + defaultCycleLength);
     }
 
     // 2. Fallback to historical Hybrid ARIMA pipeline
     final lengths = <int>[];
     for (int i = 0; i < sortedCycleEvents.length - 1; i++) {
-      final length = sortedCycleEvents[i].startDate.difference(sortedCycleEvents[i + 1].startDate).inDays;
+      final length = sortedCycleEvents[i].startDate.daysDifference(sortedCycleEvents[i + 1].startDate);
       
       // Data Cleaning: Ignore "micro-cycles" < 15 days which are likely logging errors 
       // or mid-cycle spotting, as they aggressively skew ARIMA/Average models.
@@ -70,14 +84,20 @@ class CycleCalculator {
 
     if (lengths.isEmpty) {
       developer.log('No valid cycle history after filtering, using default 28.', name: 'PrivacyTracker.Prediction');
-      return sortedCycleEvents.first.startDate.add(const Duration(days: defaultCycleLength));
+      final start = sortedCycleEvents.first.startDate;
+      return start.isUtc
+          ? DateTime.utc(start.year, start.month, start.day + defaultCycleLength)
+          : DateTime(start.year, start.month, start.day + defaultCycleLength);
     }
 
     // Forecaster expects oldest to newest
     final chronologicalLengths = lengths.reversed.toList();
     final predictedLength = CycleLengthForecaster.predictNextLength(chronologicalLengths);
 
-    final nextPeriod = sortedCycleEvents.first.startDate.add(Duration(days: predictedLength));
+    final start = sortedCycleEvents.first.startDate;
+    final nextPeriod = start.isUtc
+        ? DateTime.utc(start.year, start.month, start.day + predictedLength)
+        : DateTime(start.year, start.month, start.day + predictedLength);
     developer.log('Calculated Next Period: ${nextPeriod.toIso8601String()} (Length: $predictedLength)', name: 'PrivacyTracker.Prediction');
 
     return nextPeriod;
@@ -109,7 +129,7 @@ class CycleCalculator {
       // Check for continuity in dates (must be consecutive logs)
       bool isConsecutive = true;
       for (int j = i - 6; j < i + 2; j++) {
-        if (sorted[j + 1].date.difference(sorted[j].date).inDays != 1) {
+        if (sorted[j + 1].date.daysDifference(sorted[j].date) != 1) {
           isConsecutive = false;
           break;
         }
@@ -135,7 +155,7 @@ class CycleCalculator {
 
   /// Calculates the current cycle day (1, 2, 3...)
   int currentCycleDay(DateTime lastPeriodStart) {
-    return _clock.now().difference(lastPeriodStart).inDays + 1;
+    return _clock.now().daysDifference(lastPeriodStart) + 1;
   }
 
   /// Checks if the user is currently in their period.
@@ -149,10 +169,11 @@ class CycleCalculator {
 
     // Period usually lasts 3-7 days if not ended yet
     if (latest.endDate == null) {
-      final daysSinceStart = now.difference(latest.startDate).inDays;
+      final daysSinceStart = now.daysDifference(latest.startDate);
       return daysSinceStart >= 0 && daysSinceStart < 7;
     }
 
-    return now.isAfter(latest.startDate) && now.isBefore(latest.endDate!.add(const Duration(days: 1)));
+    final end = latest.endDate!;
+    return now.isAfter(latest.startDate) && now.isBefore(DateTime(end.year, end.month, end.day + 1));
   }
 }

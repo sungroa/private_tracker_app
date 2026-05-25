@@ -125,7 +125,12 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         bottomNavigationBar: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 20,
+            bottom: 20 + MediaQuery.of(context).padding.bottom,
+          ),
           child: Container(
             decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 32).copyWith(
               boxShadow: [
