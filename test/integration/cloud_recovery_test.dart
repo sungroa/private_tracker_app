@@ -8,7 +8,6 @@ import 'package:private_tracker_app/core/services/auth_service.dart';
 import 'package:private_tracker_app/core/services/preferences_service.dart';
 import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
-import 'package:private_tracker_app/presentation/pages/home_page.dart';
 import 'package:private_tracker_app/core/services/service_locator.dart';
 import 'package:private_tracker_app/core/services/notification_service.dart';
 import 'package:private_tracker_app/domain/repositories/donation_repository.dart';

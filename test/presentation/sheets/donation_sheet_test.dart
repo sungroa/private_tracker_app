@@ -54,7 +54,7 @@ void main() {
 
   testWidgets('DonationSheet renders header and products', (WidgetTester tester) async {
     final mockProducts = [
-      DonationProduct(id: '1', name: 'Coffee', description: 'Buy a coffee', formattedPrice: '\$2.00', isSubscription: false),
+      const DonationProduct(id: '1', name: 'Coffee', description: 'Buy a coffee', formattedPrice: '\$2.00', isSubscription: false),
     ];
     when(() => mockRepository.getDonationProducts()).thenAnswer((_) async => mockProducts);
 

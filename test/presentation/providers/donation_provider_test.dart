@@ -32,7 +32,7 @@ void main() {
   group('DonationProvider Tests', () {
     test('initialization should load products', () async {
       final mockProducts = [
-        DonationProduct(id: '1', name: 'P1', description: '...', formattedPrice: '\$1', isSubscription: false),
+        const DonationProduct(id: '1', name: 'P1', description: '...', formattedPrice: '\$1', isSubscription: false),
       ];
       when(() => mockRepository.getDonationProducts()).thenAnswer((_) async => mockProducts);
 
@@ -47,7 +47,7 @@ void main() {
 
     test('loadProducts should update products and clear loading state', () async {
       final mockProducts = [
-        DonationProduct(id: '1', name: 'P1', description: '...', formattedPrice: '\$1', isSubscription: false),
+        const DonationProduct(id: '1', name: 'P1', description: '...', formattedPrice: '\$1', isSubscription: false),
       ];
       when(() => mockRepository.getDonationProducts()).thenAnswer((_) async => mockProducts);
 
@@ -70,7 +70,7 @@ void main() {
     });
 
     test('purchase should set error if repository fails', () async {
-      final product = DonationProduct(id: '1', name: 'P1', description: '...', formattedPrice: '\$1', isSubscription: false);
+      const product = DonationProduct(id: '1', name: 'P1', description: '...', formattedPrice: '\$1', isSubscription: false);
       when(() => mockRepository.purchase(product)).thenAnswer((_) async => false);
 
       initProvider();
