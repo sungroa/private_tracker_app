@@ -52,3 +52,7 @@ coverage/
 
 # Agent internal files
 .agent/
+
+# Temporary log files
+test_output.txt
+logcat_latest.txt
