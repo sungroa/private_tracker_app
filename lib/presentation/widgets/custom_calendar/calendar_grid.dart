@@ -76,8 +76,11 @@ class CustomCalendarGrid extends StatelessWidget {
     // Determine the weekday offset for the 1st of the month.
     final firstDayOffset = DateUtils.firstDayOffset(focusedDay.year, focusedDay.month, MaterialLocalizations.of(context));
     
-    // Ensure the grid is always 5 or 6 full rows (35 or 42 cells) to prevent jitter during month transitions.
-    final totalCells = (daysInMonth + firstDayOffset <= 35) ? 35 : 42;
+    // Always render 6 full rows (42 cells) to prevent layout overflow during
+    // month transitions. A dynamic 35/42 switch causes a transient frame where
+    // the AnimatedContainer padding is mid-animation but the grid height has
+    // already snapped, producing a brief overflow error.
+    const totalCells = 42;
 
     return Column(
       children: [

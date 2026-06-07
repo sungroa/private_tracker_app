@@ -220,8 +220,12 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                       // Stack allows overlaying the "Today" FAB on the calendar card.
                       child: Stack(
                         children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
+                          // Use a static Container for decoration (never animates)
+                          // + AnimatedPadding for the only animated property.
+                          // Previously an AnimatedContainer tried to lerp the
+                          // BoxDecoration each frame, causing transient errors
+                          // in BoxShadow.lerpList during month transitions.
+                          Container(
                             decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 32).copyWith(
                               boxShadow: [
                                 BoxShadow(
@@ -231,6 +235,9 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                                 )
                               ],
                             ),
+                            child: AnimatedPadding(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
                             padding: EdgeInsets.fromLTRB(20, 20, 20, _isCurrentMonth ? 20 : 60),
                             child: Column(
                               children: [
@@ -304,55 +311,60 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                                 ),
                               ],
                             ),
-                          ),
+                          ), // AnimatedPadding
+                          ), // Container
 
                           // "Return to Today" Glassmorphic Mini-FAB
+                          // NOTE: The BackdropFilter subtree is conditionally removed from the
+                          // tree when on the current month. Keeping it mounted at opacity 0
+                          // caused a transient compositing error on Android during the layout
+                          // transition (AnimatedContainer padding + grid row count change).
                           Positioned(
                             bottom: 12,
                             right: 12,
-                            child: IgnorePointer(
-                              ignoring: _isCurrentMonth,
-                              child: AnimatedOpacity(
-                                opacity: _isCurrentMonth ? 0.0 : 1.0,
-                                duration: const Duration(milliseconds: 250),
-                                curve: Curves.easeInOut,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(14),
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                                    child: Container(
-                                      decoration: AppTheme.glassFabDecoration(isDark: isDark),
-                                      child: Material(
-                                        color: Colors.transparent,
-                                        child: InkWell(
-                                          borderRadius: BorderRadius.circular(14),
-                                          onTap: _returnToToday,
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Icons.today_rounded, color: primary, size: 18),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  'TODAY',
-                                                  style: TextStyle(
-                                                    color: primary,
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w800,
-                                                    letterSpacing: 1,
-                                                    fontFamily: AppTheme.fontFamily,
-                                                  ),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 250),
+                              switchInCurve: Curves.easeInOut,
+                              switchOutCurve: Curves.easeInOut,
+                              child: _isCurrentMonth
+                                  ? const SizedBox.shrink(key: ValueKey('empty'))
+                                  : ClipRRect(
+                                      key: const ValueKey('todayFab'),
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: BackdropFilter(
+                                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                        child: Container(
+                                          decoration: AppTheme.glassFabDecoration(isDark: isDark),
+                                          child: Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              borderRadius: BorderRadius.circular(14),
+                                              onTap: _returnToToday,
+                                              child: Padding(
+                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.today_rounded, color: primary, size: 18),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      'TODAY',
+                                                      style: TextStyle(
+                                                        color: primary,
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.w800,
+                                                        letterSpacing: 1,
+                                                        fontFamily: AppTheme.fontFamily,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                              ),
                             ),
                           ),
                         ],

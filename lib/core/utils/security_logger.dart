@@ -27,6 +27,13 @@ class SecurityLogger {
       if (sensitiveContext != null) {
         developer.log('🔍 Context: $sensitiveContext', name: _tag);
       }
+      debugPrint('[$_tag] 🚨 $message');
+      if (error != null) {
+        debugPrint('[$_tag] 🛑 Error: $error');
+      }
+      if (stackTrace != null) {
+        debugPrint('[$_tag] 🥞 StackTrace:\n$stackTrace');
+      }
     } else {
       // Production: Log ONLY the message and error (excluding sensitiveContext)
       // We use debugPrint which typically reaches logcat under the 'flutter' tag.

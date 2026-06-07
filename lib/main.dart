@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 import 'core/services/auth_service.dart';
@@ -42,6 +43,28 @@ const _kGoogleServerClientId =
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // --- Logcat-visible error handlers ---
+  // Flutter framework errors (layout overflows, render exceptions, etc.) only
+  // go to the Dart VM service by default.  Routing them through debugPrint
+  // ensures they appear in `adb logcat` for easier on-device debugging.
+  final defaultOnError = FlutterError.onError;
+  FlutterError.onError = (FlutterErrorDetails details) {
+    debugPrint('[PrivacyTracker.Flutter] ❌ ${details.exceptionAsString()}');
+    debugPrint('[PrivacyTracker.Flutter] 📍 ${details.context?.toString() ?? 'no context'}');
+    if (details.stack != null) {
+      debugPrint('[PrivacyTracker.Flutter] 🥞 ${details.stack}');
+    }
+    // Still run the default handler (which prints to console in debug mode)
+    defaultOnError?.call(details);
+  };
+
+  // Catch async errors that escape the Flutter framework.
+  PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    debugPrint('[PrivacyTracker.Platform] ❌ Unhandled: $error');
+    debugPrint('[PrivacyTracker.Platform] 🥞 $stack');
+    return true; // prevent app crash in debug mode
+  };
 
   // google_sign_in v7 mandates initialize() be awaited ONCE before any
   // API calls and before runApp().
