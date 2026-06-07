@@ -1,0 +1,371 @@
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 47.0.0 (101.0.0 available)
+  analyzer 4.7.0 (13.1.0 available)
+  app_links 6.4.1 (7.1.1 available)
+  archive 3.6.1 (4.0.9 available)
+  build 2.4.1 (4.0.6 available)
+  build_config 1.1.2 (1.3.0 available)
+  build_resolvers 2.0.10 (3.0.4 available)
+  build_runner 2.4.13 (2.15.0 available)
+  build_runner_core 7.2.10 (9.3.2 available)
+  built_value 8.12.5 (8.12.6 available)
+  cli_util 0.4.2 (0.5.1 available)
+  code_assets 1.0.0 (1.2.1 available)
+  dart_style 2.2.4 (3.1.9 available)
+  dbus 0.7.12 (0.7.14 available)
+  file_picker 8.3.7 (11.0.2 available)
+  fl_chart 0.71.0 (1.2.0 available)
+  flutter_launcher_icons 0.13.1 (0.14.4 available)
+  flutter_lints 2.0.3 (6.0.0 available)
+  flutter_local_notifications 21.0.0 (22.0.0 available)
+  flutter_local_notifications_linux 8.0.0 (8.0.1 available)
+  flutter_local_notifications_platform_interface 11.0.0 (12.0.0 available)
+  flutter_local_notifications_windows 3.0.0 (3.1.0 available)
+  flutter_markdown 0.7.7+1 (discontinued replaced by flutter_markdown_plus)
+  flutter_plugin_android_lifecycle 2.0.34 (2.0.35 available)
+  flutter_secure_storage 8.1.0 (10.3.1 available)
+  flutter_secure_storage_linux 1.2.3 (3.0.1 available)
+  flutter_secure_storage_macos 3.1.3 (4.0.0 available)
+  flutter_secure_storage_platform_interface 1.1.2 (2.0.1 available)
+  flutter_secure_storage_web 1.2.1 (2.1.1 available)
+  flutter_secure_storage_windows 2.1.1 (4.2.2 available)
+  flutter_timezone 5.0.2 (5.1.0 available)
+  google_sign_in_android 7.2.10 (7.2.13 available)
+  gtk 2.1.0 (2.2.0 available)
+  hive_generator 1.1.3 (2.0.1 available)
+  hooks 1.0.2 (2.0.2 available)
+  image 4.3.0 (4.9.1 available)
+  in_app_purchase 3.2.3 (3.3.0 available)
+  in_app_purchase_android 0.4.0+10 (0.5.0+2 available)
+  in_app_purchase_platform_interface 1.4.0 (1.4.1 available)
+  in_app_purchase_storekit 0.4.8+1 (0.4.10 available)
+  intl 0.17.0 (0.20.2 available)
+  js 0.6.7 (0.7.2 available)
+  json_annotation 4.11.0 (4.12.0 available)
+  lints 2.1.1 (6.1.0 available)
+  local_auth 2.3.0 (3.0.1 available)
+  local_auth_android 1.0.56 (2.0.9 available)
+  local_auth_darwin 1.6.1 (2.0.3 available)
+  local_auth_windows 1.0.11 (2.0.1 available)
+  matcher 0.12.19 (0.12.20 available)
+  meta 1.17.0 (1.18.3 available)
+  mobile_scanner 5.2.3 (7.2.0 available)
+  mocktail 1.0.4 (1.0.5 available)
+  native_toolchain_c 0.17.6 (0.19.1 available)
+  objective_c 9.3.0 (9.4.1 available)
+  path_provider_android 2.2.23 (2.3.1 available)
+  pointycastle 3.9.1 (4.0.0 available)
+  qr 3.0.2 (4.0.0 available)
+  share_plus 12.0.2 (13.1.0 available)
+  share_plus_platform_interface 6.1.0 (7.1.0 available)
+  shared_preferences_android 2.4.23 (2.4.25 available)
+  shelf_web_socket 2.0.1 (3.0.0 available)
+  source_gen 1.2.6 (4.2.3 available)
+  source_helper 1.3.3 (1.3.12 available)
+  test_api 0.7.10 (0.7.12 available)
+  url_launcher_web 2.4.2 (2.4.3 available)
+  vector_math 2.2.0 (2.4.0 available)
+  vm_service 15.0.2 (15.2.0 available)
+  win32 5.15.0 (6.3.0 available)
+  xml 6.6.1 (7.0.1 available)
+Got dependencies!
+1 package is discontinued.
+68 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/sungroa/git/private_tracker_app/test/domain/usecases/tag_use_cases_test.dart
+00:00 +0: /home/sungroa/git/private_tracker_app/test/domain/usecases/tag_use_cases_test.dart: (setUpAll)
+00:00 +0: /home/sungroa/git/private_tracker_app/test/domain/usecases/tag_use_cases_test.dart: AddTagUseCase Tests execute should save a new tag if name is unique
+00:00 +1: /home/sungroa/git/private_tracker_app/test/domain/usecases/tag_use_cases_test.dart: AddTagUseCase Tests execute should not save if tag name already exists (case-insensitive)
+00:00 +2: /home/sungroa/git/private_tracker_app/test/domain/usecases/tag_use_cases_test.dart: AddTagUseCase Tests execute should trim whitespace when checking for duplicates
+00:00 +3: /home/sungroa/git/private_tracker_app/test/domain/usecases/tag_use_cases_test.dart: DeleteTagUseCase Tests execute should call repository delete
+00:00 +4: /home/sungroa/git/private_tracker_app/test/domain/usecases/tag_use_cases_test.dart: (tearDownAll)
+00:00 +4: /home/sungroa/git/private_tracker_app/test/domain/usecases/deletion_use_cases_test.dart: DeleteCycleLogUseCase Tests execute should call repository delete
+00:00 +5: /home/sungroa/git/private_tracker_app/test/domain/usecases/deletion_use_cases_test.dart: DeleteSymptomLogUseCase Tests execute should call repository delete
+00:00 +6: /home/sungroa/git/private_tracker_app/test/domain/usecases/sync_data_use_case_test.dart: (setUpAll)
+00:00 +6: /home/sungroa/git/private_tracker_app/test/domain/usecases/sync_data_use_case_test.dart: SyncDataUseCase Tests execute should perform initial upload if cloud is empty
+00:00 +7: /home/sungroa/git/private_tracker_app/test/domain/usecases/sync_data_use_case_test.dart: SyncDataUseCase Tests execute should skip if checksums match and no local modifications
+00:00 +8: /home/sungroa/git/private_tracker_app/test/domain/usecases/sync_data_use_case_test.dart: SyncDataUseCase Tests execute should merge and upload if cloud is newer
+00:00 +9: /home/sungroa/git/private_tracker_app/test/domain/usecases/sync_data_use_case_test.dart: (tearDownAll)
+00:01 +9: /home/sungroa/git/private_tracker_app/test/domain/usecases/get_cycle_logs_use_case_test.dart: execute returns AnalysedCycles asynchronously
+00:01 +10: /home/sungroa/git/private_tracker_app/test/domain/usecases/get_cycle_logs_use_case_test.dart: AnalysedCycles does not contain calendarMap
+00:01 +11: /home/sungroa/git/private_tracker_app/test/domain/trends_test.dart: TrendsCalculator Tests calculateAverageCycleLength calculates correctly from multiple logs
+00:01 +12: /home/sungroa/git/private_tracker_app/test/domain/trends_test.dart: TrendsCalculator Tests calculateAveragePeriodDuration calculates correctly from completed logs
+00:01 +13: /home/sungroa/git/private_tracker_app/test/domain/trends_test.dart: TrendsCalculator Tests calculateTopSymptoms counts and sorts correctly
+00:01 +14: /home/sungroa/git/private_tracker_app/test/domain/trends_test.dart: TrendsCalculator Tests getMoodHistory returns sorted points within 30 days
+00:01 +15: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests predictNextPeriod with empty logs should return null
+00:01 +16: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests predictNextPeriod with one log should return startDate + 28 days
+00:01 +17: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests predictNextPeriod with multiple logs should use weighted average
+00:01 +18: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests predictNextPeriod should filter outliers with IQR
+00:01 +19: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests predictNextPeriod should apply exponential decay weights
+00:01 +20: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests isCurrentlyInPeriod should detect active period if no endDate
+00:01 +21: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests isCurrentlyInPeriod should expire after 7 days if no endDate
+00:01 +22: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests predictNextPeriod with uniform cycles should keep all values through IQR
+00:01 +23: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests Ovulation Confirmation (3-over-6 Rule) confirmOvulation returns null if fewer than 9 logs
+00:01 +24: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests Ovulation Confirmation (3-over-6 Rule) confirmOvulation detects valid shift
+00:01 +25: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests Ovulation Confirmation (3-over-6 Rule) confirmOvulation prioritizes most recent shift
+00:01 +26: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests Ovulation Confirmation (3-over-6 Rule) confirmOvulation fails if data is missing
+00:01 +27: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests Prediction Override Tests predictNextPeriod overrides using confirmed ovulation
+00:01 +28: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_test.dart: CycleCalculator Tests Prediction Override Tests predictNextPeriod uses default if no ovulation confirmed
+00:02 +29: /home/sungroa/git/private_tracker_app/test/domain/partner_sharing_service_test.dart: PartnerSharingService Tests generateEncryptedPayload should produce a valid payload and key
+00:02 +30: /home/sungroa/git/private_tracker_app/test/domain/partner_sharing_service_test.dart: PartnerSharingService Tests Encryption/Decryption cycle should preserve data integrity
+00:02 +31: /home/sungroa/git/private_tracker_app/test/domain/partner_sharing_service_test.dart: PartnerSharingService Tests Deep link generation and parsing should be symmetric
+00:02 +32: /home/sungroa/git/private_tracker_app/test/domain/partner_sharing_service_test.dart: PartnerSharingService Tests decryptPayload should throw exception on invalid data
+00:02 +33: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_clock_test.dart: CycleCalculator Clock-Dependent Tests isCurrentlyInPeriod should be true if today is within 7 days of start
+00:02 +34: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_clock_test.dart: CycleCalculator Clock-Dependent Tests isCurrentlyInPeriod should be false if today is 8 days after start
+00:02 +35: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_clock_test.dart: CycleCalculator Clock-Dependent Tests currentCycleDay should return 1 if start date is today
+00:02 +36: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_clock_test.dart: CycleCalculator Clock-Dependent Tests currentCycleDay should return 6 if start date was 5 days ago
+00:02 +37: /home/sungroa/git/private_tracker_app/test/domain/cycle_calculator_clock_test.dart: CycleCalculator Clock-Dependent Tests isCurrentlyInPeriod should handle month boundary correctly
+00:02 +38: /home/sungroa/git/private_tracker_app/test/domain/cycle_prediction_scenarios_test.dart: CycleCalculator Advanced Scenarios Leap Year: Should handle Feb 29 correctly in prediction
+00:02 +39: /home/sungroa/git/private_tracker_app/test/domain/cycle_prediction_scenarios_test.dart: CycleCalculator Advanced Scenarios Irregular Cycles: Weighted average should favor recent trends
+00:02 +40: /home/sungroa/git/private_tracker_app/test/domain/cycle_prediction_scenarios_test.dart: CycleCalculator Advanced Scenarios Confirmed Ovulation: Override prediction when BBT shift is detected
+00:02 +41: /home/sungroa/git/private_tracker_app/test/domain/cycle_prediction_scenarios_test.dart: CycleCalculator Advanced Scenarios Current Phase: Should identify Luteal phase after confirmed ovulation
+00:02 +42: /home/sungroa/git/private_tracker_app/test/domain/cycle_prediction_scenarios_test.dart: CycleCalculator Advanced Scenarios Data Gaps: Should ignore cycles longer than 100 days as outliers when enough data is present
+00:03 +43: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests saveSymptomLog should save with date-based key
+00:03 +44: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests getSymptomLogsForMonth should filter correctly
+00:03 +45: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests saveCycleLog and getCycleLogs should work
+00:03 +46: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests exportDataToCsv should format CSV string correctly
+00:03 +47: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests exportDataToCsv should format CSV string correctly
+00:03 +48: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests exportDataToCsv should format CSV string correctly
+00:03 +49: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests exportDataToCsv should format CSV string correctly
+00:03 +50: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests exportDataToCsv should format CSV string correctly
+00:03 +51: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests exportDataToCsv should format CSV string correctly
+00:03 +52: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests exportDataToCsv should format CSV string correctly
+00:03 +53: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests exportDataToCsv should format CSV string correctly
+00:03 +54: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests exportDataToCsv should format CSV string correctly
+00:03 +55: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests exportDataToCsv should format CSV string correctly
+00:03 +56: /home/sungroa/git/private_tracker_app/test/domain/cycle_length_forecaster_test.dart: CycleLengthForecaster Tests Edge Cases History length > 12 uses only recent 12
+00:03 +57: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests saveTag and deleteTag should work
+00:03 +58: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests Encrypted backup and restore should preserve all data
+00:03 +59: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests Encrypted backup and restore should preserve all data
+00:03 +60: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests Encrypted backup and restore should preserve all data
+00:03 +61: /home/sungroa/git/private_tracker_app/test/domain/storage_test.dart: EncryptedStorageService & BackupOrchestrator Tests Encrypted backup and restore should preserve all data
+00:04 +62: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests (setUpAll)
+00:04 +62: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +63: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +64: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +64: /home/sungroa/git/private_tracker_app/test/core/auth_service_test.dart: AuthService Tests authenticate should return true when PlatformException is NotAvailable
+[PrivacyTracker.Security] 🚨 AuthService: PlatformException during authentication [NotAvailable]
+[PrivacyTracker.Security] 🛑 Error: PlatformException(NotAvailable, null, null, null)
+00:05 +65: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+Smoke test polling [retry 0], found text: SECURE ENVIRONMENT
+[PrivacyTracker.Security] 🚨 Hive.initFlutter failed, falling back to Hive.init('.')
+[PrivacyTracker.Security] 🛑 Error: MissingPluginException(No implementation found for method getApplicationDocumentsDirectory on channel plugins.flutter.io/path_provider)
+Smoke test polling [retry 10], found text: SECURE ENVIRONMENT
+Smoke test polling [retry 20], found text: SECURE ENVIRONMENT
+00:05 +66: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +67: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +68: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +69: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +70: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +71: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +72: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +73: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +74: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +75: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+Smoke test polling [retry 30], found text: SECURE ENVIRONMENT
+00:05 +76: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +77: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +78: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +79: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +80: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+[PrivacyTracker.Notifications] Orchestrator: Period reminder disabled or no prediction, cancelling.
+[PrivacyTracker.Notifications] Orchestrator: Fertility reminder disabled or no prediction, cancelling.
+00:05 +81: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:05 +82: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:06 +83: /home/sungroa/git/private_tracker_app/test/widget_test.dart: App smoke tests App smoke test renders home page
+00:06 +84: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different passphrases
+00:06 +85: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different passphrases
+00:06 +86: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different passphrases
+00:06 +87: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different passphrases
+00:06 +87: /home/sungroa/git/private_tracker_app/test/core/services/notification_service_test.dart: NotificationService Tests scheduleSingleNotification should not schedule if date is in the past
+[PrivacyTracker.Notifications] Skipping notification 1: Scheduled date is in the past.
+00:06 +88: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different passphrases
+00:06 +89: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different passphrases
+00:07 +89: /home/sungroa/git/private_tracker_app/test/core/services/notification_orchestrator_test.dart: NotificationOrchestrator Tests updateScheduledReminders should schedule period reminder if enabled
+[PrivacyTracker.Notifications] Orchestrator: Scheduling period reminder for 2026-05-18T00:00:00.000 at Closure: (BuildContext) => String from Function 'format':.
+[PrivacyTracker.Notifications] Orchestrator: Fertility reminder disabled or no prediction, cancelling.
+00:07 +90: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different passphrases
+00:07 +90: /home/sungroa/git/private_tracker_app/test/core/services/notification_orchestrator_test.dart: NotificationOrchestrator Tests updateScheduledReminders should cancel reminders if disabled
+[PrivacyTracker.Notifications] Orchestrator: Period reminder disabled or no prediction, cancelling.
+[PrivacyTracker.Notifications] Orchestrator: Fertility reminder disabled or no prediction, cancelling.
+00:07 +91: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different passphrases
+00:07 +92: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different salts
+00:08 +93: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different salts
+00:09 +94: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different salts
+00:09 +95: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different salts
+00:09 +96: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different salts
+00:09 +97: /home/sungroa/git/private_tracker_app/test/core/utils/key_derivation_util_test.dart: KeyDerivationUtil deriveKey should produce different output for different salts
+00:09 +98: /home/sungroa/git/private_tracker_app/test/presentation/calendar_test.dart: CustomCalendar Widget Tests CustomCalendarGrid renders correct number of days for April 2026
+00:09 +99: /home/sungroa/git/private_tracker_app/test/presentation/calendar_test.dart: CustomCalendar Widget Tests CustomCalendarGrid renders correct number of days for April 2026
+00:09 +100: /home/sungroa/git/private_tracker_app/test/presentation/calendar_test.dart: CustomCalendar Widget Tests CalendarDayCell shows bleeding span background
+00:09 +101: /home/sungroa/git/private_tracker_app/test/presentation/calendar_test.dart: CustomCalendar Widget Tests Selecting a day triggers onDaySelected callback
+00:10 +102: /home/sungroa/git/private_tracker_app/test/presentation/calendar_test.dart: CustomCalendar Widget Tests Symptom markers are displayed on relevant days
+00:10 +103: /home/sungroa/git/private_tracker_app/test/presentation/calendar_test.dart: CustomCalendar Widget Tests Regression: month transition between 5-row and 6-row months produces no errors
+00:10 +104: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryLineChart Tests renders "No mood data" when empty
+00:11 +105: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryLineChart Tests renders "No mood data" when empty
+00:11 +106: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryLineChart Tests renders "No mood data" when empty
+00:11 +107: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryLineChart Tests renders "No mood data" when empty
+00:11 +108: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryLineChart Tests renders "No mood data" when empty
+00:11 +109: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryLineChart Tests renders "No mood data" when empty
+00:11 +110: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests init() loads state from preferences
+00:11 +111: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryLineChart Tests renders CustomPaint when data is present
+00:11 +112: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryLineChart Tests renders CustomPaint when data is present
+00:11 +112: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests sync() captures error on failure
+[PrivacyTracker.Security] 🚨 Cloud Sync: Orchestration failure
+[PrivacyTracker.Security] 🛑 Error: Exception: Sync failed
+[PrivacyTracker.Security] 🥞 StackTrace:
+#0      When.thenThrow.<anonymous closure> (package:mocktail/src/mocktail.dart:249:7)
+#1      Mock.noSuchMethod (package:mocktail/src/mocktail.dart:131:37)
+#2      MockSyncDataUseCase.execute (file:///home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart:12:7)
+#3      CloudSyncProvider.sync (package:private_tracker_app/presentation/providers/cloud_sync_provider.dart:425:42)
+#4      main.<anonymous closure>.<anonymous closure> (file:///home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart:98:22)
+<asynchronous suspension>
+#5      Declarer.test.<anonymous closure>.<anonymous closure> (package:test_api/src/backend/declarer.dart:253:15)
+<asynchronous suspension>
+#6      Declarer.test.<anonymous closure> (package:test_api/src/backend/declarer.dart:250:11)
+<asynchronous suspension>
+#7      Invoker._waitForOutstandingCallbacks.<anonymous closure> (package:test_api/src/backend/invoker.dart:318:9)
+<asynchronous suspension>
+
+00:11 +113: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryLineChart Tests renders CustomPaint when data is present
+00:11 +114: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests toggleGoogleDrive updates prefs and triggers sync when enabled and passphrase set
+00:11 +115: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryTrendCard Tests renders title, value, and subtitle
+00:11 +116: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryTrendCard Tests renders title, value, and subtitle
+00:11 +117: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryTrendCard Tests renders title, value, and subtitle
+00:11 +118: /home/sungroa/git/private_tracker_app/test/presentation/widgets/summary_widgets_test.dart: SummaryTrendCard Tests renders title, value, and subtitle
+00:11 +119: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase rotates key when old passphrase is correct
+00:12 +120: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase rotates key when old passphrase is correct
+00:12 +121: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase rotates key when old passphrase is correct
+00:12 +122: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase rotates key when old passphrase is correct
+00:12 +123: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase rotates key when old passphrase is correct
+00:12 +124: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase rotates key when old passphrase is correct
+00:12 +125: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase rotates key when old passphrase is correct
+00:12 +126: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase rotates key when old passphrase is correct
+00:12 +127: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase rotates key when old passphrase is correct
+00:12 +128: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase rotates key when old passphrase is correct
+00:12 +129: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase rotates key when old passphrase is correct
+00:13 +130: /home/sungroa/git/private_tracker_app/test/presentation/provider_scope_test.dart: Architecture: Pushed route can access Provider above MaterialApp
+00:14 +130: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests changePassphrase sets error when old passphrase is wrong
+[PrivacyTracker.Security] 🚨 Cloud Sync: Passphrase change failed
+[PrivacyTracker.Security] 🛑 Error: Exception: Integrity check failed: Incorrect key or corrupted backup
+00:14 +131: /home/sungroa/git/private_tracker_app/test/presentation/provider_scope_test.dart: Architecture: Pushed route can access Provider above MaterialApp
+00:14 +131: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests sync() sets isOrphanKey when HMAC fails with no salt anywhere
+[PrivacyTracker.Security] 🚨 Cloud Sync: Orphan key state. Activating recovery UI.
+[PrivacyTracker.Security] 🛑 Error: CloudSyncException: Cloud backup key was lost and cannot be recovered
+00:14 +132: /home/sungroa/git/private_tracker_app/test/presentation/provider_scope_test.dart: Architecture: Pushed route can access Provider above MaterialApp
+00:14 +132: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests overwriteCloudWithLocal() resets isOrphanKey and re-uploads local data
+[PrivacyTracker.Security] 🚨 Cloud Sync: Orphan key state. Activating recovery UI.
+[PrivacyTracker.Security] 🛑 Error: CloudSyncException: Cloud backup key was lost and cannot be recovered
+00:14 +133: /home/sungroa/git/private_tracker_app/test/presentation/provider_scope_test.dart: Architecture: Pushed route can access Provider above MaterialApp
+00:14 +134: /home/sungroa/git/private_tracker_app/test/presentation/pages/summary_trends_page_test.dart: renders "No data available yet" when trends are null
+00:14 +135: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests migrateToPassphrase syncs first then rotates key
+00:14 +135: /home/sungroa/git/private_tracker_app/test/presentation/provider_scope_test.dart: Integration: Pushed route can access PartnerStorageService
+[PrivacyTracker.Notifications] Orchestrator: Period reminder disabled or no prediction, cancelling.
+[PrivacyTracker.Notifications] Orchestrator: Fertility reminder disabled or no prediction, cancelling.
+00:14 +136: /home/sungroa/git/private_tracker_app/test/presentation/providers/cloud_sync_provider_test.dart: CloudSyncProvider Tests migrateToPassphrase syncs first then rotates key
+00:14 +137: /home/sungroa/git/private_tracker_app/test/presentation/provider_scope_test.dart: Integration: Pushed route can access PartnerStorageService
+00:14 +138: /home/sungroa/git/private_tracker_app/test/presentation/provider_scope_test.dart: Integration: Pushed route can access PartnerStorageService
+00:15 +139: /home/sungroa/git/private_tracker_app/test/presentation/pages/settings_page_test.dart: SettingsPage renders correctly
+00:15 +140: /home/sungroa/git/private_tracker_app/test/presentation/pages/settings_page_test.dart: Toggling biometric lock calls auth and prefs
+00:16 +141: /home/sungroa/git/private_tracker_app/test/presentation/pages/settings_page_test.dart: Clicking export data calls storage and shows success
+00:16 +142: /home/sungroa/git/private_tracker_app/test/presentation/pages/tracking_calendar_page_test.dart: Tapping calendar header opens MonthYearPickerSheet
+00:19 +143: /home/sungroa/git/private_tracker_app/test/presentation/pages/tracking_calendar_page_test.dart: Tapping calendar header opens MonthYearPickerSheet
+00:19 +144: /home/sungroa/git/private_tracker_app/test/presentation/pages/share_prediction_page_test.dart: SharePredictionPage renders QR code
+00:19 +145: /home/sungroa/git/private_tracker_app/test/presentation/pages/partner_mode_page_test.dart: PartnerModePage Widget Tests Should display empty state when no data exists
+00:19 +146: /home/sungroa/git/private_tracker_app/test/presentation/pages/partner_mode_page_test.dart: PartnerModePage Widget Tests Should display empty state when no data exists
+00:19 +147: /home/sungroa/git/private_tracker_app/test/presentation/pages/partner_mode_page_test.dart: PartnerModePage Widget Tests Should display empty state when no data exists
+00:20 +148: /home/sungroa/git/private_tracker_app/test/presentation/pages/partner_mode_page_test.dart: PartnerModePage Widget Tests Should display empty state when no data exists
+00:21 +149: /home/sungroa/git/private_tracker_app/test/presentation/sheets_test.dart: Sheet Widget Tests SymptomLoggingSheet shows basic UI
+00:23 +150: /home/sungroa/git/private_tracker_app/test/presentation/sheets/unified_logging_sheet_test.dart: UnifiedLoggingSheet renders and switches tabs
+00:23 +151: /home/sungroa/git/private_tracker_app/test/presentation/sheets/unified_logging_sheet_test.dart: UnifiedLoggingSheet renders and switches tabs
+00:24 +152: /home/sungroa/git/private_tracker_app/test/presentation/sheets/unified_logging_sheet_test.dart: UnifiedLoggingSheet renders and switches tabs
+00:24 +153: /home/sungroa/git/private_tracker_app/test/presentation/sheets/unified_logging_sheet_test.dart: UnifiedLoggingSheet renders and switches tabs
+00:24 +154: /home/sungroa/git/private_tracker_app/test/presentation/sheets/unified_logging_sheet_test.dart: UnifiedLoggingSheet renders and switches tabs
+00:24 +155: /home/sungroa/git/private_tracker_app/test/presentation/sheets_test.dart: Sheet Widget Tests Saving symptom log persists and closes sheet
+00:24 +156: /home/sungroa/git/private_tracker_app/test/presentation/sheets_test.dart: Sheet Widget Tests Saving symptom log persists and closes sheet
+00:25 +157: /home/sungroa/git/private_tracker_app/test/presentation/sheets_test.dart: Sheet Widget Tests Saving cycle log persists and closes sheet
+00:26 +158: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: (setUpAll)
+00:26 +158: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:27 +159: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:27 +160: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:28 +161: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:28 +162: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:28 +163: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:28 +164: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+[PrivacyTracker.Notifications] Orchestrator: Period reminder disabled or no prediction, cancelling.
+[PrivacyTracker.Notifications] Orchestrator: Fertility reminder disabled or no prediction, cancelling.
+00:29 +165: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:29 +165 -1: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:30 +165 -1: /home/sungroa/git/private_tracker_app/test/data/storage/google_drive_sync_repository_test.dart: GoogleDriveSyncRepository fetchLatestCloudChecksum() returns checksum if backup exists [E]
+  CloudSyncException: Failed to fetch latest cloud checksum (Original error: type 'Null' is not a subtype of type 'Future<FileList>')
+  package:private_tracker_app/data/storage/google_drive_sync_repository.dart 352:7   GoogleDriveSyncRepository.fetchLatestCloudMetadata
+  package:private_tracker_app/data/storage/google_drive_sync_repository.dart 308:28  GoogleDriveSyncRepository.fetchLatestCloudChecksum
+  test/data/storage/google_drive_sync_repository_test.dart 85:41                     main.<fn>.<fn>
+  
+00:30 +166 -1: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:30 +167 -1: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:30 +168 -1: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:30 +168 -1: /home/sungroa/git/private_tracker_app/test/data/storage/google_drive_sync_repository_test.dart: GoogleDriveSyncRepository uploadEncryptedBackup() creates new and deletes older backups
+[PrivacyTracker.Security] 🚨 Upload failed
+[PrivacyTracker.Security] 🛑 Error: type 'Null' is not a subtype of type 'Future<FileList>'
+00:30 +168 -2: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:30 +168 -2: /home/sungroa/git/private_tracker_app/test/data/storage/google_drive_sync_repository_test.dart: GoogleDriveSyncRepository uploadEncryptedBackup() creates new and deletes older backups [E]
+  CloudSyncException: Failed to upload backup to cloud storage (Original error: type 'Null' is not a subtype of type 'Future<FileList>')
+  package:private_tracker_app/data/storage/google_drive_sync_repository.dart 213:7  GoogleDriveSyncRepository.uploadEncryptedBackup
+  
+00:30 +168 -2: /home/sungroa/git/private_tracker_app/test/data/storage/google_drive_sync_repository_test.dart: GoogleDriveSyncRepository downloadEncryptedBackup() downloads latest file successfully
+[PrivacyTracker.Security] 🚨 Download failed
+[PrivacyTracker.Security] 🛑 Error: type 'Null' is not a subtype of type 'Future<FileList>'
+00:30 +168 -3: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:30 +168 -3: /home/sungroa/git/private_tracker_app/test/data/storage/google_drive_sync_repository_test.dart: GoogleDriveSyncRepository downloadEncryptedBackup() downloads latest file successfully [E]
+  CloudSyncException: Failed to download backup from cloud storage (Original error: type 'Null' is not a subtype of type 'Future<FileList>')
+  package:private_tracker_app/data/storage/google_drive_sync_repository.dart 257:7  GoogleDriveSyncRepository.downloadEncryptedBackup
+  test/data/storage/google_drive_sync_repository_test.dart 164:38                   main.<fn>.<fn>
+  
+00:30 +168 -3: /home/sungroa/git/private_tracker_app/test/integration/cloud_recovery_test.dart: Cloud Recovery Smoke Test Cloud Recovery flow: Settings shows "Action Required" card
+00:30 +168 -3: /home/sungroa/git/private_tracker_app/test/integration/happy_path_test.dart: Happy Path Integration Tests Full flow: App Launch -> Log Period -> Navigation
+[PrivacyTracker.Notifications] Orchestrator: Period reminder disabled or no prediction, cancelling.
+00:30 +169 -3: /home/sungroa/git/private_tracker_app/test/integration/happy_path_test.dart: Happy Path Integration Tests Full flow: App Launch -> Log Period -> Navigation
+[PrivacyTracker.Notifications] Orchestrator: Fertility reminder disabled or no prediction, cancelling.
+00:31 +170 -3: /home/sungroa/git/private_tracker_app/test/integration/happy_path_test.dart: Happy Path Integration Tests Full flow: App Launch -> Log Period -> Navigation
+00:31 +171 -3: /home/sungroa/git/private_tracker_app/test/integration/happy_path_test.dart: Happy Path Integration Tests Full flow: App Launch -> Log Period -> Navigation
+00:31 +172 -3: /home/sungroa/git/private_tracker_app/test/integration/happy_path_test.dart: Happy Path Integration Tests Full flow: App Launch -> Log Period -> Navigation
+00:31 +173 -3: /home/sungroa/git/private_tracker_app/test/integration/happy_path_test.dart: Happy Path Integration Tests Full flow: App Launch -> Log Period -> Navigation
+00:31 +174 -3: /home/sungroa/git/private_tracker_app/test/integration/happy_path_test.dart: Happy Path Integration Tests Full flow: App Launch -> Log Period -> Navigation
+00:31 +175 -3: /home/sungroa/git/private_tracker_app/test/integration/happy_path_test.dart: Happy Path Integration Tests Full flow: App Launch -> Log Period -> Navigation
+00:31 +176 -3: /home/sungroa/git/private_tracker_app/test/integration/happy_path_test.dart: Happy Path Integration Tests Full flow: App Launch -> Log Period -> Navigation
+00:31 +177 -3: /home/sungroa/git/private_tracker_app/test/integration/happy_path_test.dart: (tearDownAll)
+00:32 +177 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/cycle_log_repository_impl_test.dart: (setUpAll)
+00:32 +177 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/cycle_log_repository_impl_test.dart: CycleLogRepositoryImpl getCycleLogs returns events from storage
+00:32 +178 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/cycle_log_repository_impl_test.dart: CycleLogRepositoryImpl addCycleLog calls storage
+00:32 +179 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/cycle_log_repository_impl_test.dart: CycleLogRepositoryImpl updateCycleLog calls storage save
+00:32 +180 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/cycle_log_repository_impl_test.dart: CycleLogRepositoryImpl deleteCycleLog calls storage delete
+00:32 +181 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/cycle_log_repository_impl_test.dart: (tearDownAll)
+00:33 +181 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/play_billing_donation_repository_test.dart: (setUpAll)
+00:33 +181 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/play_billing_donation_repository_test.dart: PlayBillingDonationRepository Tests getDonationProducts should return mapped products when IAP is available
+00:33 +182 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/play_billing_donation_repository_test.dart: PlayBillingDonationRepository Tests getDonationProducts should return empty list when IAP is unavailable
+PrivacyTracker.Donations: InAppPurchase is NOT available on this device.
+00:33 +183 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/play_billing_donation_repository_test.dart: PlayBillingDonationRepository Tests purchase should call buyConsumable for non-subscription products
+00:33 +184 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/play_billing_donation_repository_test.dart: PlayBillingDonationRepository Tests Successful purchase update should trigger supporter status change
+00:33 +185 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/play_billing_donation_repository_test.dart: (tearDownAll)
+00:33 +185 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/tag_repository_impl_test.dart: (setUpAll)
+00:33 +185 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/tag_repository_impl_test.dart: TagRepositoryImpl Tests getTags should return all tags from data source
+00:33 +186 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/tag_repository_impl_test.dart: TagRepositoryImpl Tests saveTag should delegate to data source
+00:33 +187 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/tag_repository_impl_test.dart: TagRepositoryImpl Tests deleteTag should delegate to data source
+00:33 +188 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/tag_repository_impl_test.dart: (tearDownAll)
+00:33 +188 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/symptom_log_repository_impl_test.dart: (setUpAll)
+00:33 +188 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/symptom_log_repository_impl_test.dart: SymptomLogRepositoryImpl getSymptomLogs returns logs from storage
+00:33 +189 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/symptom_log_repository_impl_test.dart: SymptomLogRepositoryImpl getSymptomLogsForMonth calls storage
+00:33 +190 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/symptom_log_repository_impl_test.dart: SymptomLogRepositoryImpl addSymptomLog calls storage save
+00:33 +191 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/symptom_log_repository_impl_test.dart: SymptomLogRepositoryImpl updateSymptomLog calls storage save
+00:33 +192 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/symptom_log_repository_impl_test.dart: SymptomLogRepositoryImpl deleteSymptomLog calls storage delete
+00:34 +193 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/symptom_log_repository_impl_test.dart: (tearDownAll)
+00:34 +193 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/sync_metadata_repository_impl_test.dart: SyncMetadataRepositoryImpl Tests getLastSyncChecksum returns value from box
+00:34 +194 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/sync_metadata_repository_impl_test.dart: SyncMetadataRepositoryImpl Tests setLastSyncChecksum puts value in box
+00:34 +195 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/sync_metadata_repository_impl_test.dart: SyncMetadataRepositoryImpl Tests setLastSyncChecksum deletes if null
+00:34 +196 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/sync_metadata_repository_impl_test.dart: SyncMetadataRepositoryImpl Tests getLastLocalModified returns value from box
+00:34 +197 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/sync_metadata_repository_impl_test.dart: SyncMetadataRepositoryImpl Tests clearLocalModifiedFlag deletes from box
+00:34 +198 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/sync_metadata_repository_impl_test.dart: SyncMetadataRepositoryImpl Tests getRecoverySalt returns value from box
+00:34 +199 -3: /home/sungroa/git/private_tracker_app/test/data/repositories/sync_metadata_repository_impl_test.dart: SyncMetadataRepositoryImpl Tests setRecoverySalt puts value in box
+00:34 +200 -3: Some tests failed.

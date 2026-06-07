@@ -78,6 +78,7 @@ void main() {
       when(() => fileList.files).thenReturn([mockFile]);
       
       when(() => mockFilesResource.list(
+        q: any(named: 'q'),
         spaces: 'appDataFolder',
         $fields: '*',
       )).thenAnswer((_) async => fileList);
@@ -86,6 +87,7 @@ void main() {
 
       expect(checksum, 'test_checksum_123');
       verify(() => mockFilesResource.list(
+        q: any(named: 'q'),
         spaces: 'appDataFolder',
         $fields: '*',
       )).called(1);
@@ -111,6 +113,7 @@ void main() {
       when(() => fileList.files).thenReturn([oldMockFile, newMockFile]);
       
       when(() => mockFilesResource.list(
+        q: any(named: 'q'),
         spaces: 'appDataFolder',
         $fields: '*',
       )).thenAnswer((_) async => fileList);
@@ -126,6 +129,7 @@ void main() {
       )).called(1);
 
       verify(() => mockFilesResource.list(
+        q: any(named: 'q'),
         spaces: 'appDataFolder',
         $fields: '*',
       )).called(1);
@@ -146,6 +150,7 @@ void main() {
       when(() => fileList.files).thenReturn([mockFile]);
       
       when(() => mockFilesResource.list(
+        q: any(named: 'q'),
         spaces: 'appDataFolder',
         $fields: '*',
       )).thenAnswer((_) async => fileList);
@@ -166,6 +171,7 @@ void main() {
       expect(bytes, [1, 2, 3]);
 
       verify(() => mockFilesResource.list(
+        q: any(named: 'q'),
         spaces: 'appDataFolder',
         $fields: '*',
       )).called(1);

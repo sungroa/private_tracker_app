@@ -2,7 +2,13 @@
 
 A premium, privacy-focused health and cycle tracking application built with Flutter. Designed for zero-knowledge security and a luxury aesthetic.
 
-![Hero Shot](file:///home/sungroa/.gemini/antigravity/brain/86932ca1-504f-4dc9-8f12-7b52df67c1fb/private_tracker_hero_1775545127090.png)
+![Hero Shot](assets/images/hero.png)
+
+## 🚀 Beta Access
+
+Private Tracker is currently in Closed Beta. To try the app, please join our [Beta Testers Google Group](https://groups.google.com/g/private-tracker-app-closed-beta/about).
+
+Once you are a member of the beta group, you can download the app from the [Google Play Store](https://play.google.com/store/apps/details?id=com.sry_developer.private_tracker_app). Note that the Play Store link will only work for users who have joined the beta group.
 
 ## ✨ Feature Highlights
 

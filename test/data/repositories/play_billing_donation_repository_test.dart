@@ -68,7 +68,7 @@ void main() {
     });
 
     test('purchase should call buyConsumable for non-subscription products', () async {
-      final product = DonationProduct(
+      const product = DonationProduct(
         id: 'tip_coffee_consumable',
         name: 'Coffee',
         description: '...',
