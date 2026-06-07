@@ -454,11 +454,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               );
             }
-          } catch (e) {
+          } catch (e, stack) {
+            debugPrint('Failed to restore backup: $e\n$stack');
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Failed to restore backup: Incorrect password or corrupted file'),
+                SnackBar(
+                  content: Text('Failed to restore backup: $e'),
                   backgroundColor: Colors.red,
                 ),
               );

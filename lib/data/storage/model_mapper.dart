@@ -23,7 +23,7 @@ class ModelMapper {
 
   static CycleLog cycleLogFromMap(Map<String, dynamic> map) {
     return CycleLog(
-      id: map['id'] as String,
+      id: map['id']?.toString() ?? '',
       startDate: DateTime.parse(map['startDate']),
       endDate: map['endDate'] != null ? DateTime.parse(map['endDate']) : null,
       notes: map['notes'],
@@ -72,7 +72,7 @@ class ModelMapper {
 
   static SymptomLog symptomLogFromMap(Map<String, dynamic> map) {
     return SymptomLog(
-      id: map['id'] as String,
+      id: map['id']?.toString() ?? '',
       date: DateTime.parse(map['date']),
       symptoms: List<String>.from(map['symptoms']),
       moodRating: map['moodRating'] ?? 3,
@@ -125,7 +125,7 @@ class ModelMapper {
 
   static CustomTag customTagFromMap(Map<String, dynamic> map) {
     return CustomTag(
-      id: map['id'] as String,
+      id: map['id']?.toString() ?? '',
       name: map['name'],
       isDefault: map['isDefault'] ?? false,
       updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : DateTime.now(),

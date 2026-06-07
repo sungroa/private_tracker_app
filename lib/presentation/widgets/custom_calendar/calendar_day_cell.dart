@@ -105,7 +105,7 @@ class _CalendarDayCellState extends State<CalendarDayCell> {
             // Day Circle/Highlight (Animated Glass Orb)
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutBack,
+              curve: Curves.easeOutCubic,
               width: widget.isSelected ? 40 : 36,
               height: widget.isSelected ? 40 : 36,
               decoration: widget.isSelected 

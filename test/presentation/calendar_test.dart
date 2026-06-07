@@ -4,6 +4,19 @@ import 'package:private_tracker_app/presentation/widgets/custom_calendar/calenda
 import 'package:private_tracker_app/presentation/widgets/custom_calendar/calendar_day_cell.dart';
 import '../helpers/test_model_factory.dart';
 
+/// Helper to wrap a [CustomCalendarGrid] in a scrollable scaffold, matching the
+/// production layout in [TrackingCalendarPage].  Without this, the 42-cell grid
+/// overflows the default 600px test viewport.
+Widget _buildTestHarness(Widget child) {
+  return MaterialApp(
+    home: Scaffold(
+      body: SingleChildScrollView(
+        child: child,
+      ),
+    ),
+  );
+}
+
 void main() {
   group('CustomCalendar Widget Tests', () {
     final testMonth = DateTime(2026, 4, 1);
@@ -13,25 +26,22 @@ void main() {
 
     testWidgets('CustomCalendarGrid renders correct number of days for April 2026', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CustomCalendarGrid(
-              focusedDay: testMonth,
-              calendarEventMap: const {},
-              symptomMap: const {},
-              onDaySelected: (_) {},
-            ),
+        _buildTestHarness(
+          CustomCalendarGrid(
+            focusedDay: testMonth,
+            calendarEventMap: const {},
+            symptomMap: const {},
+            onDaySelected: (_) {},
           ),
         ),
       );
 
-      // April 2026 starts on Wednesday (offset 3)
-      // Days in April: 30
-      // Total cells in a 5-week grid (used in code if <= 35) or 6-week:
-      // 3 + 30 = 33. Code uses 35 cells minimum.
+      // April 2026 starts on Wednesday (offset 3), Days in April: 30.
+      // Grid always renders 42 cells (6 full rows) regardless of month
+      // to prevent layout overflow during month transitions.
       
       final dayCells = find.byType(CalendarDayCell);
-      expect(dayCells, findsNWidgets(35));
+      expect(dayCells, findsNWidgets(42));
       
       // Verify April 1st is present and not marked as outside
       // Filter for the one that is NOT outside the month
@@ -80,14 +90,12 @@ void main() {
     testWidgets('Selecting a day triggers onDaySelected callback', (WidgetTester tester) async {
       DateTime? selected;
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CustomCalendarGrid(
-              focusedDay: testMonth,
-              calendarEventMap: const {},
-              symptomMap: const {},
-              onDaySelected: (day) => selected = day,
-            ),
+        _buildTestHarness(
+          CustomCalendarGrid(
+            focusedDay: testMonth,
+            calendarEventMap: const {},
+            symptomMap: const {},
+            onDaySelected: (day) => selected = day,
           ),
         ),
       );
@@ -109,20 +117,74 @@ void main() {
       };
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CustomCalendarGrid(
-              focusedDay: testMonth,
-              calendarEventMap: const {},
-              symptomMap: symptomMap,
-              onDaySelected: (_) {},
-            ),
+        _buildTestHarness(
+          CustomCalendarGrid(
+            focusedDay: testMonth,
+            calendarEventMap: const {},
+            symptomMap: symptomMap,
+            onDaySelected: (_) {},
           ),
         ),
       );
 
       // The marker for symptoms is Icons.brightness_1 (dot)
       expect(find.byIcon(Icons.brightness_1), findsOneWidget);
+    });
+
+    testWidgets('Regression: month transition between 5-row and 6-row months produces no errors', (WidgetTester tester) async {
+      // May 2026 naturally needs 6 rows (starts Friday, 31 days → 37 cells).
+      // April 2026 naturally needs 5 rows (starts Wednesday, 30 days → 33 cells).
+      // Switching between them used to cause a transient layout overflow because
+      // the grid height snapped while the AnimatedContainer padding was animating.
+      final List<FlutterErrorDetails> errors = [];
+      final originalHandler = FlutterError.onError;
+      FlutterError.onError = (details) => errors.add(details);
+
+      try {
+        // Start with May (6-row month)
+        await tester.pumpWidget(
+          _buildTestHarness(
+            CustomCalendarGrid(
+              focusedDay: DateTime(2026, 5, 1),
+              calendarEventMap: const {},
+              symptomMap: const {},
+              onDaySelected: (_) {},
+            ),
+          ),
+        );
+        expect(find.byType(CalendarDayCell), findsNWidgets(42));
+
+        // Switch to April (5-row month) — this is the transition that used to fail.
+        await tester.pumpWidget(
+          _buildTestHarness(
+            CustomCalendarGrid(
+              focusedDay: DateTime(2026, 4, 1),
+              calendarEventMap: const {},
+              symptomMap: const {},
+              onDaySelected: (_) {},
+            ),
+          ),
+        );
+        expect(find.byType(CalendarDayCell), findsNWidgets(42));
+
+        // And back to May
+        await tester.pumpWidget(
+          _buildTestHarness(
+            CustomCalendarGrid(
+              focusedDay: DateTime(2026, 5, 1),
+              calendarEventMap: const {},
+              symptomMap: const {},
+              onDaySelected: (_) {},
+            ),
+          ),
+        );
+        expect(find.byType(CalendarDayCell), findsNWidgets(42));
+
+        // No Flutter errors should have been recorded during any transition.
+        expect(errors, isEmpty, reason: 'Month transition should not produce layout overflow');
+      } finally {
+        FlutterError.onError = originalHandler;
+      }
     });
   });
 }
