@@ -65,12 +65,15 @@ void main() {
 
     test('sync() executes use case and updates lastSyncTime on success', () async {
       when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => true);
-      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
+      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => true);
       when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockPrefs.setLastSyncTime(any())).thenAnswer((_) async => {});
       when(() => mockSyncUseCase.execute()).thenAnswer((_) async => true);
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer((_) async => null);
+      // Return non-null metadata with salt so recovery is not triggered
+      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
+        (_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='},
+      );
 
       await provider.init();
       await provider.sync();
@@ -83,11 +86,13 @@ void main() {
 
     test('sync() captures error on failure', () async {
       when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => true);
-      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
+      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => true);
       when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockSyncUseCase.execute()).thenThrow(Exception('Sync failed'));
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer((_) async => null);
+      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
+        (_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='},
+      );
 
       await provider.init();
       await provider.sync();
@@ -97,15 +102,18 @@ void main() {
       verify(() => mockSyncUseCase.execute()).called(1);
     });
 
-    test('toggleGoogleDrive updates prefs and triggers sync when enabled', () async {
+    test('toggleGoogleDrive updates prefs and triggers sync when enabled and passphrase set', () async {
       when(() => mockPrefs.setCloudSyncEnabled(true)).thenAnswer((_) async => {});
       when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => true);
-      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
+      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => true);
       when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockSyncUseCase.execute()).thenAnswer((_) async => true);
       when(() => mockPrefs.setLastSyncTime(any())).thenAnswer((_) async => {});
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer((_) async => null);
+      // Cloud has a backup with salt — passphrase is set so sync proceeds
+      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
+        (_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='},
+      );
 
       await provider.init();
       await provider.toggleGoogleDrive(true);
@@ -113,6 +121,40 @@ void main() {
       expect(provider.isGoogleDriveEnabled, true);
       verify(() => mockPrefs.setCloudSyncEnabled(true)).called(1);
       verify(() => mockSyncUseCase.execute()).called(1);
+    });
+
+    test('toggleGoogleDrive sets needsInitialSetup when no cloud backup exists', () async {
+      when(() => mockPrefs.setCloudSyncEnabled(true)).thenAnswer((_) async => {});
+      when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => false);
+      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
+      when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
+      when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
+      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer((_) async => null);
+
+      await provider.init();
+      await provider.toggleGoogleDrive(true);
+
+      expect(provider.isGoogleDriveEnabled, true);
+      expect(provider.needsInitialSetup, true);
+      verifyNever(() => mockSyncUseCase.execute());
+    });
+
+    test('toggleGoogleDrive sets needsPassphraseMigration when backup has no salt', () async {
+      when(() => mockPrefs.setCloudSyncEnabled(true)).thenAnswer((_) async => {});
+      when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => false);
+      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
+      when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
+      when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
+      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
+        (_) async => {'checksum': 'abc'},
+      );
+
+      await provider.init();
+      await provider.toggleGoogleDrive(true);
+
+      expect(provider.isGoogleDriveEnabled, true);
+      expect(provider.needsPassphraseMigration, true);
+      verifyNever(() => mockSyncUseCase.execute());
     });
 
     // --- Regression: W12 guard — the root cause of the CRITICAL FAILURE spam ---
@@ -190,14 +232,15 @@ void main() {
       verifyNever(() => mockKeyStorage.setCloudSyncKey(any()));
     });
 
-    // --- Orphan key: sync fails with no salt anywhere → isOrphanKey set ---
     test('sync() sets isOrphanKey when HMAC fails with no salt anywhere', () async {
       when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => true);
-      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
+      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => true);
       when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
-      // No salt in cloud metadata
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer((_) async => {'checksum': 'abc'});
+      // Backup exists with a salt so the sync guard doesn't block us
+      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
+        (_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='},
+      );
       // execute() throws the orphanKey CloudSyncException
       when(() => mockSyncUseCase.execute()).thenThrow(
         CloudSyncException(CloudSyncException.orphanKey),
@@ -210,13 +253,14 @@ void main() {
       expect(provider.lastError, isNull); // Card UI handles this — no snackbar
     });
 
-    // --- overwriteCloudWithLocal: resets orphan key flag on success ---
     test('overwriteCloudWithLocal() resets isOrphanKey and re-uploads local data', () async {
       when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => true);
-      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
+      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => true);
       when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer((_) async => {'checksum': 'abc'});
+      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
+        (_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='},
+      );
       when(() => mockCloudSync.deleteCloudData()).thenAnswer((_) async => {});
       when(() => mockSyncUseCase.clearLocalMetadata()).thenAnswer((_) async => {});
       when(() => mockSyncUseCase.execute()).thenAnswer((_) async => false);
@@ -224,7 +268,6 @@ void main() {
 
       await provider.init();
       // Manually place provider in orphan key state
-      // We do this by triggering a sync with orphanKey exception first
       when(() => mockSyncUseCase.execute()).thenThrow(
         CloudSyncException(CloudSyncException.orphanKey),
       );
@@ -239,6 +282,61 @@ void main() {
       expect(provider.lastError, isNull);
       verify(() => mockCloudSync.deleteCloudData()).called(1);
       verify(() => mockSyncUseCase.clearLocalMetadata()).called(1);
+    });
+
+    // --- migrateToPassphrase: syncs with old key then rotates ---
+    test('migrateToPassphrase syncs first then rotates key', () async {
+      when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => true);
+      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
+      when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
+      when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
+      // Backup exists without salt = migration needed
+      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
+        (_) async => {'checksum': 'abc'},
+      );
+      when(() => mockSyncUseCase.execute()).thenAnswer((_) async => false);
+      when(() => mockSyncUseCase.forceFullUpload()).thenAnswer((_) async => {});
+      when(() => mockSyncUseCase.setRecoverySalt(any())).thenAnswer((_) async => {});
+      when(() => mockKeyStorage.setCloudSyncKey(any())).thenAnswer((_) async => {});
+      when(() => mockPrefs.setRecoveryPassphraseSet(true)).thenAnswer((_) async => {});
+      when(() => mockPrefs.setRecoverySalt(any())).thenAnswer((_) async => {});
+
+      await provider.init();
+      expect(provider.needsPassphraseMigration, true);
+
+      await provider.migrateToPassphrase('mySecurePass123');
+
+      expect(provider.isRecoveryEnabled, true);
+      expect(provider.needsPassphraseMigration, false);
+      expect(provider.lastError, isNull);
+      // Verify order: execute (old key) → then forceFullUpload (new key)
+      verifyInOrder([
+        () => mockSyncUseCase.execute(),
+        () => mockKeyStorage.setCloudSyncKey(any()),
+        () => mockSyncUseCase.forceFullUpload(),
+      ]);
+    });
+
+    // --- cancelCloudSetup: reverts toggle and clears state ---
+    test('cancelCloudSetup reverts toggle and signs out', () async {
+      when(() => mockPrefs.setCloudSyncEnabled(true)).thenAnswer((_) async => {});
+      when(() => mockPrefs.setCloudSyncEnabled(false)).thenAnswer((_) async => {});
+      when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => false);
+      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
+      when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
+      when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
+      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer((_) async => null);
+      when(() => mockCloudSync.signOut()).thenAnswer((_) async => {});
+
+      await provider.init();
+      await provider.toggleGoogleDrive(true);
+      expect(provider.needsInitialSetup, true);
+
+      await provider.cancelCloudSetup();
+
+      expect(provider.isGoogleDriveEnabled, false);
+      expect(provider.needsInitialSetup, false);
+      verify(() => mockCloudSync.signOut()).called(1);
     });
   });
 }
