@@ -696,6 +696,107 @@ class _SettingsPageState extends State<SettingsPage> {
       );
     }
 
+    // --- Migration Required: machine-key user must set a passphrase ---
+    if (syncProvider.needsPassphraseMigration) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24, borderColor: Colors.deepPurple.withValues(alpha: 0.3)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.security_update_good_rounded, color: Colors.deepPurple, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Security Upgrade Required",
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: isDark ? Colors.white : Colors.black87),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Cloud sync now requires a recovery passphrase to protect your data. "
+              "Without one, your backup cannot be restored if you switch devices or reinstall the app. "
+              "Set a passphrase to continue syncing.",
+              style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black54),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: syncProvider.isSyncing ? null : () => _handlePassphraseMigration(syncProvider),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: syncProvider.isSyncing
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text("SET RECOVERY PASSPHRASE", style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // --- Initial Setup Required: first-time user must set passphrase ---
+    if (syncProvider.needsInitialSetup) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24, borderColor: primary.withValues(alpha: 0.3)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.enhanced_encryption_rounded, color: primary, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Set Recovery Passphrase",
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: isDark ? Colors.white : Colors.black87),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "A recovery passphrase is required to encrypt your cloud backup. "
+              "You'll need it to restore your data on a new device.",
+              style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black54),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: syncProvider.isSyncing ? null : () => _handleInitialCloudSetup(syncProvider),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primary,
+                  foregroundColor: isDark ? Colors.black87 : Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Text("CREATE PASSPHRASE", style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton(
+                onPressed: () => syncProvider.cancelCloudSetup(),
+                style: TextButton.styleFrom(foregroundColor: isDark ? Colors.white38 : Colors.black38),
+                child: const Text("CANCEL SETUP", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
       child: _buildSettingsItem(
@@ -733,6 +834,192 @@ class _SettingsPageState extends State<SettingsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Recovery security enabled!'), backgroundColor: Colors.green),
         );
+      }
+    }
+  }
+
+  /// Shows an enhanced passphrase creation dialog with full security warnings.
+  ///
+  /// Used for both initial cloud sync setup and machine-key migration.
+  /// Includes: explanation, irrecoverability warning, and password manager suggestion.
+  Future<String?> _showCloudPassphraseSetupDialog({required String title}) async {
+    final controller = TextEditingController();
+    final confirmController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        scrollable: true,
+        title: Row(
+          children: [
+            Icon(Icons.enhanced_encryption_rounded, color: primary, size: 24),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(title, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold, fontSize: 18)),
+            ),
+          ],
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Explanation
+              Text(
+                'Your cloud backup is encrypted end-to-end. This passphrase is the '
+                'only way to decrypt and restore your data on a new device.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.white.withValues(alpha: 0.7) : Colors.black54,
+                  fontFamily: AppTheme.fontFamily,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Warning box
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: isDark ? 0.15 : 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'If you forget this passphrase, your cloud backup cannot be recovered. '
+                        'There is no reset option. We recommend saving it in a password manager '
+                        'or writing it down somewhere safe.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.red.shade200 : Colors.red.shade700,
+                          fontFamily: AppTheme.fontFamily,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: controller,
+                obscureText: true,
+                style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                decoration: InputDecoration(
+                  labelText: 'Recovery Passphrase',
+                  filled: true,
+                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Passphrase is required';
+                  if (value.length < 8) return 'Minimum 8 characters';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: confirmController,
+                obscureText: true,
+                style: const TextStyle(fontFamily: AppTheme.fontFamily),
+                decoration: InputDecoration(
+                  labelText: 'Confirm Passphrase',
+                  filled: true,
+                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                ),
+                validator: (value) {
+                  if (value != controller.text) return 'Passphrases do not match';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+              // Password manager suggestion
+              Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 14, color: isDark ? Colors.white38 : Colors.black38),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Tip: Use a password manager like Bitwarden or Google Passwords.',
+                      style: TextStyle(fontSize: 11, color: isDark ? Colors.white38 : Colors.black38, fontFamily: AppTheme.fontFamily),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(context, controller.text);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text('Encrypt & Sync', style: TextStyle(color: isDark ? AppTheme.backgroundDarkColor : Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Handles first-time cloud sync setup: passphrase creation before first upload.
+  Future<void> _handleInitialCloudSetup(CloudSyncProvider provider) async {
+    HapticFeedback.mediumImpact();
+    final passphrase = await _showCloudPassphraseSetupDialog(
+      title: 'Create Recovery Passphrase',
+    );
+
+    if (passphrase != null && mounted) {
+      await provider.setupRecovery(passphrase);
+      if (mounted && provider.lastError == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cloud sync enabled with passphrase protection!'), backgroundColor: Colors.green),
+        );
+      }
+    } else if (mounted) {
+      // User cancelled — revert the toggle
+      await provider.cancelCloudSetup();
+    }
+  }
+
+  /// Handles machine-key → passphrase migration for existing users.
+  Future<void> _handlePassphraseMigration(CloudSyncProvider provider) async {
+    HapticFeedback.mediumImpact();
+    final passphrase = await _showCloudPassphraseSetupDialog(
+      title: 'Security Upgrade',
+    );
+
+    if (passphrase != null && mounted) {
+      await provider.migrateToPassphrase(passphrase);
+      if (mounted && provider.lastError == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Backup upgraded to passphrase protection!'), backgroundColor: Colors.green),
+        );
+      } else if (mounted && provider.lastError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(provider.lastError!), backgroundColor: Colors.redAccent),
+        );
+        provider.clearError();
       }
     }
   }
@@ -1259,7 +1546,18 @@ class _SettingsPageState extends State<SettingsPage> {
                     subtitle: "Personal hidden storage",
                     icon: Icons.add_to_drive_rounded,
                     enabled: syncProvider.isGoogleDriveEnabled,
-                    onChanged: (val) => syncProvider.toggleGoogleDrive(val),
+                    onChanged: (val) async {
+                      await syncProvider.toggleGoogleDrive(val);
+                      if (!mounted || !val) return;
+                      // After toggle-on, check if any setup dialog is needed
+                      if (syncProvider.needsInitialSetup) {
+                        await _handleInitialCloudSetup(syncProvider);
+                      } else if (syncProvider.needsPassphraseMigration) {
+                        await _handlePassphraseMigration(syncProvider);
+                      } else if (syncProvider.requiresRecoveryPrompt) {
+                        await _handleRestoreWithPassphrase(syncProvider);
+                      }
+                    },
                   ),
                   if (Platform.isIOS) ...[
                     const SizedBox(height: 12),
