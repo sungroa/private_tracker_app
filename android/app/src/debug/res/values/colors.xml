@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-build override for the adaptive launcher icon background colour.
+  Orange tint makes the debug build immediately distinguishable from release.
+  This file lives in src/debug/res and is merged by Gradle automatically.
+-->
+<resources>
+    <color name="ic_launcher_background">#7A3800</color>
+</resources>
