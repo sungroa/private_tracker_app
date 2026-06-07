@@ -90,6 +90,43 @@ void main() {
       verify(() => mockDbManager.updateLastModified()).called(1);
     });
 
+    test('restoreData should handle integer IDs gracefully (legacy backups)', () async {
+      final data = {
+        'cycleLogs': [
+          {'id': 123, 'startDate': '2026-03-01T00:00:00.000Z', 'updatedAt': '2026-03-01T00:00:00.000Z'}
+        ],
+        'symptomLogs': [
+          {'id': 456, 'date': '2026-03-01T00:00:00.000Z', 'symptoms': ['Cramps'], 'updatedAt': '2026-03-01T00:00:00.000Z'}
+        ],
+        'customTags': [
+          {'id': 789, 'name': 'Custom Tag', 'isDefault': false, 'updatedAt': '2026-03-01T00:00:00.000Z'}
+        ],
+      };
+
+      when(() => mockCycleDS.clear()).thenAnswer((_) async => {});
+      when(() => mockSymptomDS.clear()).thenAnswer((_) async => {});
+      when(() => mockTagDS.clear()).thenAnswer((_) async => {});
+      when(() => mockCycleDS.putAll(any())).thenAnswer((_) async => {});
+      when(() => mockSymptomDS.putAll(any())).thenAnswer((_) async => {});
+      when(() => mockTagDS.putAll(any())).thenAnswer((_) async => {});
+      when(() => mockDbManager.updateLastModified()).thenAnswer((_) async => {});
+
+      await orchestrator.restoreData(data);
+
+      verify(() => mockCycleDS.clear()).called(1);
+      verify(() => mockSymptomDS.clear()).called(1);
+      verify(() => mockTagDS.clear()).called(1);
+
+      final cycleCapture = verify(() => mockCycleDS.putAll(captureAny())).captured.single as Map<dynamic, dynamic>;
+      expect(cycleCapture.keys.first, '123');
+
+      final symptomCapture = verify(() => mockSymptomDS.putAll(captureAny())).captured.single as Map<dynamic, dynamic>;
+      expect(symptomCapture.keys.first, '456');
+
+      final tagCapture = verify(() => mockTagDS.putAll(captureAny())).captured.single as Map<dynamic, dynamic>;
+      expect(tagCapture.keys.first, '789');
+    });
+
     test('restoreData with empty data should return early', () async {
       await orchestrator.restoreData({});
       verifyNever(() => mockCycleDS.clear());

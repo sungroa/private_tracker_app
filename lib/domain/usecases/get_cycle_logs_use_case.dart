@@ -51,8 +51,9 @@ class GetCycleLogsUseCase {
 
     // 2. Perform heavy calculations in a background Isolate (W3)
     // This prevents UI jank regardless of the amount of historical data.
+    final calculator = _trendsCalculator;
     final trends = await Isolate.run(() {
-      return _trendsCalculator.calculateTrends(logs, symptomLogs);
+      return calculator.calculateTrends(logs, symptomLogs);
     });
 
     return AnalysedCycles(
