@@ -37,11 +37,21 @@ class StorageConfig {
 }
 
 /// The OAuth2 server/web client ID for Google Sign-In.
-/// Required by both [GoogleSignIn.instance.initialize] and [ServiceLocator.setup].
-const _kGoogleServerClientId =
-    'REDACTED_OAUTH_CLIENT_ID';
+/// Injected at build time via dart-defines.json — never hardcoded.
+/// See DEVELOPMENT.md § "Local Setup" for instructions.
+const _kGoogleServerClientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
 
 void main() async {
+  // Fail fast with a clear message if dart-defines.json was not loaded.
+  // Run: flutter run --dart-define-from-file=dart-defines.json
+  // Or use the VS Code launch config which sets this automatically.
+  assert(
+    _kGoogleServerClientId.isNotEmpty,
+    '\n\n[Private Tracker] GOOGLE_CLIENT_ID is not set.\n'
+    'Copy dart-defines.json.example → dart-defines.json and fill in your value.\n'
+    'See DEVELOPMENT.md § "Local Setup" for full instructions.\n',
+  );
+
   WidgetsFlutterBinding.ensureInitialized();
 
   // --- Logcat-visible error handlers ---

@@ -56,3 +56,8 @@ coverage/
 # Temporary log files
 test_output.txt
 logcat_latest.txt
+
+# Local build-time secrets (never commit the real file)
+# Copy dart-defines.json.example → dart-defines.json and fill in your values.
+# See DEVELOPMENT.md for details.
+dart-defines.json

@@ -134,3 +134,44 @@ If Google Sign-In returns a `canceled` error in Release mode, it is likely a SHA
 1.  **Copy Release SHA-1**: Find the SHA-1 of your release keystore.
 2.  **Google Cloud Console**: Add the SHA-1 to your **OAuth 2.0 Client ID** at the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
 3.  **Propagation**: Wait ~10 minutes for Google's servers to sync. No app re-build is required.
+
+---
+
+## 🔑 Local Setup (First-Time)
+
+Two gitignored files must be created before you can build or run the app locally.
+This mirrors the standard Flutter pattern for `android/key.properties` and `android/local.properties`.
+
+### 1. Google OAuth Client ID (`dart-defines.json`)
+
+```bash
+# From repo root:
+cp dart-defines.json.example dart-defines.json
+```
+
+Then open `dart-defines.json` and replace the placeholder with your real Web Client ID:
+
+```json
+{
+  "GOOGLE_CLIENT_ID": "your-project-id.apps.googleusercontent.com"
+}
+```
+
+**Where to find it:**
+1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → **APIs & Services → Credentials**
+2. Under **OAuth 2.0 Client IDs**, find the entry for this app.
+3. Copy the **Client ID** (ends in `.apps.googleusercontent.com`).
+
+**Running after setup:**
+
+| Tool | Command |
+|------|---------|
+| CLI | `flutter run --dart-define-from-file=dart-defines.json` |
+| VS Code | Use the **Private Tracker (debug)** run config — it's pre-configured in `.vscode/launch.json` |
+| Android Studio | Add `--dart-define-from-file=dart-defines.json` to **Additional run args** in the Run Configuration |
+
+If you forget this step, the app will fail at startup with a clear error message pointing you here.
+
+### 2. Android Signing Keys (`android/key.properties` + keystore)
+
+Required for release builds only. See the [Cloud Sync troubleshooting](#cloud-sync-release-build) section above for the SHA-1 setup, and ask a maintainer for the keystore file.

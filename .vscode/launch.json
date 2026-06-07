@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Private Tracker (debug)",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--dart-define-from-file=dart-defines.json"]
+    },
+    {
+      "name": "Private Tracker (profile)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile",
+      "args": ["--dart-define-from-file=dart-defines.json"]
+    },
+    {
+      "name": "Private Tracker (release)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "args": ["--dart-define-from-file=dart-defines.json"]
+    }
+  ]
+}
