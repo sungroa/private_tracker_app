@@ -83,6 +83,15 @@ Ensure all tests pass and Hive adapters are generated (`flutter pub run build_ru
 
 ### Android
 
+#### 🔓 App Signing Setup (Debug Mode)
+
+The project includes a shared `debug.keystore` located at `android/app/debug.keystore`. The Android build configuration is explicitly set up to use this shared keystore for all debug builds. This ensures that all developers share the same signing identity, avoiding signature mismatch errors when collaborating or sharing debug APKs.
+
+Debug builds use this key automatically when you run:
+```bash
+flutter run --dart-define-from-file=dart-defines.json
+```
+
 #### 🔐 App Signing Setup (Release Mode)
 
 For production builds, the app must be signed with a secure keystore.
