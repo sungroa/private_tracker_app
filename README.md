@@ -48,9 +48,26 @@ flutter pub get
 flutter pub run build_runner build --delete-conflicting-outputs
 ```
 
-### 3. Run
+### 3. Configure Local Secrets
+
+Two gitignored files must be created before the app will run. These are never committed — see [DEVELOPMENT.md § Local Setup](DEVELOPMENT.md#-local-setup-first-time) for full details.
+
+#### Google OAuth Client ID (`dart-defines.json`)
 ```bash
-flutter run
+cp dart-defines.json.example dart-defines.json
+# Then edit dart-defines.json and fill in your GOOGLE_CLIENT_ID
+# (found in Google Cloud Console → APIs & Services → Credentials)
+```
+
+#### Android Signing Keys (`android/key.properties`)
+Required for release builds only — see [App Signing Setup](#-app-signing-setup-release-mode) below.
+
+### 4. Run
+```bash
+# VS Code: use the pre-configured "Private Tracker (debug)" launch config (F5)
+
+# CLI:
+flutter run --dart-define-from-file=dart-defines.json
 ```
 
 ## 🧪 Testing State
@@ -91,10 +108,10 @@ For production builds, the app must be signed with a secure keystore.
 
 ```bash
 # Build APK (Release)
-flutter build apk --release
+flutter build apk --release --dart-define-from-file=dart-defines.json
 
 # Build App Bundle (Release)
-flutter build appbundle --release
+flutter build appbundle --release --dart-define-from-file=dart-defines.json
 ```
 
 #### 📱 Local Testing with Play Store Installed
@@ -103,10 +120,10 @@ Debug builds use an `applicationIdSuffix` of `.dev`, which means they install as
 
 ```bash
 # Run debug build directly on device (coexists with Play Store version)
-flutter run
+flutter run --dart-define-from-file=dart-defines.json
 
 # Or build and install manually
-flutter build apk --debug
+flutter build apk --debug --dart-define-from-file=dart-defines.json
 adb install build/app/outputs/flutter-apk/app-debug.apk
 
 # View logs specifically for the local debug package
@@ -119,14 +136,14 @@ adb logcat --pid=$(adb shell pidof com.sry_developer.private_tracker_app.dev)
 *Note: Requires macOS and Xcode.*
 ```bash
 # Build IPA (Release)
-flutter build ipa --release
+flutter build ipa --release --dart-define-from-file=dart-defines.json
 ```
 
 ### Web
 ```bash
 # Build Web (Release)
-flutter build web --release
+flutter build web --release --dart-define-from-file=dart-defines.json
 ```
 
 ## 📘 Further Reading
-- [DEVELOPMENT.md](file:///home/sungroa/git/private_tracker_app/DEVELOPMENT.md): Detailed guide on architecture, security protocols, and coding standards.
+- [DEVELOPMENT.md](DEVELOPMENT.md): Detailed guide on architecture, security protocols, local setup, and coding standards.
