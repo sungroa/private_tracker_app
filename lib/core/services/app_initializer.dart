@@ -45,13 +45,13 @@ class AppInitializer {
 
       if (!context.mounted) return;
 
-      // 3. Trigger auto-sync if cloud is enabled and no recovery is pending.
-      // init() now awaits checkRecoveryStatus(), so requiresRecoveryPrompt is
-      // accurate here. Skipping sync when recovery is pending avoids the
+      // 3. Trigger auto-sync if cloud is enabled and no setup is pending.
+      // init() now awaits checkRecoveryStatus(), so needsAnySetup is
+      // accurate here. Skipping sync when any setup is pending avoids the
       // guaranteed CRITICAL FAILURE from decrypting with the wrong key.
       final cloudSync = context.read<CloudSyncProvider>();
       await cloudSync.init();
-      if (cloudSync.isCloudEnabled && !cloudSync.requiresRecoveryPrompt && !cloudSync.isOrphanKey) {
+      if (cloudSync.isCloudEnabled && !cloudSync.needsAnySetup) {
         unawaited(cloudSync.sync());
       }
 

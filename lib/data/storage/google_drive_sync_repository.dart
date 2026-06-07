@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
@@ -37,6 +38,9 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
   /// [GoogleSignInAccount] instance lets its [authorizationClient] reuse a
   /// warm token cache, avoiding repeated Credential Manager UI invocations.
   GoogleSignInAccount? _cachedAccount;
+
+  String get _backupFileName =>
+      kDebugMode ? 'private_tracker_backup_dev.enc' : 'private_tracker_backup.enc';
 
   GoogleDriveSyncRepository({
     GoogleSignIn? googleSignIn,
@@ -86,15 +90,20 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       // --- Step 2: Fetch a fresh account silently if needed. ---
       if (authHeaders == null) {
         SecurityLogger.logInfo("Google Drive: Attempting lightweight sign-in...");
-        GoogleSignInAccount? account =
-            await _googleSignIn.attemptLightweightAuthentication();
+        GoogleSignInAccount? account;
+        try {
+          account = await _googleSignIn.attemptLightweightAuthentication();
+        } catch (e) {
+          SecurityLogger.logInfo("Google Drive: Lightweight auth threw exception ($e). Falling back to interactive auth.");
+          account = null;
+        }
 
         if (account == null) {
-          // Only reached if the user has never signed in or revoked access.
-          // This is the only path that may show a UI — it is intentional.
+          // Only reached if the user has never signed in, revoked access, or 
+          // their session needs re-authentication.
           SecurityLogger.logInfo(
               "Google Drive: Lightweight auth failed. Requesting user sign-in...");
-          account = await _googleSignIn.authenticate(scopeHint: [scope]);
+          account = await _googleSignIn.authenticate();
         }
 
         SecurityLogger.logInfo(
@@ -169,7 +178,7 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       final recoverySalt = extraMetadata?['recovery_salt'];
 
       final driveFile = drive.File()
-        ..name = 'private_tracker_backup.enc'
+        ..name = _backupFileName
         ..parents = ['appDataFolder']
         ..appProperties = appPropertiesMap
         ..properties = propertiesMap
@@ -182,8 +191,11 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
 
       // Clean up old backups post-upload
       SecurityLogger.logInfo("Cleaning up old backups...");
-      final fileList =
-          await _driveApi!.files.list(spaces: 'appDataFolder', $fields: '*');
+      final fileList = await _driveApi!.files.list(
+        q: "name = '$_backupFileName'",
+        spaces: 'appDataFolder',
+        $fields: '*',
+      );
       final allFiles = fileList.files;
       if (allFiles != null && allFiles.isNotEmpty) {
         for (final f in allFiles) {
@@ -208,7 +220,11 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
 
     try {
       SecurityLogger.logInfo("Listing cloud backups for download...");
-      final fileList = await _driveApi!.files.list(spaces: 'appDataFolder', $fields: '*');
+      final fileList = await _driveApi!.files.list(
+        q: "name = '$_backupFileName'",
+        spaces: 'appDataFolder',
+        $fields: '*',
+      );
       final allFiles = fileList.files;
 
       if (allFiles == null || allFiles.isEmpty) {
@@ -253,6 +269,7 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       
       do {
         final fileList = await _driveApi!.files.list(
+          q: "name = '$_backupFileName'",
           spaces: 'appDataFolder',
           $fields: 'nextPageToken, files(id, name, createdTime, size)',
           pageToken: pageToken,
@@ -297,7 +314,11 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
     _checkAuthenticated();
 
     try {
-      final fileList = await _driveApi!.files.list(spaces: 'appDataFolder', $fields: '*');
+      final fileList = await _driveApi!.files.list(
+        q: "name = '$_backupFileName'",
+        spaces: 'appDataFolder',
+        $fields: '*',
+      );
       final allFiles = fileList.files;
 
       if (allFiles == null || allFiles.isEmpty) {
@@ -344,6 +365,9 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
   Future<void> signOut() async {
     try {
       SecurityLogger.logInfo("Google Drive: Signing out and clearing tokens...");
+      clearCachedAccount();
+      // Disconnect fully revokes access, which helps reset Android 14 Credential Manager
+      await _googleSignIn.disconnect();
       await _googleSignIn.signOut();
       dispose();
     } catch (e) {
