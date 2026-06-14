@@ -77,6 +77,7 @@ class CycleProvider extends ChangeNotifier {
   }
   
   DateTime? get predictedNextPeriod => _trends?.predictedNextPeriod;
+  List<DateTime> get predictedPeriodStarts => _trends?.predictedPeriodStarts ?? [];
   List<DateTime> get predictedFertilityDates => _trends?.predictedFertilityDates ?? [];
 
   /// Delegates bleeding prediction check to the domain model.

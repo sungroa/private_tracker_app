@@ -296,7 +296,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                                       selectedDay: _selectedDay,
                                       calendarEventMap: cycleProvider.calendarEventMap,
                                       symptomMap: symptomProvider.symptomMap,
-                                      predictedNextPeriod: cycleProvider.predictedNextPeriod,
+                                      predictedPeriodStarts: cycleProvider.predictedPeriodStarts,
                                       predictedFertilityDates: cycleProvider.predictedFertilityDates,
                                       onDaySelected: (selectedDay) {
                                         HapticFeedback.selectionClick();

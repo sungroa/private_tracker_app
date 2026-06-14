@@ -39,7 +39,7 @@ void main() {
       topSymptoms: [const MapEntry('Cramps', 5)],
       moodHistory: [],
       bbtHistory: [],
-      predictedNextPeriod: DateTime(2026, 6, 1),
+      predictedPeriodStarts: [DateTime(2026, 6, 1)],
       predictedFertilityDates: [DateTime(2026, 5, 14)],
     );
     when(() => mockProvider.trends).thenReturn(trendData);

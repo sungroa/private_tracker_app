@@ -22,32 +22,82 @@ class CycleCalculator {
   CycleCalculator(this._clock);
 
   /// Predicts the next period start date based on previous logs.
-  /// If [symptomLogs] are provided, it attempts to mathematically confirm ovulation
-  /// using the 3-over-6 rule and overrides the average prediction.
+  ///
+  /// Delegates to [predictFuturePeriods] with a count of 1. Kept for backwards
+  /// compatibility with any callers that only need the nearest prediction.
   DateTime? predictNextPeriod(
     List<CycleLog> cycleLogs, [
     List<SymptomLog>? symptomLogs,
     double threshold = 0.2,
   ]) {
-    if (cycleLogs.isEmpty) {
-      return null;
-    }
+    final results = predictFuturePeriods(cycleLogs, symptomLogs: symptomLogs, threshold: threshold, count: 1);
+    return results.isEmpty ? null : results.first;
+  }
+
+  /// Predicts up to [count] future period start dates in chronological order.
+  ///
+  /// When [count] is omitted the adaptive tier logic is applied:
+  /// - 1 recorded cycle  → 1 projection  (cold start, no pattern)
+  /// - 2–3 cycles        → 2 projections
+  /// - 4–7 cycles        → 3 projections
+  /// - ≥8 cycles         → 4 projections (Hybrid ARIMA active)
+  ///
+  /// Each subsequent cycle is predicted by appending the previously predicted
+  /// length to the synthetic history and re-running the forecaster. This means
+  /// later projections naturally follow the modelled trajectory rather than
+  /// blindly repeating the same cycle length.
+  ///
+  /// If [symptomLogs] are provided and a BBT-confirmed ovulation is detected
+  /// for the current (most recent) cycle, that confirmation overrides the
+  /// first projection only; subsequent cycles use the statistical model.
+  List<DateTime> predictFuturePeriods(
+    List<CycleLog> cycleLogs, {
+    List<SymptomLog>? symptomLogs,
+    double threshold = 0.2,
+    int? count,
+  }) {
+    if (cycleLogs.isEmpty) return [];
 
     // Sort newest first
     final sortedCycleEvents = List<CycleLog>.from(cycleLogs)
       ..sort((a, b) => b.startDate.compareTo(a.startDate));
 
-    // 1. Try to confirm ovulation for the current cycle if symptom logs are available
+    // --- Build historical cycle-length series (oldest → newest) ---
+    final lengths = <int>[];
+    for (int i = 0; i < sortedCycleEvents.length - 1; i++) {
+      final length = sortedCycleEvents[i].startDate
+          .daysDifference(sortedCycleEvents[i + 1].startDate);
+      if (length >= 15) {
+        lengths.add(length);
+      } else {
+        developer.log(
+          'Ignoring micro-cycle: $length days (spotting or duplicate log)',
+          name: 'PrivacyTracker.Prediction',
+        );
+      }
+    }
+    // Forecaster expects chronological order (oldest first)
+    final chronologicalLengths = lengths.reversed.toList();
+
+    // --- Determine how many cycles to project ---
+    final projectionCount = count ?? _adaptiveProjectionCount(chronologicalLengths.length);
+
+    // --- First projection: may be overridden by confirmed ovulation (STM) ---
+    final List<DateTime> results = [];
+    DateTime anchor = sortedCycleEvents.first.startDate;
+    final isUtc = anchor.isUtc;
+
+    // Attempt STM ovulation confirmation for the very first projection only
+    DateTime? firstProjection;
     if (symptomLogs != null && symptomLogs.isNotEmpty) {
       final latestCycleStart = sortedCycleEvents.first.startDate;
       final currentCycleEvents = symptomLogs
           .where((log) => !log.date.isBefore(latestCycleStart))
           .toList();
-
       final confirmedOvulation = confirmOvulation(currentCycleEvents, threshold: threshold);
       if (confirmedOvulation != null) {
-        // STM standard: Luteal phase is consistently ~14 days
-        return confirmedOvulation.isUtc
+        // STM: luteal phase ≈ 14 days
+        firstProjection = isUtc
             ? DateTime.utc(
                 confirmedOvulation.year,
                 confirmedOvulation.month,
@@ -61,46 +111,55 @@ class CycleCalculator {
       }
     }
 
-    if (sortedCycleEvents.length < 2) {
-      final start = sortedCycleEvents.first.startDate;
-      return start.isUtc
-          ? DateTime.utc(start.year, start.month, start.day + defaultCycleLength)
-          : DateTime(start.year, start.month, start.day + defaultCycleLength);
-    }
+    // Synthetic length history that grows as we project further
+    final syntheticLengths = List<int>.from(chronologicalLengths);
 
-    // 2. Fallback to historical Hybrid ARIMA pipeline
-    final lengths = <int>[];
-    for (int i = 0; i < sortedCycleEvents.length - 1; i++) {
-      final length = sortedCycleEvents[i].startDate.daysDifference(sortedCycleEvents[i + 1].startDate);
-      
-      // Data Cleaning: Ignore "micro-cycles" < 15 days which are likely logging errors 
-      // or mid-cycle spotting, as they aggressively skew ARIMA/Average models.
-      if (length >= 15) {
-        lengths.add(length);
+    for (int i = 0; i < projectionCount; i++) {
+      final int predictedLength;
+      DateTime nextPeriod;
+
+      if (i == 0 && firstProjection != null) {
+        // BBT-confirmed first projection
+        nextPeriod = firstProjection;
+        // Back-calculate the synthetic length for subsequent forecaster calls
+        predictedLength = nextPeriod.daysDifference(anchor).abs();
       } else {
-        developer.log('Ignoring micro-cycle length: $length days (likely spotting or duplicate log)', name: 'PrivacyTracker.Prediction');
+        if (syntheticLengths.isEmpty) {
+          predictedLength = defaultCycleLength;
+        } else {
+          predictedLength = CycleLengthForecaster.predictNextLength(syntheticLengths);
+        }
+        nextPeriod = isUtc
+            ? DateTime.utc(anchor.year, anchor.month, anchor.day + predictedLength)
+            : DateTime(anchor.year, anchor.month, anchor.day + predictedLength);
       }
+
+      results.add(nextPeriod);
+      developer.log(
+        'Projection ${i + 1}/$projectionCount: ${nextPeriod.toIso8601String()} (length: $predictedLength)',
+        name: 'PrivacyTracker.Prediction',
+      );
+
+      // Feed the prediction back for the next iteration
+      syntheticLengths.add(predictedLength);
+      anchor = nextPeriod;
     }
 
-    if (lengths.isEmpty) {
-      developer.log('No valid cycle history after filtering, using default 28.', name: 'PrivacyTracker.Prediction');
-      final start = sortedCycleEvents.first.startDate;
-      return start.isUtc
-          ? DateTime.utc(start.year, start.month, start.day + defaultCycleLength)
-          : DateTime(start.year, start.month, start.day + defaultCycleLength);
-    }
+    return results;
+  }
 
-    // Forecaster expects oldest to newest
-    final chronologicalLengths = lengths.reversed.toList();
-    final predictedLength = CycleLengthForecaster.predictNextLength(chronologicalLengths);
-
-    final start = sortedCycleEvents.first.startDate;
-    final nextPeriod = start.isUtc
-        ? DateTime.utc(start.year, start.month, start.day + predictedLength)
-        : DateTime(start.year, start.month, start.day + predictedLength);
-    developer.log('Calculated Next Period: ${nextPeriod.toIso8601String()} (Length: $predictedLength)', name: 'PrivacyTracker.Prediction');
-
-    return nextPeriod;
+  /// Returns the number of future cycles to project based on recorded history.
+  ///
+  /// Mirrors the [CycleLengthForecaster] pipeline tiers so the two stay in sync:
+  /// - 0–1 recorded lengths → 1 projection (cold start)
+  /// - 2–3 lengths          → 2 projections
+  /// - 4–7 lengths          → 3 projections
+  /// - ≥8 lengths           → 4 projections (ARIMA active)
+  static int _adaptiveProjectionCount(int historyLength) {
+    if (historyLength <= 1) return 1;
+    if (historyLength <= 3) return 2;
+    if (historyLength <= 7) return 3;
+    return 4;
   }
 
   /// Implements the Sympto-Thermal Method "3-over-6 rule" to confirm ovulation.

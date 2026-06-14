@@ -20,6 +20,7 @@ void main() {
 
     when(() => mockCycleProvider.calendarEventMap).thenReturn({});
     when(() => mockCycleProvider.predictedNextPeriod).thenReturn(null);
+    when(() => mockCycleProvider.predictedPeriodStarts).thenReturn([]);
     when(() => mockCycleProvider.predictedFertilityDates).thenReturn([]);
     when(() => mockSymptomProvider.symptomMap).thenReturn({});
     

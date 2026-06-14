@@ -46,7 +46,7 @@ void main() {
         averagePeriodDuration: 5,
         topSymptoms: [],
         moodHistory: [],
-        predictedNextPeriod: DateTime(2026, 5, 20),
+        predictedPeriodStarts: [DateTime(2026, 5, 20)],
         predictedFertilityDates: [],
       );
 
@@ -72,7 +72,7 @@ void main() {
         averagePeriodDuration: 5,
         topSymptoms: [],
         moodHistory: [],
-        predictedNextPeriod: DateTime(2026, 5, 20),
+        predictedPeriodStarts: [DateTime(2026, 5, 20)],
         predictedFertilityDates: [],
       );
 
