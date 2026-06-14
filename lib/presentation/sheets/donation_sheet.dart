@@ -181,65 +181,73 @@ class _ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+    final cleanName = product.name.split('(').first.trim();
+    final description = product.isSubscription
+        ? "Subscribe to $cleanName for ${product.formattedPrice} per month"
+        : "One-time support donation of ${product.formattedPrice} ($cleanName)";
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: product.isSubscription
-                ? AppGradients.accentGradient
-                : [
-                    primary.withValues(alpha: 0.1),
-                    primary.withValues(alpha: 0.05),
-                  ],
-          ),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: product.isSubscription
-                ? Colors.transparent
-                : primary.withValues(alpha: 0.2),
-            width: 1.5,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              product.isSubscription ? Icons.stars_rounded : Icons.coffee_rounded,
-              size: 32,
-              color: product.isSubscription ? Colors.white : primary,
+    return Semantics(
+      button: true,
+      label: description,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: product.isSubscription
+                  ? AppGradients.accentGradient
+                  : [
+                      primary.withValues(alpha: 0.1),
+                      primary.withValues(alpha: 0.05),
+                    ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              product.name.split('(').first.trim(),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: product.isSubscription ? Colors.white : (isDark ? Colors.white : Colors.black87),
-              ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: product.isSubscription
+                  ? Colors.transparent
+                  : primary.withValues(alpha: 0.2),
+              width: 1.5,
             ),
-            const SizedBox(height: 4),
-            Text(
-              product.formattedPrice,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
+          ),
+          child: Column(
+            children: [
+              Icon(
+                product.isSubscription ? Icons.stars_rounded : Icons.coffee_rounded,
+                size: 32,
                 color: product.isSubscription ? Colors.white : primary,
               ),
-            ),
-            if (product.isSubscription)
-              const Text(
-                "/ month",
+              const SizedBox(height: 16),
+              Text(
+                cleanName,
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.white70,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: product.isSubscription ? Colors.white : (isDark ? Colors.white : Colors.black87),
                 ),
               ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                product.formattedPrice,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: product.isSubscription ? Colors.white : primary,
+                ),
+              ),
+              if (product.isSubscription)
+                const Text(
+                  "/ month",
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.white70,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

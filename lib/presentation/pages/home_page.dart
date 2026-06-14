@@ -47,12 +47,14 @@ class _HomePageState extends State<HomePage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(4),
-                child: Image.asset(
-                  'assets/icon/app_icon_foreground.png',
-                  width: 28,
-                  height: 28,
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
+                child: ExcludeSemantics(
+                  child: Image.asset(
+                    'assets/icon/app_icon_foreground.png',
+                    width: 28,
+                    height: 28,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -70,6 +72,7 @@ class _HomePageState extends State<HomePage> {
           ),
           actions: [
             IconButton(
+              tooltip: "Support Private Tracker",
               onPressed: () {
                 HapticFeedback.lightImpact();
                 DonationSheet.show(context);
@@ -77,6 +80,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.favorite_rounded, color: primary.withValues(alpha: 0.8), size: 22),
             ),
             IconButton(
+              tooltip: "Refresh and Recalculate Predictions",
               onPressed: () {
                 HapticFeedback.mediumImpact();
                 context.read<CycleProvider>().refresh();
@@ -94,6 +98,7 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.sync_rounded, color: primary.withValues(alpha: 0.6), size: 22),
             ),
             IconButton(
+              tooltip: "Privacy Policy",
               onPressed: () {
                 HapticFeedback.lightImpact();
                 PrivacyPolicyPage.show(context);

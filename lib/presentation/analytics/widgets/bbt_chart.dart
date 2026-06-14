@@ -8,6 +8,28 @@ class BbtChart extends StatelessWidget {
 
   const BbtChart({super.key, required this.bbtHistory});
 
+  String _buildSemanticLabel() {
+    if (bbtHistory.isEmpty) {
+      return "No Basal Body Temperature data for this cycle";
+    }
+
+    final temps = bbtHistory.map((p) => p.temperature).toList();
+    final avgTemp = temps.reduce((a, b) => a + b) / temps.length;
+    final minTemp = temps.reduce((a, b) => a < b ? a : b);
+    final maxTemp = temps.reduce((a, b) => a > b ? a : b);
+    final lhSurges = bbtHistory.where((p) => p.hasLhSurge).map((p) => "Day ${p.cycleDay}").toList();
+
+    final buffer = StringBuffer();
+    buffer.write("Basal Body Temperature chart showing ${bbtHistory.length} recorded temperatures. ");
+    buffer.write("Average temperature is ${avgTemp.toStringAsFixed(1)} degrees. ");
+    buffer.write("Lowest temperature is ${minTemp.toStringAsFixed(1)} degrees. ");
+    buffer.write("Highest temperature is ${maxTemp.toStringAsFixed(1)} degrees. ");
+    if (lhSurges.isNotEmpty) {
+      buffer.write("Luteinizing Hormone surge detected on: ${lhSurges.join(', ')}.");
+    }
+    return buffer.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (bbtHistory.isEmpty) {
@@ -20,8 +42,10 @@ class BbtChart extends StatelessWidget {
     final double maxTemp = bbtHistory.map((p) => p.temperature).reduce((a, b) => a > b ? a : b) + 0.2;
     final double maxCycleDay = bbtHistory.map((p) => p.cycleDay).reduce((a, b) => a > b ? a : b).toDouble();
 
-    return Container(
-      height: 300,
+    return Semantics(
+      label: _buildSemanticLabel(),
+      child: Container(
+        height: 300,
       padding: const EdgeInsets.fromLTRB(16, 24, 24, 16),
       decoration: AppTheme.glassDecoration(),
       child: LineChart(
@@ -158,6 +182,7 @@ class BbtChart extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

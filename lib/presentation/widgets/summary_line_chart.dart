@@ -12,6 +12,34 @@ class SummaryLineChart extends StatelessWidget {
     this.height = 100,
   });
 
+  String _buildSemanticLabel() {
+    if (data.isEmpty) {
+      return "No mood data yet";
+    }
+    final ratings = data.map((p) => p.rating).toList();
+    final avgRating = ratings.reduce((a, b) => a + b) / ratings.length;
+    final lastRating = ratings.last;
+    
+    return "Mood trend chart showing ${data.length} logs. Average mood rating is ${_getMoodLabel(avgRating.round())}. Latest logged mood is ${_getMoodLabel(lastRating.round())}.";
+  }
+
+  String _getMoodLabel(int rating) {
+    switch (rating) {
+      case 1:
+        return 'Really struggling';
+      case 2:
+        return 'Feeling down';
+      case 3:
+        return 'Doing okay';
+      case 4:
+        return 'Feeling good';
+      case 5:
+        return 'Excellent mood';
+      default:
+        return 'Doing okay';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (data.isEmpty) {
@@ -28,11 +56,14 @@ class SummaryLineChart extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final themeColor = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
-    return SizedBox(
-      height: height,
-      width: double.infinity,
-      child: CustomPaint(
-        painter: _LineChartPainter(data, themeColor),
+    return Semantics(
+      label: _buildSemanticLabel(),
+      child: SizedBox(
+        height: height,
+        width: double.infinity,
+        child: CustomPaint(
+          painter: _LineChartPainter(data, themeColor),
+        ),
       ),
     );
   }
