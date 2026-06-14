@@ -228,55 +228,60 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     final isSelected = _lhPositive == value;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        setState(() => _lhPositive = isSelected ? null : value);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? primary
-              : (isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.white.withValues(alpha: 0.2)),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: "Luteinizing Hormone test: $label",
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _lhPositive = isSelected ? null : value);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
             color: isSelected
                 ? primary
                 : (isDark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.grey[200]!),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 16,
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.white.withValues(alpha: 0.2)),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
               color: isSelected
-                  ? (isDark ? AppTheme.backgroundDarkColor : Colors.white)
+                  ? primary
                   : (isDark
-                      ? Colors.white.withValues(alpha: 0.4)
-                      : Colors.grey[600]),
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.grey[200]!),
             ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 16,
                 color: isSelected
                     ? (isDark ? AppTheme.backgroundDarkColor : Colors.white)
                     : (isDark
                         ? Colors.white.withValues(alpha: 0.4)
                         : Colors.grey[600]),
-                fontFamily: AppTheme.fontFamily,
               ),
-            ),
-          ],
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected
+                      ? (isDark ? AppTheme.backgroundDarkColor : Colors.white)
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.4)
+                          : Colors.grey[600]),
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -324,39 +329,51 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
             children: List.generate(5, (index) {
               final rating = index + 1;
               final isSelected = _moodRating == rating;
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  setState(() => _moodRating = rating);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? primary
-                        : (isDark
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : Colors.white.withValues(alpha: 0.2)),
-                    shape: BoxShape.circle,
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: primary.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              spreadRadius: 2,
-                            )
-                          ]
-                        : [],
-                  ),
-                  child: Icon(
-                    _moodIcons[index],
-                    color: isSelected
-                        ? (isDark ? AppTheme.backgroundDarkColor : Colors.white)
-                        : (isDark
-                            ? Colors.white.withValues(alpha: 0.4)
-                            : Colors.grey[600]),
-                    size: 28,
+              final labels = [
+                'Really struggling',
+                'Feeling down',
+                'Doing okay',
+                'Feeling good',
+                'Excellent mood'
+              ];
+              return Semantics(
+                button: true,
+                selected: isSelected,
+                label: labels[index],
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _moodRating = rating);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? primary
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.white.withValues(alpha: 0.2)),
+                      shape: BoxShape.circle,
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: primary.withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Icon(
+                      _moodIcons[index],
+                      color: isSelected
+                          ? (isDark ? AppTheme.backgroundDarkColor : Colors.white)
+                          : (isDark
+                              ? Colors.white.withValues(alpha: 0.4)
+                              : Colors.grey[600]),
+                      size: 28,
+                    ),
                   ),
                 ),
               );
@@ -380,31 +397,34 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    TextField(
-                      key: const Key('bbt_field'),
-                      controller: _tempController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      style: TextStyle(
-                          fontFamily: AppTheme.fontFamily,
-                          color: isDark ? Colors.white : Colors.black87),
-                      decoration: InputDecoration(
-                        hintText: "98.6",
-                        suffixText: "°F",
-                        filled: true,
-                        fillColor: isDark
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : Colors.white.withValues(alpha: 0.5),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.1)
-                                  : Colors.transparent),
+                    Semantics(
+                      label: "Basal Body Temperature",
+                      child: TextField(
+                        key: const Key('bbt_field'),
+                        controller: _tempController,
+                        keyboardType:
+                            const TextInputType.numberWithOptions(decimal: true),
+                        style: TextStyle(
+                            fontFamily: AppTheme.fontFamily,
+                            color: isDark ? Colors.white : Colors.black87),
+                        decoration: InputDecoration(
+                          hintText: "98.6",
+                          suffixText: "°F",
+                          filled: true,
+                          fillColor: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.white.withValues(alpha: 0.5),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.transparent),
+                          ),
                         ),
                       ),
                     ),
@@ -558,18 +578,22 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                       ),
                     );
                   }),
-                  ActionChip(
-                    onPressed: _showAddSymptomDialog,
-                    label: Icon(Icons.add, size: 20, color: primary),
-                    backgroundColor: isDark
-                        ? Colors.white.withValues(alpha: 0.05)
-                        : Colors.white.withValues(alpha: 0.1),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : Colors.grey[200]!),
+                  Semantics(
+                    button: true,
+                    label: "Add custom symptom tag",
+                    child: ActionChip(
+                      onPressed: _showAddSymptomDialog,
+                      label: Icon(Icons.add, size: 20, color: primary),
+                      backgroundColor: isDark
+                          ? Colors.white.withValues(alpha: 0.05)
+                          : Colors.white.withValues(alpha: 0.1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.grey[200]!),
+                      ),
                     ),
                   ),
                 ],

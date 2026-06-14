@@ -246,30 +246,36 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     IconButton(
+                                      tooltip: "Previous Month",
                                       icon: Icon(Icons.chevron_left_rounded, color: primary),
                                       onPressed: _onPrevMonth,
                                     ),
                                     Row(
                                       children: [
-                                        InkWell(
-                                          onTap: _showMonthYearPicker,
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                            child: Text(
-                                              DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase(),
-                                              style: TextStyle(
-                                                color: primary,
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 15,
-                                                letterSpacing: 1.5,
-                                                fontFamily: AppTheme.fontFamily,
+                                        Semantics(
+                                          button: true,
+                                          label: "Select month and year",
+                                          child: InkWell(
+                                            onTap: _showMonthYearPicker,
+                                            borderRadius: BorderRadius.circular(8),
+                                            child: Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                              child: Text(
+                                                DateFormat('MMMM yyyy').format(_focusedDay).toUpperCase(),
+                                                style: TextStyle(
+                                                  color: primary,
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 15,
+                                                  letterSpacing: 1.5,
+                                                  fontFamily: AppTheme.fontFamily,
+                                                ),
                                               ),
                                             ),
                                           ),
                                         ),
                                         const SizedBox(width: 4),
                                         IconButton(
+                                          tooltip: "Show Legend",
                                           icon: Icon(Icons.info_outline_rounded, color: primary.withValues(alpha: 0.5), size: 18),
                                           onPressed: _showLegend,
                                           padding: EdgeInsets.zero,
@@ -279,6 +285,7 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                                       ],
                                     ),
                                     IconButton(
+                                      tooltip: "Next Month",
                                       icon: Icon(Icons.chevron_right_rounded, color: primary),
                                       onPressed: _onNextMonth,
                                     ),
@@ -337,27 +344,31 @@ class _TrackingCalendarPageState extends State<TrackingCalendarPage> {
                                           decoration: AppTheme.glassFabDecoration(isDark: isDark),
                                           child: Material(
                                             color: Colors.transparent,
-                                            child: InkWell(
-                                              borderRadius: BorderRadius.circular(14),
-                                              onTap: _returnToToday,
-                                              child: Padding(
-                                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(Icons.today_rounded, color: primary, size: 18),
-                                                    const SizedBox(width: 6),
-                                                    Text(
-                                                      'TODAY',
-                                                      style: TextStyle(
-                                                        color: primary,
-                                                        fontSize: 11,
-                                                        fontWeight: FontWeight.w800,
-                                                        letterSpacing: 1,
-                                                        fontFamily: AppTheme.fontFamily,
+                                            child: Semantics(
+                                              button: true,
+                                              label: "Return to today",
+                                              child: InkWell(
+                                                borderRadius: BorderRadius.circular(14),
+                                                onTap: _returnToToday,
+                                                child: Padding(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(Icons.today_rounded, color: primary, size: 18),
+                                                      const SizedBox(width: 6),
+                                                      Text(
+                                                        'TODAY',
+                                                        style: TextStyle(
+                                                          color: primary,
+                                                          fontSize: 11,
+                                                          fontWeight: FontWeight.w800,
+                                                          letterSpacing: 1,
+                                                          fontFamily: AppTheme.fontFamily,
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             ),

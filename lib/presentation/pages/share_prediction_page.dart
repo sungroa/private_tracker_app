@@ -125,25 +125,28 @@ class _SharePredictionPageState extends State<SharePredictionPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (_deepLink != null)
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: QrImageView(
-                            data: _deepLink!,
-                            version: QrVersions.auto,
-                            size: 200.0,
-                            eyeStyle: const QrEyeStyle(
-                              eyeShape: QrEyeShape.square,
-                              color: Colors.black87,
+                        Semantics(
+                          label: "QR Code containing encrypted cycle predictions. Have your partner scan this to connect.",
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
                             ),
-                            dataModuleStyle: const QrDataModuleStyle(
-                              dataModuleShape: QrDataModuleShape.square,
-                              color: Colors.black87,
+                            child: QrImageView(
+                              data: _deepLink!,
+                              version: QrVersions.auto,
+                              size: 200.0,
+                              eyeStyle: const QrEyeStyle(
+                                eyeShape: QrEyeShape.square,
+                                color: Colors.black87,
+                              ),
+                              dataModuleStyle: const QrDataModuleStyle(
+                                dataModuleShape: QrDataModuleShape.square,
+                                color: Colors.black87,
+                              ),
+                              gapless: false,
                             ),
-                            gapless: false,
                           ),
                         )
                       else
@@ -219,33 +222,37 @@ class _ActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 110,
-        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 110,
+          decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: primary, size: 28),
               ),
-              child: Icon(icon, color: primary, size: 28),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 14,
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+                  fontFamily: AppTheme.fontFamily,
+                  fontSize: 14,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -301,33 +301,35 @@ class _PartnerModePageState extends State<PartnerModePage> {
   }
 
   Widget _buildScannerOverlay(Color primary) {
-    return Center(
-      child: Container(
-        width: 250,
-        height: 250,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 3),
-          borderRadius: BorderRadius.circular(32),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 0, left: 0,
-              child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(top: BorderSide(color: primary, width: 6), left: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(topLeft: Radius.circular(32)))),
-            ),
-            Positioned(
-              top: 0, right: 0,
-              child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(top: BorderSide(color: primary, width: 6), right: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(topRight: Radius.circular(32)))),
-            ),
-            Positioned(
-              bottom: 0, left: 0,
-              child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(bottom: BorderSide(color: primary, width: 6), left: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(32)))),
-            ),
-            Positioned(
-              bottom: 0, right: 0,
-              child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(bottom: BorderSide(color: primary, width: 6), right: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(bottomRight: Radius.circular(32)))),
-            ),
-          ],
+    return ExcludeSemantics(
+      child: Center(
+        child: Container(
+          width: 250,
+          height: 250,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 3),
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                top: 0, left: 0,
+                child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(top: BorderSide(color: primary, width: 6), left: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(topLeft: Radius.circular(32)))),
+              ),
+              Positioned(
+                top: 0, right: 0,
+                child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(top: BorderSide(color: primary, width: 6), right: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(topRight: Radius.circular(32)))),
+              ),
+              Positioned(
+                bottom: 0, left: 0,
+                child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(bottom: BorderSide(color: primary, width: 6), left: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(32)))),
+              ),
+              Positioned(
+                bottom: 0, right: 0,
+                child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(bottom: BorderSide(color: primary, width: 6), right: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(bottomRight: Radius.circular(32)))),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -477,65 +479,67 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 32).copyWith(
-        boxShadow: isActive ? [
-          BoxShadow(
-            color: color.withValues(alpha: 0.2),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
-          )
-        ] : null,
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(20),
+    return MergeSemantics(
+      child: Container(
+        padding: const EdgeInsets.all(28),
+        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 32).copyWith(
+          boxShadow: isActive ? [
+            BoxShadow(
+              color: color.withValues(alpha: 0.2),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            )
+          ] : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(icon, color: color, size: 32),
             ),
-            child: Icon(icon, color: color, size: 32),
-          ),
-          const SizedBox(width: 24),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 11, 
-                    fontWeight: FontWeight.w900, 
-                    color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black38,
-                    letterSpacing: 1.5,
+            const SizedBox(width: 24),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 11, 
+                      fontWeight: FontWeight.w900, 
+                      color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black38,
+                      letterSpacing: 1.5,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: isActive ? color : (isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87),
-                    fontFamily: AppTheme.fontFamily,
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: isActive ? color : (isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87),
+                      fontFamily: AppTheme.fontFamily,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subValue,
-                  style: TextStyle(
-                    fontSize: 14, 
-                    color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.black45,
-                    fontFamily: AppTheme.fontFamily,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 2),
+                  Text(
+                    subValue,
+                    style: TextStyle(
+                      fontSize: 14, 
+                      color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.black45,
+                      fontFamily: AppTheme.fontFamily,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

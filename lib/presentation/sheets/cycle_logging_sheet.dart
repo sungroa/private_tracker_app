@@ -468,41 +468,46 @@ class _DateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
+    final dateText = date != null ? DateFormat('MMMM d, y').format(date!) : "Not set";
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.5)
-                    : Colors.grey[600],
-                fontWeight: FontWeight.w600,
-                fontFamily: AppTheme.fontFamily,
+    return Semantics(
+      button: true,
+      label: "$label date: $dateText",
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.5)
+                      : Colors.grey[600],
+                  fontWeight: FontWeight.w600,
+                  fontFamily: AppTheme.fontFamily,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              date != null ? DateFormat('MMM d, y').format(date!) : "Not set",
-              style: TextStyle(
-                fontSize: 15,
-                color: date != null
-                    ? primary
-                    : (isDark
-                        ? Colors.white.withValues(alpha: 0.2)
-                        : Colors.grey[400]),
-                fontWeight: FontWeight.w700,
-                fontFamily: AppTheme.fontFamily,
+              const SizedBox(height: 8),
+              Text(
+                date != null ? DateFormat('MMM d, y').format(date!) : "Not set",
+                style: TextStyle(
+                  fontSize: 15,
+                  color: date != null
+                      ? primary
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.2)
+                          : Colors.grey[400]),
+                  fontWeight: FontWeight.w700,
+                  fontFamily: AppTheme.fontFamily,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
