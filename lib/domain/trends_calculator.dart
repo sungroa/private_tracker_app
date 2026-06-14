@@ -24,8 +24,9 @@ class TrendsCalculator {
   /// 
   /// This method performs the following:
   /// 1. Calculates historical averages (cycle length, period duration).
-  /// 2. Performs period prediction using [CycleCalculator].
-  /// 3. Projects fertility windows using the [PredictionEngine].
+  /// 2. Projects up to 4 future period dates using [CycleCalculator.predictFuturePeriods].
+  ///    The count is adaptive — see [CycleCalculator._adaptiveProjectionCount].
+  /// 3. Merges fertility windows for all projected cycles via [PredictionEngine.predictAllFertilityWindows].
   /// 4. Analyzes symptom frequency and mood history via [SymptomAnalyzer].
   /// 5. Maps temperature data relative to cycle boundaries via [BbtMapper].
   /// 
@@ -35,10 +36,10 @@ class TrendsCalculator {
     final avgCycleLength = CycleStatsCalculator.calculateAverageCycleLength(cycleLogs);
     final avgPeriodDuration = CycleStatsCalculator.calculateAveragePeriodDuration(cycleLogs);
     
-    // 2. Predictive Analysis
-    // The [CycleCalculator] is sophisticated, supporting BBT-confirmed ovulation logic.
-    final nextPeriod = _cycleCalculator.predictNextPeriod(cycleLogs, symptomLogs);
-    final fertility = PredictionEngine.predictFertilityWindow(nextPeriod);
+    // 2. Multi-Cycle Predictive Analysis
+    // Adaptively projects 1–4 future cycles depending on available history.
+    final periodStarts = _cycleCalculator.predictFuturePeriods(cycleLogs, symptomLogs: symptomLogs);
+    final fertilityDates = PredictionEngine.predictAllFertilityWindows(periodStarts);
 
     // 3. Behavioral and Physiological Analysis
     return TrendData(
@@ -47,8 +48,8 @@ class TrendsCalculator {
       topSymptoms: SymptomAnalyzer.calculateTopSymptoms(symptomLogs),
       moodHistory: SymptomAnalyzer.getMoodHistory(symptomLogs),
       bbtHistory: BbtMapper.getBbtHistoryForCurrentCycle(cycleLogs, symptomLogs),
-      predictedNextPeriod: nextPeriod,
-      predictedFertilityDates: fertility,
+      predictedPeriodStarts: periodStarts,
+      predictedFertilityDates: fertilityDates,
     );
   }
 }

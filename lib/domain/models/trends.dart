@@ -19,11 +19,21 @@ class TrendData {
   /// Normalized data for Basal Body Temperature (BBT) mapping.
   final List<BbtPoint> bbtHistory;
 
-  /// The estimated start date of the next menstruation cycle.
-  final DateTime? predictedNextPeriod;
+  /// Ordered list of predicted future period start dates (up to 4 cycles).
+  ///
+  /// The list is sorted chronologically (nearest first). The number of entries
+  /// scales adaptively with the amount of recorded history — see
+  /// [CycleCalculator.predictFuturePeriods] for the tier logic.
+  final List<DateTime> predictedPeriodStarts;
 
-  /// Estimated dates for the upcoming fertility window.
+  /// Estimated dates for all upcoming fertility windows (all projected cycles merged).
   final List<DateTime> predictedFertilityDates;
+
+  /// Backwards-compatible getter: the nearest predicted period start date.
+  ///
+  /// Returns `null` when there is insufficient data for any prediction.
+  DateTime? get predictedNextPeriod =>
+      predictedPeriodStarts.isEmpty ? null : predictedPeriodStarts.first;
 
   /// Canonical constructor for [TrendData].
   TrendData({
@@ -32,27 +42,29 @@ class TrendData {
     required this.topSymptoms,
     required this.moodHistory,
     this.bbtHistory = const [],
-    this.predictedNextPeriod,
+    this.predictedPeriodStarts = const [],
     this.predictedFertilityDates = const [],
   });
 
-  /// Checks if a given [date] is within the predicted bleeding window.
+  /// Checks if a given [date] falls within any predicted bleeding window.
+  ///
+  /// Each projected period is treated as a 5-day window (days 0–4 inclusive)
+  /// starting from the predicted start date.
   bool isPredictedBleeding(DateTime date) {
-    if (predictedNextPeriod == null) return false;
+    if (predictedPeriodStarts.isEmpty) return false;
     final dateOnly = DateTime(date.year, date.month, date.day);
-    final start = DateTime(
-      predictedNextPeriod!.year,
-      predictedNextPeriod!.month,
-      predictedNextPeriod!.day,
-    );
-    
-    // Projection assumes a 4-day standard window if not otherwise specified.
-    final end = start.add(const Duration(days: 4));
-    return (dateOnly.isAtSameMomentAs(start) || 
-           (dateOnly.isAfter(start) && dateOnly.isBefore(end.add(const Duration(days: 1)))));
+
+    return predictedPeriodStarts.any((periodStart) {
+      final start = DateTime(periodStart.year, periodStart.month, periodStart.day);
+      // Projection assumes a 4-day standard window if not otherwise specified.
+      final end = start.add(const Duration(days: 4));
+      return dateOnly.isAtSameMomentAs(start) ||
+          (dateOnly.isAfter(start) &&
+              dateOnly.isBefore(end.add(const Duration(days: 1))));
+    });
   }
 
-  /// Checks if a given [date] is within the predicted fertile window.
+  /// Checks if a given [date] is within any predicted fertile window.
   bool isPredictedFertility(DateTime date) {
     final dateOnly = DateTime(date.year, date.month, date.day);
     return predictedFertilityDates.any((d) => 

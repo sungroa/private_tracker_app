@@ -172,5 +172,115 @@ void main() {
         expect(prediction, DateTime.utc(2026, 3, 1).add(const Duration(days: 28)));
       });
     });
+
+    group('Multi-Cycle Projection (predictFuturePeriods)', () {
+      test('returns empty list for empty cycle logs', () {
+        final result = calculator.predictFuturePeriods([]);
+        expect(result, isEmpty);
+      });
+
+      test('cold start: 1 recorded cycle → 1 projection', () {
+        final logs = [
+          TestModelFactory.createCycleLog(startDate: DateTime.utc(2026, 3, 1)),
+        ];
+        // 0 historical lengths → adaptive count = 1
+        final result = calculator.predictFuturePeriods(logs);
+        expect(result.length, 1);
+        expect(result.first, DateTime.utc(2026, 3, 1).add(const Duration(days: 28)));
+      });
+
+      test('tier 2: 3 recorded cycles → 2 projections', () {
+        // 2 valid historical lengths (3 cycles = 2 intervals)
+        final base = DateTime.utc(2026, 1, 1);
+        final logs = [
+          TestModelFactory.createCycleLog(startDate: base.add(const Duration(days: 56))),
+          TestModelFactory.createCycleLog(startDate: base.add(const Duration(days: 28))),
+          TestModelFactory.createCycleLog(startDate: base),
+        ];
+        final result = calculator.predictFuturePeriods(logs);
+        expect(result.length, 2);
+      });
+
+      test('tier 3: 5 recorded cycles → 3 projections', () {
+        // 4 valid historical lengths (5 cycles = 4 intervals)
+        final base = DateTime.utc(2026, 1, 1);
+        final logs = List.generate(
+          5,
+          (i) => TestModelFactory.createCycleLog(startDate: base.add(Duration(days: i * 28))),
+        ).reversed.toList(); // newest first input
+        final result = calculator.predictFuturePeriods(logs);
+        expect(result.length, 3);
+      });
+
+      test('tier 4: 9 recorded cycles → 4 projections', () {
+        // 8 valid historical lengths (9 cycles = 8 intervals)
+        final base = DateTime.utc(2026, 1, 1);
+        final logs = List.generate(
+          9,
+          (i) => TestModelFactory.createCycleLog(startDate: base.add(Duration(days: i * 28))),
+        ).reversed.toList();
+        final result = calculator.predictFuturePeriods(logs);
+        expect(result.length, 4);
+      });
+
+      test('projections are in chronological order (each after the previous)', () {
+        final base = DateTime.utc(2026, 1, 1);
+        final logs = List.generate(
+          9,
+          (i) => TestModelFactory.createCycleLog(startDate: base.add(Duration(days: i * 28))),
+        ).reversed.toList();
+        final result = calculator.predictFuturePeriods(logs);
+        for (int i = 1; i < result.length; i++) {
+          expect(
+            result[i].isAfter(result[i - 1]),
+            isTrue,
+            reason: 'Projection $i must be after projection ${i - 1}',
+          );
+        }
+      });
+
+      test('explicit count overrides adaptive tier', () {
+        // Enough history for tier 4, but we explicitly request 2
+        final base = DateTime.utc(2026, 1, 1);
+        final logs = List.generate(
+          9,
+          (i) => TestModelFactory.createCycleLog(startDate: base.add(Duration(days: i * 28))),
+        ).reversed.toList();
+        final result = calculator.predictFuturePeriods(logs, count: 2);
+        expect(result.length, 2);
+      });
+
+      test('STM override applies only to first projection; subsequent use statistical model', () {
+        // Single-cycle logs + 9 BBT readings confirming ovulation on day 6
+        final cycleStart = DateTime.utc(2026, 3, 1);
+        final cycleLogs = [TestModelFactory.createCycleLog(startDate: cycleStart)];
+
+        final symptoms = <dynamic>[];
+        for (int i = 0; i < 6; i++) {
+          symptoms.add(TestModelFactory.createSymptomLog(
+            date: cycleStart.add(Duration(days: i)),
+            basalBodyTemperature: 97.0,
+          ));
+        }
+        for (int i = 6; i < 9; i++) {
+          symptoms.add(TestModelFactory.createSymptomLog(
+            date: cycleStart.add(Duration(days: i)),
+            basalBodyTemperature: 97.3,
+          ));
+        }
+
+        final result = calculator.predictFuturePeriods(
+          cycleLogs,
+          symptomLogs: symptoms.cast(),
+          count: 2,
+        );
+
+        expect(result.length, 2);
+        // First: STM-confirmed → ovulation day 6 (Mar 6) + 14 = Mar 20
+        expect(result.first, DateTime.utc(2026, 3, 20));
+        // Second: built on the statistical model using the first projection as anchor
+        expect(result[1].isAfter(result.first), isTrue);
+      });
+    });
   });
 }

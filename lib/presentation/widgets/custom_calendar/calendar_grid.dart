@@ -21,10 +21,10 @@ class CustomCalendarGrid extends StatelessWidget {
   /// Pre-indexed map of health/symptom logs for O(1) cell lookups.
   final Map<String, SymptomLog> symptomMap;
 
-  /// Estimated start date of the next period.
-  final DateTime? predictedNextPeriod;
+  /// Estimated start dates of all projected future periods (up to 4 cycles).
+  final List<DateTime> predictedPeriodStarts;
 
-  /// Projected fertile days for the current cycle.
+  /// Projected fertile days across all projected cycles.
   final List<DateTime> predictedFertilityDates;
 
   /// Callback triggered when a user taps a specific day cell.
@@ -36,7 +36,7 @@ class CustomCalendarGrid extends StatelessWidget {
     this.selectedDay,
     required this.calendarEventMap,
     required this.symptomMap,
-    this.predictedNextPeriod,
+    this.predictedPeriodStarts = const [],
     this.predictedFertilityDates = const [],
     required this.onDaySelected,
   });
@@ -45,16 +45,17 @@ class CustomCalendarGrid extends StatelessWidget {
   String _formatKey(DateTime date) =>
       "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
-  /// Local check if a day is within the predicted bleeding window.
+  /// Local check if a day is within any projected bleeding window.
   bool _isPredictedBleeding(DateTime day) {
-    if (predictedNextPeriod == null) return false;
+    if (predictedPeriodStarts.isEmpty) return false;
     final dateOnly = DateTime(day.year, day.month, day.day);
-    final start = DateTime(predictedNextPeriod!.year,
-        predictedNextPeriod!.month, predictedNextPeriod!.day);
-    final end = start.add(const Duration(days: 4));
-    return (dateOnly.isAtSameMomentAs(start) ||
-        (dateOnly.isAfter(start) &&
-            dateOnly.isBefore(end.add(const Duration(days: 1)))));
+    return predictedPeriodStarts.any((periodStart) {
+      final start = DateTime(periodStart.year, periodStart.month, periodStart.day);
+      final end = start.add(const Duration(days: 4));
+      return dateOnly.isAtSameMomentAs(start) ||
+          (dateOnly.isAfter(start) &&
+              dateOnly.isBefore(end.add(const Duration(days: 1))));
+    });
   }
 
   /// Local check if a day is within the predicted fertility dates.
