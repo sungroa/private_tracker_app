@@ -94,9 +94,7 @@ class BackupRestoreService {
 
     final jsonString = jsonEncode(data);
     final jsonBytes = utf8.encode(jsonString);
-    final compressedBytes = GZipEncoder().encode(jsonBytes);
-    if (compressedBytes == null) throw Exception("Compression failed");
-    return Uint8List.fromList(compressedBytes);
+    return Uint8List.fromList(GZipEncoder().encode(jsonBytes));
   }
 
   /// Imports and restores data from an encrypted binary payload using a raw encryption key.

@@ -384,7 +384,7 @@ class _SettingsPageState extends State<SettingsPage> {
     
     FilePickerResult? result;
     try {
-      result = await FilePicker.platform.pickFiles(
+      result = await FilePicker.pickFiles(
         type: FileType.any,
       );
     } on PlatformException catch (e) {
