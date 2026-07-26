@@ -24,16 +24,12 @@ class BackupOrchestrator {
   final TagDataSource _tagDataSource;
 
   BackupOrchestrator({
-    required BackupRestoreService backupService,
-    required LocalDatabaseManager dbManager,
-    required CycleDataSource cycleDataSource,
-    required SymptomDataSource symptomDataSource,
-    required TagDataSource tagDataSource,
-  }) : _backupService = backupService,
-       _dbManager = dbManager,
-       _cycleDataSource = cycleDataSource,
-       _symptomDataSource = symptomDataSource,
-       _tagDataSource = tagDataSource;
+    required this._backupService,
+    required this._dbManager,
+    required this._cycleDataSource,
+    required this._symptomDataSource,
+    required this._tagDataSource,
+  });
 
   /// Creates a password-protected, AES-encrypted, and GZIP-compressed backup file.
   Future<File> exportEncryptedBackup(String userPassword) async {

@@ -30,20 +30,14 @@ class EncryptedStorageService {
   final TagDataSource _tagDataSource;
 
   EncryptedStorageService({
-    required SecureKeyStorage keyStorage,
-    required LocalDatabaseManager dbManager,
-    required DataExportService exportService,
-    required DataSeedingService seedingService,
-    required CycleDataSource cycleDataSource,
-    required SymptomDataSource symptomDataSource,
-    required TagDataSource tagDataSource,
-  }) : _keyStorage = keyStorage,
-       _dbManager = dbManager,
-       _exportService = exportService,
-       _seedingService = seedingService,
-       _cycleDataSource = cycleDataSource,
-       _symptomDataSource = symptomDataSource,
-       _tagDataSource = tagDataSource;
+    required this._keyStorage,
+    required this._dbManager,
+    required this._exportService,
+    required this._seedingService,
+    required this._cycleDataSource,
+    required this._symptomDataSource,
+    required this._tagDataSource,
+  });
 
   bool get isInitialized => _dbManager.isInitialized;
 

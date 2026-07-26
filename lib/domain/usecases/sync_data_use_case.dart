@@ -18,14 +18,11 @@ class SyncDataUseCase {
   final Future<List<int>> Function() _keyProvider;
 
   SyncDataUseCase({
-    required CloudSyncInterface cloudSync,
-    required IDataSourceRepository dataSource,
-    required ISyncMetadataRepository metadata,
-    required Future<List<int>> Function() keyProvider,
-  })  : _cloudSync = cloudSync,
-        _dataSource = dataSource,
-        _metadata = metadata,
-        _keyProvider = keyProvider;
+    required this._cloudSync,
+    required this._dataSource,
+    required this._metadata,
+    required this._keyProvider,
+  });
 
   /// Updates the local recovery salt.
   Future<void> setRecoverySalt(String salt) async {

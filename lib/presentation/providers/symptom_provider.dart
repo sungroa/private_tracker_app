@@ -23,8 +23,8 @@ class SymptomProvider extends ChangeNotifier {
   bool _isLoading = false;
 
   SymptomProvider(this._getUseCase, this._saveUseCase, this._deleteUseCase, {
-    CloudSyncProvider? cloudSync,
-  }) : _cloudSync = cloudSync;
+    this._cloudSync,
+  });
 
   /// Allows late binding of the sync provider to avoid circular dependency.
   void attachSyncProvider(CloudSyncProvider cloudSync) {
