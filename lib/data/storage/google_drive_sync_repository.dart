@@ -162,7 +162,7 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       // Build the primary metadata map (appProperties supports nullable values).
       final appPropertiesMap = <String, String?>{
         'checksum': checksum,
-        if (extraMetadata != null) ...extraMetadata,
+        ...?extraMetadata,
       };
 
       // Triple-redundant metadata storage so the recovery salt survives

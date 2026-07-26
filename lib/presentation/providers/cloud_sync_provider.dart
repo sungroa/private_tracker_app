@@ -59,14 +59,11 @@ class CloudSyncProvider with ChangeNotifier {
   DateTime? _lastSyncTime;
 
   CloudSyncProvider({
-    required SyncDataUseCase syncUseCase,
-    required PreferencesService prefs,
-    required SecureKeyStorage keyStorage,
-    required CloudSyncInterface cloudSync,
-  }) : _syncUseCase = syncUseCase,
-       _prefs = prefs,
-       _keyStorage = keyStorage,
-       _cloudSync = cloudSync;
+    required this._syncUseCase,
+    required this._prefs,
+    required this._keyStorage,
+    required this._cloudSync,
+  });
 
   bool get isSyncing => _isSyncing;
   bool get isInitialized => _isInitialized;

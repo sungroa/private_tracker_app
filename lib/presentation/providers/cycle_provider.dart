@@ -44,8 +44,8 @@ class CycleProvider extends ChangeNotifier {
     this._getCyclesUseCase,
     this._saveCycleUseCase,
     this._deleteCycleUseCase, {
-    CloudSyncProvider? cloudSync,
-  }) : _cloudSync = cloudSync;
+    this._cloudSync,
+  });
 
   /// Allows late binding of the sync provider to avoid circular dependency.
   void attachSyncProvider(CloudSyncProvider cloudSync) {

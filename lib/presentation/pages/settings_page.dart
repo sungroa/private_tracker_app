@@ -384,7 +384,7 @@ class _SettingsPageState extends State<SettingsPage> {
     
     FilePickerResult? result;
     try {
-      result = await FilePicker.platform.pickFiles(
+      result = await FilePicker.pickFiles(
         type: FileType.any,
       );
     } on PlatformException catch (e) {
@@ -1294,35 +1294,38 @@ class _SettingsPageState extends State<SettingsPage> {
     VoidCallback? onTap,
     bool isDark = false,
   }) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: iconColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: iconColor, size: 22),
         ),
-        child: Icon(icon, color: iconColor, size: 22),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.w700,
-          color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
-          fontFamily: AppTheme.fontFamily,
-          fontSize: 15,
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+            fontFamily: AppTheme.fontFamily,
+            fontSize: 15,
+          ),
         ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(
-          color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54,
-          fontFamily: AppTheme.fontFamily,
-          fontSize: 13,
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54,
+            fontFamily: AppTheme.fontFamily,
+            fontSize: 13,
+          ),
         ),
+        trailing: trailing ?? Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black26),
       ),
-      trailing: trailing ?? Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black26),
     );
   }
 

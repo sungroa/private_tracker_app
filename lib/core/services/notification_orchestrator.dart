@@ -9,13 +9,12 @@ import 'preferences_service.dart';
 /// scheduling logic from both the domain model and the UI layer.
 class NotificationOrchestrator {
   final NotificationService _notificationService;
-  final PreferencesService _prefs;
+  final PreferencesService _preferencesService;
 
   NotificationOrchestrator({
-    required NotificationService notificationService,
-    required PreferencesService preferencesService,
-  })  : _notificationService = notificationService,
-        _prefs = preferencesService;
+    required this._notificationService,
+    required this._preferencesService,
+  });
 
   /// Recalculates and reschedules all prediction-based notifications.
   /// 
@@ -28,10 +27,10 @@ class NotificationOrchestrator {
     }
 
     // --- Period Reminder ---
-    final bool periodEnabled = await _prefs.isPeriodReminderEnabled();
+    final bool periodEnabled = await _preferencesService.isPeriodReminderEnabled();
     if (periodEnabled && trends.predictedNextPeriod != null) {
-      final int offset = await _prefs.getPeriodReminderOffset();
-      final TimeOfDay time = await _prefs.getPeriodReminderTime();
+      final int offset = await _preferencesService.getPeriodReminderOffset();
+      final TimeOfDay time = await _preferencesService.getPeriodReminderTime();
       final DateTime targetDate = trends.predictedNextPeriod!.subtract(Duration(days: offset));
       
       debugPrint('[PrivacyTracker.Notifications] Orchestrator: Scheduling period reminder for ${targetDate.toIso8601String()} at ${time.format}');
@@ -49,10 +48,10 @@ class NotificationOrchestrator {
     }
 
     // --- Fertility Reminder ---
-    final bool fertilityEnabled = await _prefs.isFertilityReminderEnabled();
+    final bool fertilityEnabled = await _preferencesService.isFertilityReminderEnabled();
     if (fertilityEnabled && trends.predictedFertilityDates.isNotEmpty) {
-      final int offset = await _prefs.getFertilityReminderOffset();
-      final TimeOfDay time = await _prefs.getFertilityReminderTime();
+      final int offset = await _preferencesService.getFertilityReminderOffset();
+      final TimeOfDay time = await _preferencesService.getFertilityReminderTime();
       // Fertility window is a list, take the first day
       final DateTime fertilityStart = trends.predictedFertilityDates.first;
       final DateTime targetDate = fertilityStart.subtract(Duration(days: offset));

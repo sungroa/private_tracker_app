@@ -1,61 +1,54 @@
-# Release Notes - Version 1.1.5+11
+# Release Notes - Version 1.1.6+12
 
-**Release Date:** June 14, 2026  
-**Comparison:** Version 1.1.5+11 vs. Version 1.1.4+10 (Previous Release)
+**Release Date:** July 26, 2026  
+**Comparison:** Version 1.1.6+12 vs. Version 1.1.5+11 (Previous Release)
 
 ---
 
 ## 📋 Overview
 
-Version 1.1.5+11 brings significant enhancements to user accessibility, biological forecasting, application security, and developer onboarding. The main highlights of this release include full screen-reader accessibility for blind users, an adaptive multi-cycle forecasting engine, secret sanitization for the public release, and distinct visual/build setups for development workflows.
+Version 1.1.6+12 completes a comprehensive modernization of the application's underlying ecosystem, upgrading to Flutter SDK 3.44.8 and Dart 3.12.2 while updating the native Android toolchain to Android Gradle Plugin (AGP) 8.11.1, Kotlin 2.2.20, and Gradle 8.14. This release updates core libraries (including `app_links` 7.2.1 and `flutter_markdown_plus` 1.0.7), refactors code for Dart 3.12 standards, and enforces Flutter 3.44 Material Ink rendering compliance.
 
 ---
 
 ## 🚀 Key Enhancements
 
-### 1. Screen-Reader Accessibility for Blind Users
-This release achieves full accessibility compatibility with screen readers (e.g., TalkBack and VoiceOver) across all key application paths:
-*   **Accessible Calendar Navigation:** Day cells in the custom calendar grid are wrapped in custom semantics that synthesize local logs, bleeding status, predictions, and symptom notes into a single, cohesive spoken description (e.g., *"Monday, June 15, 2026, Selected, Predicted period, Symptoms: cramps, headache"*).
-*   **Semantic Chart Summaries:** The Basal Body Temperature (BBT) and mood trend charts automatically compile and speak aggregated statistical summaries (e.g., number of recordings, average values, low/high points, and latest logs) to non-visual users.
-*   **Interactive Input Sheets:** Accessibility elements like custom labels, slider levels, and accessibility summaries are implemented for daily symptom logs, cycle logs, and donation screens.
+### 1. Framework & SDK Modernization
+*   **Flutter SDK Upgrade:** Upgraded from Flutter 3.41.6 to Flutter 3.44.8 (Dart 3.12.2).
+*   **SDK Constraint:** Updated `pubspec.yaml` environment constraint to `>=3.12.0 <4.0.0`.
+*   **Deep Link Navigation:** Upgraded `app_links` to `7.2.1` for enhanced deep-linking handling across mobile platforms.
+*   **Markdown Support:** Replaced discontinued `flutter_markdown` with `flutter_markdown_plus` (`1.0.7`).
 
-### 2. Adaptive Multi-Cycle Prediction Engine
-The cycle forecasting engine is upgraded from a single-cycle forecast to an adaptive multi-cycle engine:
-*   **Multi-Cycle Projections:** Calculates up to 4 future cycles depending on the depth of the user's recorded cycle history:
-    *   *1 recorded cycle:* 1 projection (Cold Start)
-    *   *2–3 recorded cycles:* 2 projections
-    *   *4–7 recorded cycles:* 3 projections
-    *   *8+ recorded cycles:* 4 projections (ARIMA Engine active)
-*   **Expanded Calendar Views:** Bleeding indicators and fertility windows are projected and visible across multiple future months in the calendar grid.
-*   **Deduplicated Fertility Projections:** Flat-maps and deduplicates projected fertility windows across all future cycles for clean visual calendar grid rendering.
+### 2. Native Android Toolchain Upgrade
+*   **Gradle Wrapper:** Upgraded to Gradle `8.14`.
+*   **Android Gradle Plugin:** Upgraded AGP to `8.11.1`.
+*   **Kotlin Plugin:** Upgraded Kotlin to `2.2.20`.
+*   **Compatibility Safeguards:** Maintained backwards-compatibility build flags in `gradle.properties` to ensure third-party plugin stability.
 
-### 3. Secret Sanitization & Security
-To prepare the repository for public release, hardcoded credentials have been securely externalized:
-*   **Environment Configuration:** The Google OAuth Web Client ID has been migrated from hardcoded code constants to environment definitions loaded at compile time via `String.fromEnvironment('GOOGLE_CLIENT_ID')`.
-*   **Contributors Template:** A template `dart-defines.json.example` is provided, and the local configuration file is added to `.gitignore` to prevent credential exposure in version control.
-*   **Onboarding Assertions:** Startup checks halt development builds with clear troubleshooting messages if target environment secrets are missing.
-
-### 4. Development & QA Workflows
-*   **Debug Launcher Icons:** Android debug builds automatically overlay a prominent orange "D" badge on the launcher icon and apply a distinct burnt-orange adaptive background, keeping release builds clean and making it easy to identify development builds on-device.
-*   **Shared Debug Keystore:** A pre-configured `debug.keystore` is committed to the repository to ensure consistent signing keys across dev machines, preventing signature mismatch errors during local test runs.
+### 3. Modernized Dart Syntaxes & UI Assertions
+*   **Initializing Formals:** Refactored constructor parameter initializers across core services and presentation providers to use concise Dart 3.12 `this._fieldName` formals.
+*   **Null-Aware Spread Operators:** Refactored map projections to use null-aware collection spreads (`...?`).
+*   **Material Ink Splash Compliance:** Wrapped `ListTile` items in a `Material(color: Colors.transparent)` widget inside `SettingsPage` to satisfy Flutter 3.44's background ink splash assertions.
 
 ---
 
-## 📝 Commits Included in this Release
+## 🧪 Verification & Build Integrity
 
-*   `f855891` - Incrementing the app version to 1.1.5+11.
-*   `451d50d` - feat: implement full screen-reader accessibility for blind users (#10)
-*   `956b70e` - feat: extend prediction engine to 3–4 future cycles (#9)
-*   `b5e3cf4` - Feature/debug launcher icon (#8)
-*   `07409f3` - chore: explicitly configure and document shared debug keystore (#7)
-*   `30d7901` - docs: update README with dart-defines.json setup and build flags
-*   `65a39cd` - security: move Google OAuth client ID to gitignored dart-defines.json
-*   `8b84eed` - chore: clean up temporary test and log files and update gitignore
+*   **Static Analysis:** `flutter analyze` passes cleanly with 0 issues.
+*   **Test Suite:** 100% pass rate across all 234 unit and widget tests.
+*   **Build Verification:** Successfully produced debug APK (`app-debug.apk`) with Gradle 8.14 and AGP 8.11.1.
 
 ---
 
-## 🧪 Testing & Verification Summary
+# Previous Release Notes
 
-*   **Static Analysis:** `flutter analyze` passes with zero issues.
-*   **Unit & Widget Tests:** Expanded test suite (now totaling 233 tests) passes successfully.
-*   **Accessibility Tests:** Added automated semantics verification in `test/presentation/accessibility_test.dart` to assert correct behavior of `SummaryTrendCard`, `SummaryLineChart`, and `BbtChart`.
+<details>
+<summary><b>Version 1.1.5+11 (June 14, 2026)</b></summary>
+
+### Key Enhancements:
+*   **Screen-Reader Accessibility for Blind Users:** Custom calendar grid semantics, semantic BBT/mood chart statistical summaries, and accessible symptom input sheets.
+*   **Adaptive Multi-Cycle Prediction Engine:** Scalable cycle forecasting engine projecting up to 4 future cycles based on recorded history depth.
+*   **Secret Sanitization & Security:** Google OAuth Client ID externalization via `String.fromEnvironment('GOOGLE_CLIENT_ID')` and gitignored `dart-defines.json`.
+*   **Development Workflows:** Debug launcher icon badge overlay and shared debug keystore.
+
+</details>

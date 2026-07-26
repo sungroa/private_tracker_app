@@ -21,8 +21,8 @@ class TagProvider with ChangeNotifier {
   bool _isLoading = false;
 
   TagProvider(this._getUseCase, this._addUseCase, this._deleteUseCase, {
-    CloudSyncProvider? cloudSync,
-  }) : _cloudSync = cloudSync;
+    this._cloudSync,
+  });
 
   /// Allows late binding of the sync provider to avoid circular dependency.
   void attachSyncProvider(CloudSyncProvider cloudSync) {

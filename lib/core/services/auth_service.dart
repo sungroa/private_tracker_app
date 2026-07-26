@@ -1,5 +1,4 @@
 import 'package:local_auth/local_auth.dart';
-import 'package:flutter/services.dart';
 import '../utils/security_logger.dart';
 
 class AuthService {
@@ -25,17 +24,14 @@ class AuthService {
       SecurityLogger.logInfo("AuthService: Starting biometric authentication prompt...");
       final bool didAuthenticate = await _auth.authenticate(
         localizedReason: 'Please authenticate to access your private data',
-        options: const AuthenticationOptions(
-          stickyAuth: false, // (W10) Disabled for better compatibility on Android 12
-          biometricOnly: false,
-          useErrorDialogs: true, // (W10) Explicitly enable system error UI
-        ),
+        persistAcrossBackgrounding: false,
+        biometricOnly: false,
       );
       SecurityLogger.logInfo("AuthService: Authentication request completed. Result: $didAuthenticate");
       return didAuthenticate;
-    } on PlatformException catch (e) {
-      SecurityLogger.logError("AuthService: PlatformException during authentication [${e.code}]", error: e);
-      if (e.code == 'NotAvailable') {
+    } on LocalAuthException catch (e) {
+      SecurityLogger.logError("AuthService: LocalAuthException during authentication [${e.code}]", error: e);
+      if (e.code == LocalAuthExceptionCode.noCredentialsSet) {
         // (W10) Device has no security lock (PIN/Bio) configured. 
         // We treat this as "authenticated" since there is no challenge possible.
         SecurityLogger.logInfo("AuthService: No device security configured. Proceeding by default.");
