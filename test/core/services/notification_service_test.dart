@@ -26,27 +26,26 @@ void main() {
   setUp(() {
     mockPlugin = MockNotificationsPlugin();
     mockClock = MockClock(DateTime.utc(2026, 5, 15));
-    service = NotificationService(
-      notificationsPlugin: mockPlugin,
-      clock: mockClock,
-    );
+    service = NotificationService(notificationsPlugin: mockPlugin, clock: mockClock);
 
-    when(() => mockPlugin.zonedSchedule(
-      id: any(named: 'id'),
-      title: any(named: 'title'),
-      body: any(named: 'body'),
-      scheduledDate: any(named: 'scheduledDate'),
-      notificationDetails: any(named: 'notificationDetails'),
-      androidScheduleMode: any(named: 'androidScheduleMode'),
-      matchDateTimeComponents: any(named: 'matchDateTimeComponents'),
-    )).thenAnswer((_) async {});
+    when(
+      () => mockPlugin.zonedSchedule(
+        id: any(named: 'id'),
+        title: any(named: 'title'),
+        body: any(named: 'body'),
+        scheduledDate: any(named: 'scheduledDate'),
+        notificationDetails: any(named: 'notificationDetails'),
+        androidScheduleMode: any(named: 'androidScheduleMode'),
+        matchDateTimeComponents: any(named: 'matchDateTimeComponents'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   group('NotificationService Tests', () {
     test('scheduleDailyReminder should schedule for today if time is in the future', () async {
       // Mock current time: 2026-05-15 10:00:00
       mockClock.setNow(DateTime.utc(2026, 5, 15, 10, 0, 0));
-      
+
       // Schedule for 11:00:00 today
       await service.scheduleDailyReminder(
         id: 1,
@@ -55,15 +54,17 @@ void main() {
         body: 'Body',
       );
 
-      final captured = verify(() => mockPlugin.zonedSchedule(
-        id: 1,
-        title: 'Title',
-        body: 'Body',
-        scheduledDate: captureAny(named: 'scheduledDate'),
-        notificationDetails: any(named: 'notificationDetails'),
-        androidScheduleMode: any(named: 'androidScheduleMode'),
-        matchDateTimeComponents: DateTimeComponents.time,
-      )).captured;
+      final captured = verify(
+        () => mockPlugin.zonedSchedule(
+          id: 1,
+          title: 'Title',
+          body: 'Body',
+          scheduledDate: captureAny(named: 'scheduledDate'),
+          notificationDetails: any(named: 'notificationDetails'),
+          androidScheduleMode: any(named: 'androidScheduleMode'),
+          matchDateTimeComponents: DateTimeComponents.time,
+        ),
+      ).captured;
 
       final scheduledDate = captured.first as tz.TZDateTime;
       expect(scheduledDate.year, 2026);
@@ -75,7 +76,7 @@ void main() {
     test('scheduleDailyReminder should schedule for tomorrow if time is in the past', () async {
       // Mock current time: 2026-05-15 10:00:00
       mockClock.setNow(DateTime.utc(2026, 5, 15, 10, 0, 0));
-      
+
       // Schedule for 09:00:00 (past)
       await service.scheduleDailyReminder(
         id: 1,
@@ -84,15 +85,17 @@ void main() {
         body: 'Body',
       );
 
-      final captured = verify(() => mockPlugin.zonedSchedule(
-        id: 1,
-        title: 'Title',
-        body: 'Body',
-        scheduledDate: captureAny(named: 'scheduledDate'),
-        notificationDetails: any(named: 'notificationDetails'),
-        androidScheduleMode: any(named: 'androidScheduleMode'),
-        matchDateTimeComponents: DateTimeComponents.time,
-      )).captured;
+      final captured = verify(
+        () => mockPlugin.zonedSchedule(
+          id: 1,
+          title: 'Title',
+          body: 'Body',
+          scheduledDate: captureAny(named: 'scheduledDate'),
+          notificationDetails: any(named: 'notificationDetails'),
+          androidScheduleMode: any(named: 'androidScheduleMode'),
+          matchDateTimeComponents: DateTimeComponents.time,
+        ),
+      ).captured;
 
       final scheduledDate = captured.first as tz.TZDateTime;
       expect(scheduledDate.year, 2026);
@@ -103,7 +106,7 @@ void main() {
 
     test('scheduleSingleNotification should not schedule if date is in the past', () async {
       mockClock.setNow(DateTime.utc(2026, 5, 15, 10, 0, 0));
-      
+
       await service.scheduleSingleNotification(
         id: 1,
         date: DateTime.utc(2026, 5, 14), // Yesterday
@@ -112,14 +115,16 @@ void main() {
         body: 'Body',
       );
 
-      verifyNever(() => mockPlugin.zonedSchedule(
-        id: any(named: 'id'),
-        title: any(named: 'title'),
-        body: any(named: 'body'),
-        scheduledDate: any(named: 'scheduledDate'),
-        notificationDetails: any(named: 'notificationDetails'),
-        androidScheduleMode: any(named: 'androidScheduleMode'),
-      ));
+      verifyNever(
+        () => mockPlugin.zonedSchedule(
+          id: any(named: 'id'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          scheduledDate: any(named: 'scheduledDate'),
+          notificationDetails: any(named: 'notificationDetails'),
+          androidScheduleMode: any(named: 'androidScheduleMode'),
+        ),
+      );
     });
 
     test('cancelAllNotifications calls cancelAll', () async {

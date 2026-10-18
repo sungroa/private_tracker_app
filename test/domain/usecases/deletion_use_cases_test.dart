@@ -6,6 +6,7 @@ import 'package:private_tracker_app/domain/usecases/delete_cycle_log_use_case.da
 import 'package:private_tracker_app/domain/usecases/delete_symptom_log_use_case.dart';
 
 class MockCycleLogRepository extends Mock implements CycleLogRepository {}
+
 class MockSymptomLogRepository extends Mock implements SymptomLogRepository {}
 
 void main() {

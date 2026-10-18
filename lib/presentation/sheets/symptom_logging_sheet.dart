@@ -1,25 +1,27 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import '../providers/symptom_provider.dart';
-import '../providers/tag_provider.dart';
-import '../../domain/models/custom_tag.dart';
-import '../theme/app_theme.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
+import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../domain/models/custom_tag.dart';
+import '../providers/symptom_provider.dart';
+import '../providers/tag_provider.dart';
+import '../theme/app_theme.dart';
+
 class SymptomLoggingSheet extends StatefulWidget {
-  final DateTime selectedDay;
-  final SymptomLog? symptomLog;
-
-  final bool isEmbedded;
-
   const SymptomLoggingSheet({
     super.key,
     required this.selectedDay,
     this.symptomLog,
     this.isEmbedded = false,
   });
+  final DateTime selectedDay;
+  final SymptomLog? symptomLog;
+
+  final bool isEmbedded;
 
   @override
   State<SymptomLoggingSheet> createState() => _SymptomLoggingSheetState();
@@ -43,21 +45,14 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     Icons.sentiment_very_satisfied,
   ];
 
-  final List<String> _fluidTypes = [
-    'Dry',
-    'Sticky',
-    'Creamy',
-    'Watery',
-    'Eggwhite',
-  ];
+  final List<String> _fluidTypes = ['Dry', 'Sticky', 'Creamy', 'Watery', 'Eggwhite'];
 
   @override
   void initState() {
     super.initState();
     _moodRating = widget.symptomLog?.moodRating ?? SymptomLog.neutralMood;
     _selectedSymptoms = List.from(widget.symptomLog?.symptoms ?? []);
-    _notesController =
-        TextEditingController(text: widget.symptomLog?.notes ?? '');
+    _notesController = TextEditingController(text: widget.symptomLog?.notes ?? '');
     _tempController = TextEditingController(
       text: widget.symptomLog?.basalBodyTemperature?.toString() ?? "",
     );
@@ -78,9 +73,9 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     super.dispose();
   }
 
-  void _onSave() async {
+  Future<void> _onSave() async {
     if (_isSaving) return;
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
     setState(() => _isSaving = true);
     try {
       final bbt = double.tryParse(_tempController.text);
@@ -106,31 +101,29 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     }
   }
 
-  void _onDelete() async {
+  Future<void> _onDelete() async {
     if (widget.symptomLog == null) return;
-    HapticFeedback.heavyImpact();
+    unawaited(HapticFeedback.heavyImpact());
     final symptomProvider = context.read<SymptomProvider>();
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Delete Entry",
-            style: TextStyle(
-                fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Delete Entry",
+          style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold),
+        ),
         content: const Text(
-            "Are you sure you want to delete this log? This action cannot be undone.",
-            style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          "Are you sure you want to delete this log? This action cannot be undone.",
+          style: TextStyle(fontFamily: AppTheme.fontFamily),
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
           TextButton(
             onPressed: _isDeleting ? null : () => Navigator.pop(context, true),
             child: Text(
               _isDeleting ? "Deleting..." : "Delete",
-              style: const TextStyle(
-                  color: Colors.redAccent, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -155,9 +148,10 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
       context: context,
       builder: (context) => AlertDialog(
         scrollable: true,
-        title: const Text('Add Symptom',
-            style: TextStyle(
-                fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Add Symptom',
+          style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold),
+        ),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -167,27 +161,22 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
             filled: true,
             fillColor: Colors.grey.withValues(alpha: 0.05),
             border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
           ),
           maxLength: 24,
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
               if (controller.text.trim().isNotEmpty) {
-                await context
-                    .read<TagProvider>()
-                    .addTag(controller.text.trim());
+                await context.read<TagProvider>().addTag(controller.text.trim());
               }
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Add',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text('Add', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -196,9 +185,9 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
 
   void _confirmDeleteSymptom(CustomTag tag) {
     if (tag.isDefault) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Default symptoms cannot be deleted')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Default symptoms cannot be deleted')));
       return;
     }
 
@@ -208,10 +197,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
         title: const Text('Delete Symptom?'),
         content: Text('Are you sure you want to delete "${tag.name}"?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
@@ -234,7 +220,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
       label: "Luteinizing Hormone test: $label",
       child: GestureDetector(
         onTap: () {
-          HapticFeedback.selectionClick();
+          unawaited(HapticFeedback.selectionClick());
           setState(() => _lhPositive = isSelected ? null : value);
         },
         child: AnimatedContainer(
@@ -244,15 +230,13 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
             color: isSelected
                 ? primary
                 : (isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.white.withValues(alpha: 0.2)),
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.white.withValues(alpha: 0.2)),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
                   ? primary
-                  : (isDark
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : Colors.grey[200]!),
+                  : (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey[200]!),
             ),
           ),
           child: Row(
@@ -262,9 +246,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                 size: 16,
                 color: isSelected
                     ? (isDark ? AppTheme.backgroundDarkColor : Colors.white)
-                    : (isDark
-                        ? Colors.white.withValues(alpha: 0.4)
-                        : Colors.grey[600]),
+                    : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[600]),
               ),
               const SizedBox(width: 4),
               Text(
@@ -274,9 +256,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   color: isSelected
                       ? (isDark ? AppTheme.backgroundDarkColor : Colors.white)
-                      : (isDark
-                          ? Colors.white.withValues(alpha: 0.4)
-                          : Colors.grey[600]),
+                      : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[600]),
                   fontFamily: AppTheme.fontFamily,
                 ),
               ),
@@ -334,7 +314,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                 'Feeling down',
                 'Doing okay',
                 'Feeling good',
-                'Excellent mood'
+                'Excellent mood',
               ];
               return Semantics(
                 button: true,
@@ -342,7 +322,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                 label: labels[index],
                 child: GestureDetector(
                   onTap: () {
-                    HapticFeedback.selectionClick();
+                    unawaited(HapticFeedback.selectionClick());
                     setState(() => _moodRating = rating);
                   },
                   child: AnimatedContainer(
@@ -352,8 +332,8 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                       color: isSelected
                           ? primary
                           : (isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : Colors.white.withValues(alpha: 0.2)),
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.white.withValues(alpha: 0.2)),
                       shape: BoxShape.circle,
                       boxShadow: isSelected
                           ? [
@@ -361,7 +341,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                                 color: primary.withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 spreadRadius: 2,
-                              )
+                              ),
                             ]
                           : [],
                     ),
@@ -369,9 +349,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                       _moodIcons[index],
                       color: isSelected
                           ? (isDark ? AppTheme.backgroundDarkColor : Colors.white)
-                          : (isDark
-                              ? Colors.white.withValues(alpha: 0.4)
-                              : Colors.grey[600]),
+                          : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[600]),
                       size: 28,
                     ),
                   ),
@@ -402,11 +380,11 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                       child: TextField(
                         key: const Key('bbt_field'),
                         controller: _tempController,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         style: TextStyle(
-                            fontFamily: AppTheme.fontFamily,
-                            color: isDark ? Colors.white : Colors.black87),
+                          fontFamily: AppTheme.fontFamily,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
                         decoration: InputDecoration(
                           hintText: "98.6",
                           suffixText: "°F",
@@ -421,9 +399,10 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(16),
                             borderSide: BorderSide(
-                                color: isDark
-                                    ? Colors.white.withValues(alpha: 0.1)
-                                    : Colors.transparent),
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.1)
+                                  : Colors.transparent,
+                            ),
                           ),
                         ),
                       ),
@@ -450,8 +429,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                       children: [
                         _lhChip(true, "Pos", Icons.add_circle_outline, isDark),
                         const SizedBox(width: 8),
-                        _lhChip(
-                            false, "Neg", Icons.remove_circle_outline, isDark),
+                        _lhChip(false, "Neg", Icons.remove_circle_outline, isDark),
                       ],
                     ),
                   ],
@@ -481,7 +459,7 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                     label: Text(type),
                     selected: isSelected,
                     onSelected: (selected) {
-                      HapticFeedback.selectionClick();
+                      unawaited(HapticFeedback.selectionClick());
                       setState(() => _selectedFluid = selected ? type : null);
                     },
                     selectedColor: isDark
@@ -490,20 +468,18 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                     checkmarkColor: primary,
                     labelStyle: TextStyle(
                       fontFamily: AppTheme.fontFamily,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       color: isSelected
                           ? primary
-                          : (isDark
-                              ? Colors.white.withValues(alpha: 0.5)
-                              : Colors.black54),
+                          : (isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54),
                     ),
                     backgroundColor: isDark
                         ? Colors.white.withValues(alpha: 0.05)
                         : Colors.white.withValues(alpha: 0.3),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide.none),
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide.none,
+                    ),
                   ),
                 );
               }).toList(),
@@ -532,14 +508,14 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                     final isSelected = _selectedSymptoms.contains(symptom);
                     return GestureDetector(
                       onLongPress: () {
-                        HapticFeedback.mediumImpact();
+                        unawaited(HapticFeedback.mediumImpact());
                         _confirmDeleteSymptom(tag);
                       },
                       child: FilterChip(
                         label: Text(symptom),
                         selected: isSelected,
                         onSelected: (selected) {
-                          HapticFeedback.selectionClick();
+                          unawaited(HapticFeedback.selectionClick());
                           setState(() {
                             if (selected) {
                               _selectedSymptoms.add(symptom);
@@ -557,11 +533,8 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                         labelStyle: TextStyle(
                           color: isSelected
                               ? primary
-                              : (isDark
-                                  ? Colors.white.withValues(alpha: 0.5)
-                                  : Colors.black87),
-                          fontWeight:
-                              isSelected ? FontWeight.w700 : FontWeight.w500,
+                              : (isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black87),
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           fontFamily: AppTheme.fontFamily,
                         ),
                         shape: RoundedRectangleBorder(
@@ -570,8 +543,8 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                             color: isSelected
                                 ? primary
                                 : (isDark
-                                    ? Colors.white.withValues(alpha: 0.1)
-                                    : Colors.grey[200]!),
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : Colors.grey[200]!),
                             width: 1,
                           ),
                         ),
@@ -590,9 +563,8 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.1)
-                                : Colors.grey[200]!),
+                          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey[200]!,
+                        ),
                       ),
                     ),
                   ),
@@ -615,15 +587,15 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
             controller: _notesController,
             maxLines: 3,
             style: TextStyle(
-                fontSize: 14,
-                fontFamily: AppTheme.fontFamily,
-                color: isDark ? Colors.white : Colors.black87),
+              fontSize: 14,
+              fontFamily: AppTheme.fontFamily,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
             decoration: InputDecoration(
               hintText: "Anything else to log?",
               hintStyle: TextStyle(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.3)
-                      : Colors.grey),
+                color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.grey,
+              ),
               filled: true,
               fillColor: isDark
                   ? Colors.white.withValues(alpha: 0.05)
@@ -635,9 +607,10 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
                 borderSide: BorderSide(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.white.withValues(alpha: 0.5)),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.white.withValues(alpha: 0.5),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -655,46 +628,39 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
                 gradient: LinearGradient(
                   colors: isDark
                       ? [AppTheme.primaryDarkColor, AppTheme.accentDarkColor]
-                      : [
-                          AppTheme.primaryColor,
-                          AppTheme.primaryColor.withValues(alpha: 0.8)
-                        ],
+                      : [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.8)],
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: primary.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
-                  )
+                  ),
                 ],
               ),
               child: ElevatedButton(
                 key: const Key('symptom_save_button'),
                 onPressed: _onSave,
                 style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   elevation: 0,
                   backgroundColor: Colors.transparent,
-                  foregroundColor:
-                      isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                  foregroundColor: isDark ? AppTheme.backgroundDarkColor : Colors.white,
                   shadowColor: Colors.transparent,
                 ),
                 child: _isSaving
                     ? const SizedBox(
                         height: 24,
                         width: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : Text(
                         widget.symptomLog != null ? "Save Changes" : "Add Log",
                         style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
-                            fontFamily: AppTheme.fontFamily),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
                       ),
               ),
             ),
@@ -704,11 +670,14 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
             Center(
               child: TextButton(
                 onPressed: _onDelete,
-                child: const Text("Delete Daily Log",
-                    style: TextStyle(
-                        color: Colors.redAccent,
-                        fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.bold)),
+                child: const Text(
+                  "Delete Daily Log",
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontFamily: AppTheme.fontFamily,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],
@@ -717,19 +686,16 @@ class _SymptomLoggingSheetState extends State<SymptomLoggingSheet> {
     );
 
     if (widget.isEmbedded) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: content,
-      );
+      return Padding(padding: const EdgeInsets.symmetric(horizontal: 24), child: content);
     }
 
     return AbsorbPointer(
       absorbing: _isSaving,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        decoration: AppTheme.glassDecoration(isDark: isDark).copyWith(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-        ),
+        decoration: AppTheme.glassDecoration(
+          isDark: isDark,
+        ).copyWith(borderRadius: const BorderRadius.vertical(top: Radius.circular(32))),
         child: content,
       ),
     );

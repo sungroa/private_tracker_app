@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../analytics/widgets/bbt_chart.dart';
 import '../providers/cycle_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/summary_trend_card.dart';
 import '../widgets/summary_line_chart.dart';
-import '../analytics/widgets/bbt_chart.dart';
+import '../widgets/summary_trend_card.dart';
 
 class SummaryTrendsPage extends StatelessWidget {
   const SummaryTrendsPage({super.key});
@@ -13,7 +14,7 @@ class SummaryTrendsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
-    
+
     final cycleProvider = context.watch<CycleProvider>();
     final trendData = cycleProvider.trends;
 
@@ -82,7 +83,7 @@ class SummaryTrendsPage extends StatelessWidget {
             const SizedBox(height: 20),
             BbtChart(bbtHistory: trendData.bbtHistory),
             const SizedBox(height: 40),
-            
+
             // Cycle Stats Grid
             Row(
               children: [
@@ -104,27 +105,27 @@ class SummaryTrendsPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // Mood Trend Card
             SummaryTrendCard(
               title: "MOOD TREND",
-              value: trendData.moodHistory.isEmpty 
-                  ? "Logged data" 
+              value: trendData.moodHistory.isEmpty
+                  ? "Logged data"
                   : _getMoodSummaryText(trendData.moodHistory.last.rating),
               subtitle: "Consistency is key",
               icon: Icons.show_chart,
               child: SummaryLineChart(data: trendData.moodHistory),
             ),
             const SizedBox(height: 24),
-            
+
             // Top Symptoms Card
             SummaryTrendCard(
               title: "TOP SYMPTOMS",
               value: trendData.topSymptoms.isEmpty ? "None" : trendData.topSymptoms.first.key,
               subtitle: "Patterns spotted",
               icon: Icons.auto_awesome_mosaic_rounded,
-              child: trendData.topSymptoms.isEmpty 
-                  ? null 
+              child: trendData.topSymptoms.isEmpty
+                  ? null
                   : Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Column(
@@ -139,7 +140,9 @@ class SummaryTrendsPage extends StatelessWidget {
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
-                                    color: isDark ? Colors.white.withValues(alpha: 0.8) : Colors.black87,
+                                    color: isDark
+                                        ? Colors.white.withValues(alpha: 0.8)
+                                        : Colors.black87,
                                     fontFamily: AppTheme.fontFamily,
                                   ),
                                 ),

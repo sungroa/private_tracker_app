@@ -1,39 +1,41 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:google_sign_in/google_sign_in.dart';
+
 import 'package:flutter/material.dart';
-import 'core/services/auth_service.dart';
-import 'core/services/preferences_service.dart';
-import 'core/services/app_initializer.dart';
-import 'core/services/service_locator.dart';
-import 'core/services/app_lifecycle_manager.dart';
-import 'core/services/notification_orchestrator.dart';
-import 'presentation/pages/home_page.dart';
-import 'presentation/theme/app_theme.dart';
-import 'presentation/widgets/authentication_overlay.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
+
+import 'core/services/app_initializer.dart';
+import 'core/services/app_lifecycle_manager.dart';
+import 'core/services/auth_service.dart';
+import 'core/services/notification_orchestrator.dart';
+import 'core/services/preferences_service.dart';
+import 'core/services/service_locator.dart';
+import 'data/storage/secure_key_storage.dart';
+import 'domain/repositories/donation_repository.dart';
+import 'domain/services/cloud_sync_interface.dart';
+import 'domain/usecases/add_tag_use_case.dart';
+import 'domain/usecases/delete_cycle_log_use_case.dart';
+import 'domain/usecases/delete_symptom_log_use_case.dart';
+import 'domain/usecases/delete_tag_use_case.dart';
+import 'domain/usecases/get_cycle_logs_use_case.dart';
+import 'domain/usecases/get_symptom_logs_use_case.dart';
+import 'domain/usecases/get_tags_use_case.dart';
+import 'domain/usecases/save_cycle_log_use_case.dart';
+import 'domain/usecases/save_symptom_log_use_case.dart';
+import 'domain/usecases/sync_data_use_case.dart';
+import 'presentation/pages/home_page.dart';
+import 'presentation/providers/cloud_sync_provider.dart';
 import 'presentation/providers/cycle_provider.dart';
+import 'presentation/providers/donation_provider.dart';
 import 'presentation/providers/symptom_provider.dart';
 import 'presentation/providers/tag_provider.dart';
-import 'presentation/providers/cloud_sync_provider.dart';
-import 'presentation/providers/donation_provider.dart';
-import 'domain/repositories/donation_repository.dart';
-import 'domain/usecases/get_cycle_logs_use_case.dart';
-import 'domain/usecases/save_cycle_log_use_case.dart';
-import 'domain/usecases/delete_cycle_log_use_case.dart';
-import 'domain/usecases/sync_data_use_case.dart';
-import 'domain/usecases/get_symptom_logs_use_case.dart';
-import 'domain/usecases/save_symptom_log_use_case.dart';
-import 'domain/usecases/delete_symptom_log_use_case.dart';
-import 'domain/usecases/get_tags_use_case.dart';
-import 'domain/usecases/add_tag_use_case.dart';
-import 'domain/usecases/delete_tag_use_case.dart';
-import 'data/storage/secure_key_storage.dart';
-import 'domain/services/cloud_sync_interface.dart';
+import 'presentation/theme/app_theme.dart';
+import 'presentation/widgets/authentication_overlay.dart';
 
 class StorageConfig {
-  final String? storageBasePath;
   StorageConfig({this.storageBasePath});
+  final String? storageBasePath;
 }
 
 /// The OAuth2 server/web client ID for Google Sign-In.
@@ -78,21 +80,17 @@ void main() async {
 
   // google_sign_in v7 mandates initialize() be awaited ONCE before any
   // API calls and before runApp().
-  await GoogleSignIn.instance.initialize(
-    serverClientId: _kGoogleServerClientId,
-  );
+  await GoogleSignIn.instance.initialize(serverClientId: _kGoogleServerClientId);
 
   // Initialize Service Locator with default implementations
-  ServiceLocator().setup(
-    serverClientId: _kGoogleServerClientId,
-  );
+  ServiceLocator().setup(serverClientId: _kGoogleServerClientId);
 
   runApp(const PrivacyTrackerApp());
 }
 
 class PrivacyTrackerApp extends StatefulWidget {
-  final ServiceLocator? serviceLocator;
   const PrivacyTrackerApp({super.key, this.serviceLocator});
+  final ServiceLocator? serviceLocator;
 
   @override
   State<PrivacyTrackerApp> createState() => _PrivacyTrackerAppState();
@@ -143,9 +141,7 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
         Provider.value(value: sl.notificationOrchestrator),
         Provider.value(value: sl.donationRepository),
         ChangeNotifierProvider(
-          create: (context) => DonationProvider(
-            context.read<IDonationRepository>(),
-          ),
+          create: (context) => DonationProvider(context.read<IDonationRepository>()),
         ),
         ChangeNotifierProvider(
           create: (context) => CloudSyncProvider(
@@ -155,18 +151,15 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
             cloudSync: context.read<CloudSyncInterface>(),
           ),
         ),
-        ChangeNotifierProxyProvider2<CloudSyncProvider,
-            NotificationOrchestrator, CycleProvider>(
+        ChangeNotifierProxyProvider2<CloudSyncProvider, NotificationOrchestrator, CycleProvider>(
           create: (context) => CycleProvider(
             context.read<GetCycleLogsUseCase>(),
             context.read<SaveCycleLogUseCase>(),
             context.read<DeleteCycleLogUseCase>(),
           ),
-          update:
-              (context, cloudSync, notificationOrchestrator, cycleProvider) =>
-                  cycleProvider!
-                    ..attachSyncProvider(cloudSync)
-                    ..attachNotificationOrchestrator(notificationOrchestrator),
+          update: (context, cloudSync, notificationOrchestrator, cycleProvider) => cycleProvider!
+            ..attachSyncProvider(cloudSync)
+            ..attachNotificationOrchestrator(notificationOrchestrator),
         ),
         ChangeNotifierProxyProvider<CloudSyncProvider, SymptomProvider>(
           create: (context) => SymptomProvider(
@@ -183,8 +176,7 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
             context.read<AddTagUseCase>(),
             context.read<DeleteTagUseCase>(),
           ),
-          update: (context, cloudSync, tagProvider) =>
-              tagProvider!..attachSyncProvider(cloudSync),
+          update: (context, cloudSync, tagProvider) => tagProvider!..attachSyncProvider(cloudSync),
         ),
       ],
       child: AppLifecycleManager(
@@ -212,8 +204,8 @@ class _PrivacyTrackerAppState extends State<PrivacyTrackerApp> {
 /// Initialization [AppInitializer] is triggered only after successful
 /// authentication to ensure data remains locked until verified.
 class AppLockWrapper extends StatefulWidget {
-  final Widget child;
   const AppLockWrapper({super.key, required this.child});
+  final Widget child;
 
   @override
   State<AppLockWrapper> createState() => _AppLockWrapperState();
@@ -238,7 +230,7 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
       await _completeSequence();
     } else {
       setState(() => _isInitializing = false);
-      _triggerAuth();
+      unawaited(_triggerAuth());
     }
   }
 
@@ -269,9 +261,7 @@ class _AppLockWrapperState extends State<AppLockWrapper> {
     if (_isInitializing) return const _LoadingScreen();
 
     if (_useBiometric && !_isAuthenticated) {
-      return AuthenticationOverlay(
-        onUnlockSuccess: () => _completeSequence(),
-      );
+      return AuthenticationOverlay(onUnlockSuccess: () => _completeSequence());
     }
 
     return widget.child;
@@ -292,9 +282,7 @@ class _LoadingScreen extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: isDark
-                ? AppGradients.darkBackground
-                : AppGradients.lightBackground,
+            colors: isDark ? AppGradients.darkBackground : AppGradients.lightBackground,
           ),
         ),
         child: Center(
@@ -308,8 +296,7 @@ class _LoadingScreen extends StatelessWidget {
               SizedBox(
                 width: 40,
                 height: 40,
-                child:
-                    CircularProgressIndicator(color: primary, strokeWidth: 3),
+                child: CircularProgressIndicator(color: primary, strokeWidth: 3),
               ),
             ],
           ),
@@ -320,25 +307,22 @@ class _LoadingScreen extends StatelessWidget {
 }
 
 class _HeroIcon extends StatelessWidget {
-  final Color primary;
   const _HeroIcon({required this.primary});
+  final Color primary;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: primary.withValues(alpha: 0.1),
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: primary.withValues(alpha: 0.1), shape: BoxShape.circle),
       child: Icon(Icons.security_rounded, size: 64, color: primary),
     );
   }
 }
 
 class _BrandingText extends StatelessWidget {
-  final Color primary;
   const _BrandingText({required this.primary});
+  final Color primary;
 
   @override
   Widget build(BuildContext context) {

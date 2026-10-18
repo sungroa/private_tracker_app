@@ -85,12 +85,18 @@ class AppTheme {
   }
 
   // --- Premium Glassmorphism ---
-  static BoxDecoration glassDecoration({bool isDark = false, double borderRadius = 28, Color? borderColor}) {
+  static BoxDecoration glassDecoration({
+    bool isDark = false,
+    double borderRadius = 28,
+    Color? borderColor,
+  }) {
     return BoxDecoration(
       color: isDark ? surfaceDarkColor : surfaceColor,
       borderRadius: BorderRadius.circular(borderRadius),
       border: Border.all(
-        color: borderColor ?? (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.4)),
+        color:
+            borderColor ??
+            (isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.4)),
         width: 1.5,
       ),
       boxShadow: [
@@ -108,16 +114,9 @@ class AppTheme {
     return BoxDecoration(
       shape: BoxShape.circle,
       color: isDark ? primary.withValues(alpha: 0.2) : primary.withValues(alpha: 0.1),
-      border: Border.all(
-        color: primary.withValues(alpha: 0.5),
-        width: 2,
-      ),
+      border: Border.all(color: primary.withValues(alpha: 0.5), width: 2),
       boxShadow: [
-        BoxShadow(
-          color: primary.withValues(alpha: 0.4),
-          blurRadius: 12,
-          spreadRadius: 2,
-        ),
+        BoxShadow(color: primary.withValues(alpha: 0.4), blurRadius: 12, spreadRadius: 2),
         BoxShadow(
           color: Colors.white.withValues(alpha: isDark ? 0.05 : 0.4),
           blurRadius: 4,
@@ -150,11 +149,7 @@ class AppTheme {
         width: 1,
       ),
       boxShadow: [
-        BoxShadow(
-          color: primary.withValues(alpha: 0.2),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
+        BoxShadow(color: primary.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 2)),
       ],
     );
   }
@@ -171,8 +166,5 @@ class AppGradients {
     Color(0xFF2E1A47), // Deep purple night
   ];
 
-  static const List<Color> accentGradient = [
-    Color(0xFF6750A4),
-    Color(0xFF9070D8),
-  ];
+  static const List<Color> accentGradient = [Color(0xFF6750A4), Color(0xFF9070D8)];
 }

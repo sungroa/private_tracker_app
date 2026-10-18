@@ -1,22 +1,25 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:io';
-import '../providers/cloud_sync_provider.dart';
-import '../providers/cycle_provider.dart';
-import '../../data/storage/encrypted_storage_service.dart';
-import '../../data/storage/backup_orchestrator.dart';
-import '../../data/services/export_service.dart';
+
 import '../../core/services/auth_service.dart';
 import '../../core/services/notification_orchestrator.dart';
 import '../../core/services/notification_service.dart';
-import '../theme/app_theme.dart';
 import '../../core/services/preferences_service.dart';
 import '../../core/utils/security_logger.dart';
-import 'share_prediction_page.dart';
+import '../../data/services/export_service.dart';
+import '../../data/storage/backup_orchestrator.dart';
+import '../../data/storage/encrypted_storage_service.dart';
+import '../providers/cloud_sync_provider.dart';
+import '../providers/cycle_provider.dart';
+import '../theme/app_theme.dart';
 import 'partner_mode_page.dart';
+import 'share_prediction_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -31,7 +34,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _hardwareSupported = false;
   bool _notificationsEnabled = false;
   TimeOfDay _reminderTime = const TimeOfDay(hour: 20, minute: 0);
-  
+
   bool _periodReminderEnabled = false;
   int _periodReminderOffset = 1;
   TimeOfDay _periodReminderTime = const TimeOfDay(hour: 9, minute: 0);
@@ -46,7 +49,7 @@ class _SettingsPageState extends State<SettingsPage> {
   void initState() {
     super.initState();
     _loadSettings();
-    
+
     // (C6) Listen to sync errors outside of the build method
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncProvider = context.read<CloudSyncProvider>();
@@ -62,7 +65,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _syncErrorListener() {
     if (!mounted || _syncProvider == null) return;
-    
+
     // (W10) Prioritize recovery UI: Hide technical sync errors if the recovery prompt is active
     if (_syncProvider!.requiresRecoveryPrompt) {
       _syncProvider?.clearError();
@@ -86,21 +89,23 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  String _sanitizeError(dynamic error) {
+  String _sanitizeError(Object error) {
     // (W10) Error Sanitization: Prevent information leakage in UI
     final errorStr = error.toString();
     final lowerError = errorStr.toLowerCase();
-    
+
     if (lowerError.contains('password') || lowerError.contains('key')) {
       return 'Authentication failed. Please verify your credentials.';
     }
     if (lowerError.contains('notfound') || lowerError.contains('404')) {
       return 'Backup not found on cloud.';
     }
-    if (lowerError.contains('network') || lowerError.contains('socket') || lowerError.contains('timeout')) {
+    if (lowerError.contains('network') ||
+        lowerError.contains('socket') ||
+        lowerError.contains('timeout')) {
       return 'Connection timed out. Please check your internet.';
     }
-    
+
     // Check if it's a CloudSyncException and extract its message
     if (errorStr.contains('CloudSyncException:')) {
       final parts = errorStr.split('CloudSyncException:');
@@ -109,7 +114,7 @@ class _SettingsPageState extends State<SettingsPage> {
         return parts[1].split('(Original error:')[0].trim();
       }
     }
-    
+
     return 'An unexpected error occurred. Please try again later.';
   }
 
@@ -120,7 +125,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final biometric = await prefs.isBiometricEnabled();
     final notifications = await prefs.isNotificationsEnabled();
     final time = await prefs.getNotificationTime();
-    
+
     final periodEnabled = await prefs.isPeriodReminderEnabled();
     final periodOffset = await prefs.getPeriodReminderOffset();
     final periodTime = await prefs.getPeriodReminderTime();
@@ -128,7 +133,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final fertilityEnabled = await prefs.isFertilityReminderEnabled();
     final fertilityOffset = await prefs.getFertilityReminderOffset();
     final fertilityTime = await prefs.getFertilityReminderTime();
-    
+
     if (mounted) {
       setState(() {
         _hardwareSupported = supported;
@@ -146,7 +151,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleExportData() async {
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
     setState(() => _isExporting = true);
     final storage = context.read<EncryptedStorageService>();
     try {
@@ -155,10 +160,7 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to export data: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Failed to export data: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -169,14 +171,14 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _toggleBiometric(bool value) async {
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     final authService = context.read<AuthService>();
     final prefs = context.read<PreferencesService>();
     final success = await authService.authenticate();
     if (success) {
       await prefs.setBiometricEnabled(value);
       setState(() => _biometricEnabled = value);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -189,7 +191,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _toggleNotifications(bool value) async {
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     final notificationService = context.read<NotificationService>();
     if (value) {
       final granted = await notificationService.requestPermissions();
@@ -214,7 +216,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final prefs = context.read<PreferencesService>();
     await prefs.setNotificationsEnabled(value);
     setState(() => _notificationsEnabled = value);
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -252,12 +254,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _togglePeriodReminder(bool value) async {
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     final prefs = context.read<PreferencesService>();
     await prefs.setPeriodReminderEnabled(value);
     setState(() => _periodReminderEnabled = value);
     await _triggerOrchestrator();
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -269,7 +271,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _toggleFertilityReminder(bool value) async {
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     final prefs = context.read<PreferencesService>();
     await prefs.setFertilityReminderEnabled(value);
     setState(() => _fertilityReminderEnabled = value);
@@ -306,7 +308,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<TimeOfDay?> _showTimePicker(TimeOfDay initialTime) async {
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
@@ -316,8 +318,12 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: isDark 
-                ? ColorScheme.dark(primary: primary, onPrimary: AppTheme.backgroundDarkColor, surface: AppTheme.backgroundDarkColor)
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: primary,
+                    onPrimary: AppTheme.backgroundDarkColor,
+                    surface: AppTheme.backgroundDarkColor,
+                  )
                 : ColorScheme.light(primary: primary, onPrimary: Colors.white, onSurface: primary),
           ),
           child: child!,
@@ -333,11 +339,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleCreateBackup() async {
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
     final backupOrchestrator = context.read<BackupOrchestrator>();
     final password = await _showPasswordDialog(
       title: 'Create Backup',
-      message: 'Enter a password to encrypt your backup. You will need this password to restore your data later.',
+      message:
+          'Enter a password to encrypt your backup. You will need this password to restore your data later.',
       isCreate: true,
     );
 
@@ -348,12 +355,9 @@ class _SettingsPageState extends State<SettingsPage> {
         final file = await backupOrchestrator.exportEncryptedBackup(password);
         final xFile = XFile(file.path);
         await SharePlus.instance.share(
-          ShareParams(
-            files: [xFile],
-            text: 'Private Tracker Encrypted Backup',
-          ),
+          ShareParams(files: [xFile], text: 'Private Tracker Encrypted Backup'),
         );
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -365,10 +369,7 @@ class _SettingsPageState extends State<SettingsPage> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to create backup: $e'),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text('Failed to create backup: $e'), backgroundColor: Colors.red),
           );
         }
       } finally {
@@ -380,13 +381,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleRestoreBackup() async {
-    HapticFeedback.mediumImpact();
-    
+    unawaited(HapticFeedback.mediumImpact());
+
     FilePickerResult? result;
     try {
-      result = await FilePicker.pickFiles(
-        type: FileType.any,
-      );
+      result = await FilePicker.pickFiles(type: FileType.any);
     } on PlatformException catch (e) {
       debugPrint('File picker error: $e');
       if (mounted) {
@@ -416,21 +415,27 @@ class _SettingsPageState extends State<SettingsPage> {
 
       final backupOrchestrator = context.read<BackupOrchestrator>();
       final file = File(path);
-      
+
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Restore Backup?', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
-          content: const Text('This will COMPLETELY OVERWRITE your current local data. This action cannot be undone.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          title: const Text(
+            'Restore Backup?',
+            style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            'This will COMPLETELY OVERWRITE your current local data. This action cannot be undone.',
+            style: TextStyle(fontFamily: AppTheme.fontFamily),
+          ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Overwrite & Restore', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Overwrite & Restore',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
@@ -488,13 +493,23 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (context) => AlertDialog(
         scrollable: true,
-        title: Text(title, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+        title: Text(
+          title,
+          style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold),
+        ),
         content: Form(
           key: formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(message, style: TextStyle(fontSize: 14, color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54, fontFamily: AppTheme.fontFamily)),
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54,
+                  fontFamily: AppTheme.fontFamily,
+                ),
+              ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: controller,
@@ -503,8 +518,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   filled: true,
-                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  fillColor: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Password is required';
@@ -521,8 +541,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   decoration: InputDecoration(
                     labelText: 'Confirm Password',
                     filled: true,
-                    fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    fillColor: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.black.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                   validator: (value) {
                     if (value != controller.text) return 'Passwords do not match';
@@ -534,10 +559,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
@@ -548,7 +570,13 @@ class _SettingsPageState extends State<SettingsPage> {
               backgroundColor: isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text('Continue', style: TextStyle(color: isDark ? AppTheme.backgroundDarkColor : Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Continue',
+              style: TextStyle(
+                color: isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -557,7 +585,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _scheduleReminder() async {
     await context.read<NotificationService>().scheduleDailyReminder(
-      id: 100, 
+      id: 100,
       time: _reminderTime,
       title: 'Time to log',
       body: 'Don\'t forget to record your symptoms and cycle data today.',
@@ -585,7 +613,7 @@ class _SettingsPageState extends State<SettingsPage> {
         trailing: Switch.adaptive(
           value: enabled,
           onChanged: (val) {
-            HapticFeedback.selectionClick();
+            unawaited(HapticFeedback.selectionClick());
             onChanged(val);
           },
           activeThumbColor: primary,
@@ -594,12 +622,21 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildRecoverySecurityCard(BuildContext context, CloudSyncProvider syncProvider, bool isDark, Color primary) {
+  Widget _buildRecoverySecurityCard(
+    BuildContext context,
+    CloudSyncProvider syncProvider,
+    bool isDark,
+    Color primary,
+  ) {
     // --- Orphan Key: cloud backup encrypted with a lost machine key ---
     if (syncProvider.isOrphanKey) {
       return Container(
         padding: const EdgeInsets.all(20),
-        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24, borderColor: Colors.redAccent.withValues(alpha: 0.3)),
+        decoration: AppTheme.glassDecoration(
+          isDark: isDark,
+          borderRadius: 24,
+          borderColor: Colors.redAccent.withValues(alpha: 0.3),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -610,7 +647,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 Expanded(
                   child: Text(
                     "Cloud Backup Unrecoverable",
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: isDark ? Colors.white : Colors.black87),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                 ),
               ],
@@ -625,22 +666,33 @@ class _SettingsPageState extends State<SettingsPage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: syncProvider.isSyncing ? null : () => _handleOverwriteCloudWithLocal(syncProvider),
+                onPressed: syncProvider.isSyncing
+                    ? null
+                    : () => _handleOverwriteCloudWithLocal(syncProvider),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primary,
                   foregroundColor: isDark ? Colors.black87 : Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: syncProvider.isSyncing
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
                     : const Text("USE LOCAL DATA", style: TextStyle(fontWeight: FontWeight.w800)),
               ),
             ),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => _handleResetCloudSync(syncProvider),
-              style: TextButton.styleFrom(foregroundColor: isDark ? Colors.white38 : Colors.black38),
-              child: const Text("RESET & START OVER", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              style: TextButton.styleFrom(
+                foregroundColor: isDark ? Colors.white38 : Colors.black38,
+              ),
+              child: const Text(
+                "RESET & START OVER",
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+              ),
             ),
           ],
         ),
@@ -651,7 +703,11 @@ class _SettingsPageState extends State<SettingsPage> {
     if (syncProvider.requiresRecoveryPrompt) {
       return Container(
         padding: const EdgeInsets.all(20),
-        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24, borderColor: Colors.orange.withValues(alpha: 0.3)),
+        decoration: AppTheme.glassDecoration(
+          isDark: isDark,
+          borderRadius: 24,
+          borderColor: Colors.orange.withValues(alpha: 0.3),
+        ),
         child: Column(
           children: [
             Row(
@@ -661,7 +717,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 Expanded(
                   child: Text(
                     "Action Required",
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: isDark ? Colors.white : Colors.black87),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                 ),
               ],
@@ -682,14 +742,22 @@ class _SettingsPageState extends State<SettingsPage> {
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text("RECOVER CLOUD DATA", style: TextStyle(fontWeight: FontWeight.w800)),
+                child: const Text(
+                  "RECOVER CLOUD DATA",
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
               ),
             ),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () => _handleResetCloudSync(syncProvider),
-              style: TextButton.styleFrom(foregroundColor: isDark ? Colors.white38 : Colors.black38),
-              child: const Text("RESET & START OVER", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              style: TextButton.styleFrom(
+                foregroundColor: isDark ? Colors.white38 : Colors.black38,
+              ),
+              child: const Text(
+                "RESET & START OVER",
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+              ),
             ),
           ],
         ),
@@ -700,7 +768,11 @@ class _SettingsPageState extends State<SettingsPage> {
     if (syncProvider.needsPassphraseMigration) {
       return Container(
         padding: const EdgeInsets.all(20),
-        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24, borderColor: Colors.deepPurple.withValues(alpha: 0.3)),
+        decoration: AppTheme.glassDecoration(
+          isDark: isDark,
+          borderRadius: 24,
+          borderColor: Colors.deepPurple.withValues(alpha: 0.3),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -711,7 +783,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 Expanded(
                   child: Text(
                     "Security Upgrade Required",
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: isDark ? Colors.white : Colors.black87),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                 ),
               ],
@@ -728,15 +804,24 @@ class _SettingsPageState extends State<SettingsPage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: syncProvider.isSyncing ? null : () => _handlePassphraseMigration(syncProvider),
+                onPressed: syncProvider.isSyncing
+                    ? null
+                    : () => _handlePassphraseMigration(syncProvider),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: syncProvider.isSyncing
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text("SET RECOVERY PASSPHRASE", style: TextStyle(fontWeight: FontWeight.w800)),
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text(
+                        "SET RECOVERY PASSPHRASE",
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
               ),
             ),
           ],
@@ -748,7 +833,11 @@ class _SettingsPageState extends State<SettingsPage> {
     if (syncProvider.needsInitialSetup) {
       return Container(
         padding: const EdgeInsets.all(20),
-        decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24, borderColor: primary.withValues(alpha: 0.3)),
+        decoration: AppTheme.glassDecoration(
+          isDark: isDark,
+          borderRadius: 24,
+          borderColor: primary.withValues(alpha: 0.3),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -759,7 +848,11 @@ class _SettingsPageState extends State<SettingsPage> {
                 Expanded(
                   child: Text(
                     "Set Recovery Passphrase",
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: isDark ? Colors.white : Colors.black87),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
                   ),
                 ),
               ],
@@ -775,21 +868,31 @@ class _SettingsPageState extends State<SettingsPage> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: syncProvider.isSyncing ? null : () => _handleInitialCloudSetup(syncProvider),
+                onPressed: syncProvider.isSyncing
+                    ? null
+                    : () => _handleInitialCloudSetup(syncProvider),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primary,
                   foregroundColor: isDark ? Colors.black87 : Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text("CREATE PASSPHRASE", style: TextStyle(fontWeight: FontWeight.w800)),
+                child: const Text(
+                  "CREATE PASSPHRASE",
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
               ),
             ),
             const SizedBox(height: 8),
             Center(
               child: TextButton(
                 onPressed: () => syncProvider.cancelCloudSetup(),
-                style: TextButton.styleFrom(foregroundColor: isDark ? Colors.white38 : Colors.black38),
-                child: const Text("CANCEL SETUP", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                style: TextButton.styleFrom(
+                  foregroundColor: isDark ? Colors.white38 : Colors.black38,
+                ),
+                child: const Text(
+                  "CANCEL SETUP",
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+                ),
               ),
             ),
           ],
@@ -800,21 +903,31 @@ class _SettingsPageState extends State<SettingsPage> {
     return Container(
       decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
       child: _buildSettingsItem(
-        icon: syncProvider.isRecoveryEnabled ? Icons.verified_user_rounded : Icons.gpp_maybe_rounded,
+        icon: syncProvider.isRecoveryEnabled
+            ? Icons.verified_user_rounded
+            : Icons.gpp_maybe_rounded,
         iconColor: syncProvider.isRecoveryEnabled ? Colors.green : Colors.orange,
         title: "Recovery Security",
-        subtitle: syncProvider.isRecoveryEnabled ? "Tap to change passphrase" : "Required for new device restore",
+        subtitle: syncProvider.isRecoveryEnabled
+            ? "Tap to change passphrase"
+            : "Required for new device restore",
         isDark: isDark,
         onTap: () => _handleSetupRecovery(syncProvider),
-        trailing: syncProvider.isRecoveryEnabled 
-            ? const Text("CHANGE", style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12))
-            : const Text("SET UP", style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12)),
+        trailing: syncProvider.isRecoveryEnabled
+            ? const Text(
+                "CHANGE",
+                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
+              )
+            : const Text(
+                "SET UP",
+                style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
       ),
     );
   }
 
   Future<void> _handleSetupRecovery(CloudSyncProvider provider) async {
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
 
     // Branch: if recovery is already enabled, route to the change passphrase flow.
     if (provider.isRecoveryEnabled) {
@@ -824,7 +937,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
     final passphrase = await _showPasswordDialog(
       title: 'Set Recovery Passphrase',
-      message: 'This passphrase encrypts your cloud backups. You will need it to restore your data on a new device. Keep it somewhere safe — it can be changed later from this screen.',
+      message:
+          'This passphrase encrypts your cloud backups. You will need it to restore your data on a new device. Keep it somewhere safe — it can be changed later from this screen.',
       isCreate: true,
     );
 
@@ -832,7 +946,10 @@ class _SettingsPageState extends State<SettingsPage> {
       await provider.setupRecovery(passphrase);
       if (mounted && provider.lastError == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Recovery security enabled!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Recovery security enabled!'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     }
@@ -859,7 +976,14 @@ class _SettingsPageState extends State<SettingsPage> {
             Icon(Icons.enhanced_encryption_rounded, color: primary, size: 24),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(title, style: const TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold, fontSize: 18)),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontFamily: AppTheme.fontFamily,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
             ),
           ],
         ),
@@ -918,8 +1042,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 decoration: InputDecoration(
                   labelText: 'Recovery Passphrase',
                   filled: true,
-                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  fillColor: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Passphrase is required';
@@ -935,8 +1064,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 decoration: InputDecoration(
                   labelText: 'Confirm Passphrase',
                   filled: true,
-                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  fillColor: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (value) {
                   if (value != controller.text) return 'Passphrases do not match';
@@ -947,12 +1081,20 @@ class _SettingsPageState extends State<SettingsPage> {
               // Password manager suggestion
               Row(
                 children: [
-                  Icon(Icons.info_outline_rounded, size: 14, color: isDark ? Colors.white38 : Colors.black38),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 14,
+                    color: isDark ? Colors.white38 : Colors.black38,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Tip: Use a password manager like Bitwarden or Google Passwords.',
-                      style: TextStyle(fontSize: 11, color: isDark ? Colors.white38 : Colors.black38, fontFamily: AppTheme.fontFamily),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isDark ? Colors.white38 : Colors.black38,
+                        fontFamily: AppTheme.fontFamily,
+                      ),
                     ),
                   ),
                 ],
@@ -961,10 +1103,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
@@ -975,7 +1114,13 @@ class _SettingsPageState extends State<SettingsPage> {
               backgroundColor: primary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text('Encrypt & Sync', style: TextStyle(color: isDark ? AppTheme.backgroundDarkColor : Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Encrypt & Sync',
+              style: TextStyle(
+                color: isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -984,16 +1129,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
   /// Handles first-time cloud sync setup: passphrase creation before first upload.
   Future<void> _handleInitialCloudSetup(CloudSyncProvider provider) async {
-    HapticFeedback.mediumImpact();
-    final passphrase = await _showCloudPassphraseSetupDialog(
-      title: 'Create Recovery Passphrase',
-    );
+    unawaited(HapticFeedback.mediumImpact());
+    final passphrase = await _showCloudPassphraseSetupDialog(title: 'Create Recovery Passphrase');
 
     if (passphrase != null && mounted) {
       await provider.setupRecovery(passphrase);
       if (mounted && provider.lastError == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cloud sync enabled with passphrase protection!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Cloud sync enabled with passphrase protection!'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } else if (mounted) {
@@ -1004,16 +1150,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
   /// Handles machine-key → passphrase migration for existing users.
   Future<void> _handlePassphraseMigration(CloudSyncProvider provider) async {
-    HapticFeedback.mediumImpact();
-    final passphrase = await _showCloudPassphraseSetupDialog(
-      title: 'Security Upgrade',
-    );
+    unawaited(HapticFeedback.mediumImpact());
+    final passphrase = await _showCloudPassphraseSetupDialog(title: 'Security Upgrade');
 
     if (passphrase != null && mounted) {
       await provider.migrateToPassphrase(passphrase);
       if (mounted && provider.lastError == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Backup upgraded to passphrase protection!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Backup upgraded to passphrase protection!'),
+            backgroundColor: Colors.green,
+          ),
         );
       } else if (mounted && provider.lastError != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1029,7 +1176,7 @@ class _SettingsPageState extends State<SettingsPage> {
   /// Collects: old passphrase (for proof-of-knowledge), new passphrase, confirm new.
   /// The old passphrase verification happens server-side via a cloud decrypt round-trip.
   Future<void> _handleChangePassphrase(CloudSyncProvider provider) async {
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
 
     final oldController = TextEditingController();
     final newController = TextEditingController();
@@ -1040,7 +1187,10 @@ class _SettingsPageState extends State<SettingsPage> {
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Change Passphrase', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Change Passphrase',
+          style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold),
+        ),
         content: Form(
           key: formKey,
           child: Column(
@@ -1048,7 +1198,11 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               Text(
                 'Enter your current passphrase to verify identity, then set a new one. This will re-encrypt your cloud backup.',
-                style: TextStyle(fontSize: 13, color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54, fontFamily: AppTheme.fontFamily),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54,
+                  fontFamily: AppTheme.fontFamily,
+                ),
               ),
               const SizedBox(height: 20),
               TextFormField(
@@ -1058,8 +1212,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 decoration: InputDecoration(
                   labelText: 'Current Passphrase',
                   filled: true,
-                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  fillColor: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
               ),
@@ -1071,8 +1230,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 decoration: InputDecoration(
                   labelText: 'New Passphrase',
                   filled: true,
-                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  fillColor: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Required';
@@ -1089,8 +1253,13 @@ class _SettingsPageState extends State<SettingsPage> {
                 decoration: InputDecoration(
                   labelText: 'Confirm New Passphrase',
                   filled: true,
-                  fillColor: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  fillColor: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.black.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (v) => (v != newController.text) ? 'Passphrases do not match' : null,
               ),
@@ -1098,24 +1267,24 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
-                Navigator.pop(context, {
-                  'old': oldController.text,
-                  'new': newController.text,
-                });
+                Navigator.pop(context, {'old': oldController.text, 'new': newController.text});
               }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: Text('Change', style: TextStyle(color: isDark ? AppTheme.backgroundDarkColor : Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(
+              'Change',
+              style: TextStyle(
+                color: isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -1126,7 +1295,10 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         if (provider.lastError == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Passphrase changed successfully!'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Text('Passphrase changed successfully!'),
+              backgroundColor: Colors.green,
+            ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1143,7 +1315,7 @@ class _SettingsPageState extends State<SettingsPage> {
   /// Shows a confirmation dialog (the action overwrites cloud data), then
   /// proceeds with biometric auth before calling [provider.overwriteCloudWithLocal].
   Future<void> _handleOverwriteCloudWithLocal(CloudSyncProvider provider) async {
-    HapticFeedback.heavyImpact();
+    unawaited(HapticFeedback.heavyImpact());
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -1155,14 +1327,14 @@ class _SettingsPageState extends State<SettingsPage> {
           style: TextStyle(fontFamily: AppTheme.fontFamily),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-            child: const Text('Yes, Overwrite Cloud', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Yes, Overwrite Cloud',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -1173,7 +1345,10 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) {
         if (provider.lastError == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cloud backup restored from local data.'), backgroundColor: Colors.green),
+            const SnackBar(
+              content: Text('Cloud backup restored from local data.'),
+              backgroundColor: Colors.green,
+            ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1186,7 +1361,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _handleRestoreWithPassphrase(CloudSyncProvider provider) async {
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
     final passphrase = await _showPasswordDialog(
       title: 'Enter Recovery Passphrase',
       message: 'Enter the passphrase you set on your other device to decrypt the cloud backup.',
@@ -1197,39 +1372,48 @@ class _SettingsPageState extends State<SettingsPage> {
       await provider.restoreRecovery(passphrase);
       if (mounted && provider.lastError == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cloud data recovered successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Cloud data recovered successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     }
   }
 
   Future<void> _handleResetCloudSync(CloudSyncProvider provider) async {
-    HapticFeedback.heavyImpact();
-    
+    unawaited(HapticFeedback.heavyImpact());
+
     SecurityLogger.logInfo("UI: [WIPE-DIAG-1] Opening wipe confirmation dialog...");
     final confirm = await showDialog<bool>(
       context: context,
-      barrierDismissible: false, // (W11) Prevent accidental tap-out silently cancelling a destructive operation
+      barrierDismissible:
+          false, // (W11) Prevent accidental tap-out silently cancelling a destructive operation
       builder: (context) => AlertDialog(
-        title: const Text('Reset Cloud Sync?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+        title: const Text(
+          'Reset Cloud Sync?',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+        ),
         content: const Text(
           'This will PERMANENTLY DELETE all your data from the cloud. Local data stays safe. You should only do this if you lost your password.',
           style: TextStyle(fontFamily: AppTheme.fontFamily),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Yes, Wipe Cloud Data', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Yes, Wipe Cloud Data',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
     );
-    SecurityLogger.logInfo("UI: [WIPE-DIAG-2] Confirmation dialog closed. Result: $confirm, mounted: $mounted");
+    SecurityLogger.logInfo(
+      "UI: [WIPE-DIAG-2] Confirmation dialog closed. Result: $confirm, mounted: $mounted",
+    );
 
     if (confirm == true && mounted) {
       SecurityLogger.logInfo("UI: [WIPE-DIAG-3] User confirmed wipe. Requesting biometric auth...");
@@ -1237,23 +1421,32 @@ class _SettingsPageState extends State<SettingsPage> {
       SecurityLogger.logInfo("UI: [WIPE-DIAG-4] AuthService acquired. Calling authenticate()...");
       final authenticated = await authService.authenticate();
       SecurityLogger.logInfo("UI: [WIPE-DIAG-5] authenticate() returned. Result: $authenticated");
-      
+
       if (authenticated && mounted) {
-        SecurityLogger.logInfo("UI: [WIPE-DIAG-6] Auth success. Calling provider.resetCloudData()...");
+        SecurityLogger.logInfo(
+          "UI: [WIPE-DIAG-6] Auth success. Calling provider.resetCloudData()...",
+        );
         await provider.resetCloudData();
         if (mounted && provider.lastError == null) {
           SecurityLogger.logInfo("UI: [WIPE-DIAG-7] Wipe complete. No errors reported.");
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cloud sync reset successfully.'), backgroundColor: AppTheme.primaryColor),
+            const SnackBar(
+              content: Text('Cloud sync reset successfully.'),
+              backgroundColor: AppTheme.primaryColor,
+            ),
           );
         } else if (mounted) {
-          SecurityLogger.logInfo("UI: [WIPE-DIAG-7] Wipe completed with error: ${provider.lastError}");
+          SecurityLogger.logInfo(
+            "UI: [WIPE-DIAG-7] Wipe completed with error: ${provider.lastError}",
+          );
         }
       } else if (mounted) {
-        SecurityLogger.logInfo("UI: [WIPE-DIAG-6] Biometric auth failed or cancelled. Aborting wipe.");
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Authentication failed. Reset aborted.")),
+        SecurityLogger.logInfo(
+          "UI: [WIPE-DIAG-6] Biometric auth failed or cancelled. Aborting wipe.",
         );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Authentication failed. Reset aborted.")));
       }
     } else {
       SecurityLogger.logInfo("UI: [WIPE-DIAG-3] Wipe aborted. confirm=$confirm, mounted=$mounted");
@@ -1324,7 +1517,12 @@ class _SettingsPageState extends State<SettingsPage> {
             fontSize: 13,
           ),
         ),
-        trailing: trailing ?? Icon(Icons.chevron_right_rounded, color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black26),
+        trailing:
+            trailing ??
+            Icon(
+              Icons.chevron_right_rounded,
+              color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.black26,
+            ),
       ),
     );
   }
@@ -1352,7 +1550,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           const SizedBox(height: 32),
-          
+
           // Security Section
           if (_hardwareSupported) ...[
             _buildSectionHeader("Security", isDark),
@@ -1396,7 +1594,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 if (_notificationsEnabled) ...[
                   Padding(
                     padding: const EdgeInsets.only(left: 64),
-                    child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                    child: Divider(
+                      height: 1,
+                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                    ),
                   ),
                   _buildSettingsItem(
                     icon: Icons.access_time_rounded,
@@ -1410,131 +1611,165 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
           Container(
-              decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
-              child: Column(
-                children: [
-                  _buildSettingsItem(
-                    icon: Icons.calendar_month_rounded,
-                    iconColor: primary,
-                    title: "Period Reminder",
-                    subtitle: "Warning before period starts",
-                    isDark: isDark,
-                    trailing: Switch.adaptive(
-                      value: _periodReminderEnabled,
-                      onChanged: _togglePeriodReminder,
-                      activeThumbColor: primary,
-                      activeTrackColor: primary.withValues(alpha: 0.5),
+            decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
+            child: Column(
+              children: [
+                _buildSettingsItem(
+                  icon: Icons.calendar_month_rounded,
+                  iconColor: primary,
+                  title: "Period Reminder",
+                  subtitle: "Warning before period starts",
+                  isDark: isDark,
+                  trailing: Switch.adaptive(
+                    value: _periodReminderEnabled,
+                    onChanged: _togglePeriodReminder,
+                    activeThumbColor: primary,
+                    activeTrackColor: primary.withValues(alpha: 0.5),
+                  ),
+                ),
+                if (_periodReminderEnabled) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(left: 64),
+                    child: Divider(
+                      height: 1,
+                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
                     ),
                   ),
-                  if (_periodReminderEnabled) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(left: 64),
-                      child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
-                    ),
-                    _buildSettingsItem(
-                      icon: Icons.history_rounded,
-                      iconColor: primary,
-                      title: "Advance Warning",
-                      subtitle: "$_periodReminderOffset day${_periodReminderOffset > 1 ? 's' : ''} before",
-                      isDark: isDark,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
-                            onPressed: _periodReminderOffset > 0 ? () => _updatePeriodOffset(_periodReminderOffset - 1) : null,
-                            color: primary,
-                          ),
-                          Text("$_periodReminderOffset", style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
-                            onPressed: _periodReminderOffset < 7 ? () => _updatePeriodOffset(_periodReminderOffset + 1) : null,
-                            color: primary,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 64),
-                      child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
-                    ),
-                    _buildSettingsItem(
-                      icon: Icons.access_time_rounded,
-                      iconColor: primary,
-                      title: "Reminder Time",
-                      subtitle: "At ${_periodReminderTime.format(context)}",
-                      isDark: isDark,
-                      onTap: _selectPeriodTime,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
-              child: Column(
-                children: [
                   _buildSettingsItem(
-                    icon: Icons.spa_rounded,
+                    icon: Icons.history_rounded,
                     iconColor: primary,
-                    title: "Fertility Reminder",
-                    subtitle: "Warning before fertile window",
+                    title: "Advance Warning",
+                    subtitle:
+                        "$_periodReminderOffset day${_periodReminderOffset > 1 ? 's' : ''} before",
                     isDark: isDark,
-                    trailing: Switch.adaptive(
-                      value: _fertilityReminderEnabled,
-                      onChanged: _toggleFertilityReminder,
-                      activeThumbColor: primary,
-                      activeTrackColor: primary.withValues(alpha: 0.5),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
+                          onPressed: _periodReminderOffset > 0
+                              ? () => _updatePeriodOffset(_periodReminderOffset - 1)
+                              : null,
+                          color: primary,
+                        ),
+                        Text(
+                          "$_periodReminderOffset",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+                          onPressed: _periodReminderOffset < 7
+                              ? () => _updatePeriodOffset(_periodReminderOffset + 1)
+                              : null,
+                          color: primary,
+                        ),
+                      ],
                     ),
                   ),
-                  if (_fertilityReminderEnabled) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(left: 64),
-                      child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 64),
+                    child: Divider(
+                      height: 1,
+                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
                     ),
-                    _buildSettingsItem(
-                      icon: Icons.history_rounded,
-                      iconColor: primary,
-                      title: "Advance Warning",
-                      subtitle: "$_fertilityReminderOffset day${_fertilityReminderOffset > 1 ? 's' : ''} before",
-                      isDark: isDark,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
-                            onPressed: _fertilityReminderOffset > 0 ? () => _updateFertilityOffset(_fertilityReminderOffset - 1) : null,
-                            color: primary,
-                          ),
-                          Text("$_fertilityReminderOffset", style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: AppTheme.fontFamily)),
-                          IconButton(
-                            icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
-                            onPressed: _fertilityReminderOffset < 7 ? () => _updateFertilityOffset(_fertilityReminderOffset + 1) : null,
-                            color: primary,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 64),
-                      child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
-                    ),
-                    _buildSettingsItem(
-                      icon: Icons.access_time_rounded,
-                      iconColor: primary,
-                      title: "Reminder Time",
-                      subtitle: "At ${_fertilityReminderTime.format(context)}",
-                      isDark: isDark,
-                      onTap: _selectFertilityTime,
-                    ),
-                  ],
+                  ),
+                  _buildSettingsItem(
+                    icon: Icons.access_time_rounded,
+                    iconColor: primary,
+                    title: "Reminder Time",
+                    subtitle: "At ${_periodReminderTime.format(context)}",
+                    isDark: isDark,
+                    onTap: _selectPeriodTime,
+                  ),
                 ],
-              ),
+              ],
             ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
+            child: Column(
+              children: [
+                _buildSettingsItem(
+                  icon: Icons.spa_rounded,
+                  iconColor: primary,
+                  title: "Fertility Reminder",
+                  subtitle: "Warning before fertile window",
+                  isDark: isDark,
+                  trailing: Switch.adaptive(
+                    value: _fertilityReminderEnabled,
+                    onChanged: _toggleFertilityReminder,
+                    activeThumbColor: primary,
+                    activeTrackColor: primary.withValues(alpha: 0.5),
+                  ),
+                ),
+                if (_fertilityReminderEnabled) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(left: 64),
+                    child: Divider(
+                      height: 1,
+                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  _buildSettingsItem(
+                    icon: Icons.history_rounded,
+                    iconColor: primary,
+                    title: "Advance Warning",
+                    subtitle:
+                        "$_fertilityReminderOffset day${_fertilityReminderOffset > 1 ? 's' : ''} before",
+                    isDark: isDark,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
+                          onPressed: _fertilityReminderOffset > 0
+                              ? () => _updateFertilityOffset(_fertilityReminderOffset - 1)
+                              : null,
+                          color: primary,
+                        ),
+                        Text(
+                          "$_fertilityReminderOffset",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+                          onPressed: _fertilityReminderOffset < 7
+                              ? () => _updateFertilityOffset(_fertilityReminderOffset + 1)
+                              : null,
+                          color: primary,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 64),
+                    child: Divider(
+                      height: 1,
+                      color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                    ),
+                  ),
+                  _buildSettingsItem(
+                    icon: Icons.access_time_rounded,
+                    iconColor: primary,
+                    title: "Reminder Time",
+                    subtitle: "At ${_fertilityReminderTime.format(context)}",
+                    isDark: isDark,
+                    onTap: _selectFertilityTime,
+                  ),
+                ],
+              ],
+            ),
+          ),
           const SizedBox(height: 32),
 
           _buildSectionHeader("Cloud Synchronization", isDark),
@@ -1598,8 +1833,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    syncProvider.isSyncing 
-                                        ? "Syncing in background..." 
+                                    syncProvider.isSyncing
+                                        ? "Syncing in background..."
                                         : "Last sync: ${_formatRelativeTime(syncProvider.lastSyncTime)}",
                                     style: TextStyle(
                                       fontSize: 13,
@@ -1623,24 +1858,33 @@ class _SettingsPageState extends State<SettingsPage> {
                             children: [
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: (syncProvider.isSyncing ||
+                                  onPressed:
+                                      (syncProvider.isSyncing ||
                                           syncProvider.requiresRecoveryPrompt ||
                                           syncProvider.isOrphanKey)
                                       ? null
                                       : () => syncProvider.sync(),
                                   icon: const Icon(Icons.sync_rounded, size: 18),
-                                  label: const Text("SYNC NOW", style: TextStyle(fontWeight: FontWeight.bold)),
+                                  label: const Text(
+                                    "SYNC NOW",
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: primary,
                                     side: BorderSide(color: primary.withValues(alpha: 0.5)),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               IconButton(
                                 onPressed: () => _handleResetCloudSync(syncProvider),
-                                icon: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
+                                icon: const Icon(
+                                  Icons.delete_sweep_rounded,
+                                  color: Colors.redAccent,
+                                ),
                                 tooltip: "Reset Cloud Data",
                               ),
                             ],
@@ -1657,7 +1901,6 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 32),
 
-
           _buildSectionHeader("Data Management", isDark),
           Container(
             decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 24),
@@ -1670,13 +1913,20 @@ class _SettingsPageState extends State<SettingsPage> {
                   subtitle: "Save as CSV file",
                   isDark: isDark,
                   trailing: _isExporting
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : null,
                   onTap: _isExporting ? null : _handleExportData,
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 64),
-                  child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                  child: Divider(
+                    height: 1,
+                    color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                  ),
                 ),
                 _buildSettingsItem(
                   icon: Icons.cloud_upload_rounded,
@@ -1688,7 +1938,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 64),
-                  child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                  child: Divider(
+                    height: 1,
+                    color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                  ),
                 ),
                 _buildSettingsItem(
                   icon: Icons.restart_alt_rounded,
@@ -1715,7 +1968,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   subtitle: "Securely share predictions",
                   isDark: isDark,
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    unawaited(HapticFeedback.lightImpact());
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const SharePredictionPage()),
@@ -1724,7 +1977,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 64),
-                  child: Divider(height: 1, color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                  child: Divider(
+                    height: 1,
+                    color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                  ),
                 ),
                 _buildSettingsItem(
                   icon: Icons.favorite_rounded,
@@ -1733,7 +1989,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   subtitle: "View shared predictions",
                   isDark: isDark,
                   onTap: () {
-                    HapticFeedback.lightImpact();
+                    unawaited(HapticFeedback.lightImpact());
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const PartnerModePage()),

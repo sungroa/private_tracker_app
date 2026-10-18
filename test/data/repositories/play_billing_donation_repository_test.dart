@@ -7,6 +7,7 @@ import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/domain/models/donation_product.dart';
 
 class MockInAppPurchase extends Mock implements InAppPurchase {}
+
 class MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
 
 class PurchaseParamFake extends Fake implements PurchaseParam {}
@@ -39,7 +40,7 @@ void main() {
   group('PlayBillingDonationRepository Tests', () {
     test('getDonationProducts should return mapped products when IAP is available', () async {
       when(() => mockIap.isAvailable()).thenAnswer((_) async => true);
-      
+
       final mockProduct = ProductDetails(
         id: 'tip_coffee_consumable',
         title: 'Coffee Tip',
@@ -49,10 +50,9 @@ void main() {
         currencyCode: 'USD',
       );
 
-      when(() => mockIap.queryProductDetails(any())).thenAnswer((_) async => ProductDetailsResponse(
-        productDetails: [mockProduct],
-        notFoundIDs: [],
-      ));
+      when(() => mockIap.queryProductDetails(any())).thenAnswer(
+        (_) async => ProductDetailsResponse(productDetails: [mockProduct], notFoundIDs: []),
+      );
 
       final products = await repository.getDonationProducts();
 
@@ -85,12 +85,12 @@ void main() {
         currencyCode: '...',
       );
 
-      when(() => mockIap.queryProductDetails(any())).thenAnswer((_) async => ProductDetailsResponse(
-        productDetails: [mockProductDetails],
-        notFoundIDs: [],
-      ));
-      when(() => mockIap.buyConsumable(purchaseParam: any(named: 'purchaseParam')))
-          .thenAnswer((_) async => true);
+      when(() => mockIap.queryProductDetails(any())).thenAnswer(
+        (_) async => ProductDetailsResponse(productDetails: [mockProductDetails], notFoundIDs: []),
+      );
+      when(
+        () => mockIap.buyConsumable(purchaseParam: any(named: 'purchaseParam')),
+      ).thenAnswer((_) async => true);
 
       final result = await repository.purchase(product);
 
@@ -100,7 +100,7 @@ void main() {
 
     test('Successful purchase update should trigger supporter status change', () async {
       when(() => mockKeyStorage.setSupporterStatus(true)).thenAnswer((_) async => {});
-      
+
       // Simulate a successful purchase in the stream
       final purchase = PurchaseDetails(
         productID: 'tip_coffee_consumable',
@@ -121,7 +121,7 @@ void main() {
       purchaseStreamController.add([purchase]);
 
       // Wait for async processing
-      await Future.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       expect(supporterStates.last, true);
       verify(() => mockKeyStorage.setSupporterStatus(true)).called(1);

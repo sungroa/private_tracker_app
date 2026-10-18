@@ -1,24 +1,25 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../providers/cycle_provider.dart';
-import '../../domain/models/cycle_log.dart';
-import '../theme/app_theme.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../domain/models/cycle_log.dart';
+import '../providers/cycle_provider.dart';
+import '../theme/app_theme.dart';
+
 class CycleLoggingSheet extends StatefulWidget {
-  final DateTime selectedDay;
-  final CycleLog? cycleLog;
-
-  final bool isEmbedded;
-
   const CycleLoggingSheet({
     super.key,
     required this.selectedDay,
     this.cycleLog,
     this.isEmbedded = false,
   });
+  final DateTime selectedDay;
+  final CycleLog? cycleLog;
+
+  final bool isEmbedded;
 
   @override
   State<CycleLoggingSheet> createState() => _CycleLoggingSheetState();
@@ -37,8 +38,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     _startDate = widget.cycleLog?.startDate ?? widget.selectedDay;
     _endDate = widget.cycleLog?.endDate;
     _flowIntensity = widget.cycleLog?.flowIntensity ?? 3;
-    _notesController =
-        TextEditingController(text: widget.cycleLog?.notes ?? "");
+    _notesController = TextEditingController(text: widget.cycleLog?.notes ?? "");
   }
 
   @override
@@ -48,7 +48,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
   }
 
   Future<void> _selectStartDate() async {
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
@@ -63,11 +63,9 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
               ? ColorScheme.dark(
                   primary: primary,
                   onPrimary: AppTheme.backgroundDarkColor,
-                  surface: AppTheme.backgroundDarkColor)
-              : ColorScheme.light(
-                  primary: primary,
-                  onPrimary: Colors.white,
-                  onSurface: primary),
+                  surface: AppTheme.backgroundDarkColor,
+                )
+              : ColorScheme.light(primary: primary, onPrimary: Colors.white, onSurface: primary),
         ),
         child: child!,
       ),
@@ -76,7 +74,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
   }
 
   Future<void> _selectEndDate() async {
-    HapticFeedback.selectionClick();
+    unawaited(HapticFeedback.selectionClick());
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor;
 
@@ -91,11 +89,9 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
               ? ColorScheme.dark(
                   primary: primary,
                   onPrimary: AppTheme.backgroundDarkColor,
-                  surface: AppTheme.backgroundDarkColor)
-              : ColorScheme.light(
-                  primary: primary,
-                  onPrimary: Colors.white,
-                  onSurface: primary),
+                  surface: AppTheme.backgroundDarkColor,
+                )
+              : ColorScheme.light(primary: primary, onPrimary: Colors.white, onSurface: primary),
         ),
         child: child!,
       ),
@@ -103,9 +99,9 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     if (picked != null) setState(() => _endDate = picked);
   }
 
-  void _onSave() async {
+  Future<void> _onSave() async {
     if (_isSaving) return;
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
     final navigator = Navigator.of(context);
     setState(() => _isSaving = true);
     try {
@@ -129,31 +125,29 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     }
   }
 
-  void _onDelete() async {
+  Future<void> _onDelete() async {
     if (widget.cycleLog == null) return;
-    HapticFeedback.heavyImpact();
+    unawaited(HapticFeedback.heavyImpact());
 
     final navigator = Navigator.of(context);
     final provider = context.read<CycleProvider>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Delete Cycle Log?",
-            style: TextStyle(
-                fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Delete Cycle Log?",
+          style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold),
+        ),
         content: const Text(
-            "This action cannot be undone and will remove this cycle entry from your history.",
-            style: TextStyle(fontFamily: AppTheme.fontFamily)),
+          "This action cannot be undone and will remove this cycle entry from your history.",
+          style: TextStyle(fontFamily: AppTheme.fontFamily),
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-            child: const Text("Delete",
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text("Delete", style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -279,8 +273,9 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
               overlayColor: primary.withValues(alpha: 0.2),
               valueIndicatorColor: primary,
               valueIndicatorTextStyle: TextStyle(
-                  color: isDark ? AppTheme.backgroundDarkColor : Colors.white,
-                  fontWeight: FontWeight.bold),
+                color: isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             child: Slider(
               value: _flowIntensity.toDouble(),
@@ -311,15 +306,15 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
             controller: _notesController,
             maxLines: 3,
             style: TextStyle(
-                fontSize: 14,
-                fontFamily: AppTheme.fontFamily,
-                color: isDark ? Colors.white : Colors.black87),
+              fontSize: 14,
+              fontFamily: AppTheme.fontFamily,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
             decoration: InputDecoration(
               hintText: "Add notes about your cycle...",
               hintStyle: TextStyle(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.3)
-                      : Colors.grey),
+                color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.grey,
+              ),
               filled: true,
               fillColor: isDark
                   ? Colors.white.withValues(alpha: 0.05)
@@ -331,9 +326,10 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
                 borderSide: BorderSide(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.white.withValues(alpha: 0.5)),
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.white.withValues(alpha: 0.5),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(20),
@@ -351,47 +347,38 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                 gradient: LinearGradient(
                   colors: isDark
                       ? [AppTheme.primaryDarkColor, AppTheme.accentDarkColor]
-                      : [
-                          AppTheme.primaryColor,
-                          AppTheme.primaryColor.withValues(alpha: 0.8)
-                        ],
+                      : [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.8)],
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: primary.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
-                  )
+                  ),
                 ],
               ),
               child: ElevatedButton(
                 onPressed: _onSave,
                 style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                   elevation: 0,
                   backgroundColor: Colors.transparent,
-                  foregroundColor:
-                      isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                  foregroundColor: isDark ? AppTheme.backgroundDarkColor : Colors.white,
                   shadowColor: Colors.transparent,
                 ),
                 child: _isSaving
                     ? const SizedBox(
                         height: 24,
                         width: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : Text(
-                        widget.cycleLog != null
-                            ? "Save Changes"
-                            : "Add Cycle Log",
+                        widget.cycleLog != null ? "Save Changes" : "Add Cycle Log",
                         style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
-                            fontFamily: AppTheme.fontFamily),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          fontFamily: AppTheme.fontFamily,
+                        ),
                       ),
               ),
             ),
@@ -404,11 +391,14 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
                   HapticFeedback.lightImpact();
                   setState(() => _endDate = null);
                 },
-                child: const Text("Still in progress? Clear end date",
-                    style: TextStyle(
-                        color: Colors.redAccent,
-                        fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.w600)),
+                child: const Text(
+                  "Still in progress? Clear end date",
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontFamily: AppTheme.fontFamily,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           ],
@@ -417,11 +407,14 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
             Center(
               child: TextButton(
                 onPressed: _onDelete,
-                child: const Text("Delete Cycle Log",
-                    style: TextStyle(
-                        color: Colors.redAccent,
-                        fontFamily: AppTheme.fontFamily,
-                        fontWeight: FontWeight.bold)),
+                child: const Text(
+                  "Delete Cycle Log",
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontFamily: AppTheme.fontFamily,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],
@@ -430,10 +423,7 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
     );
 
     if (widget.isEmbedded) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: content,
-      );
+      return Padding(padding: const EdgeInsets.symmetric(horizontal: 24), child: content);
     }
 
     return AbsorbPointer(
@@ -441,9 +431,9 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
       child: Container(
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        decoration: AppTheme.glassDecoration(isDark: isDark).copyWith(
-          borderRadius: BorderRadius.circular(32),
-        ),
+        decoration: AppTheme.glassDecoration(
+          isDark: isDark,
+        ).copyWith(borderRadius: BorderRadius.circular(32)),
         child: content,
       ),
     );
@@ -451,12 +441,6 @@ class _CycleLoggingSheetState extends State<CycleLoggingSheet> {
 }
 
 class _DateCard extends StatelessWidget {
-  final String label;
-  final DateTime? date;
-  final VoidCallback onTap;
-  final bool isOptional;
-  final bool isDark;
-
   const _DateCard({
     required this.label,
     required this.date,
@@ -464,6 +448,11 @@ class _DateCard extends StatelessWidget {
     this.isOptional = false,
     required this.isDark,
   });
+  final String label;
+  final DateTime? date;
+  final VoidCallback onTap;
+  final bool isOptional;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
@@ -485,9 +474,7 @@ class _DateCard extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.5)
-                      : Colors.grey[600],
+                  color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.grey[600],
                   fontWeight: FontWeight.w600,
                   fontFamily: AppTheme.fontFamily,
                 ),
@@ -499,9 +486,7 @@ class _DateCard extends StatelessWidget {
                   fontSize: 15,
                   color: date != null
                       ? primary
-                      : (isDark
-                          ? Colors.white.withValues(alpha: 0.2)
-                          : Colors.grey[400]),
+                      : (isDark ? Colors.white.withValues(alpha: 0.2) : Colors.grey[400]),
                   fontWeight: FontWeight.w700,
                   fontFamily: AppTheme.fontFamily,
                 ),

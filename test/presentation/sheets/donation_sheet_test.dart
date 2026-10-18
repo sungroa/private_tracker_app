@@ -17,8 +17,10 @@ void main() {
   setUp(() {
     mockRepository = MockDonationRepository();
     supporterStreamController = StreamController<bool>.broadcast();
-    
-    when(() => mockRepository.isSupporterStream).thenAnswer((_) => supporterStreamController.stream);
+
+    when(
+      () => mockRepository.isSupporterStream,
+    ).thenAnswer((_) => supporterStreamController.stream);
     when(() => mockRepository.isSupporter()).thenAnswer((_) async => false);
     when(() => mockRepository.getDonationProducts()).thenAnswer((_) async => []);
   });
@@ -31,9 +33,7 @@ void main() {
     return MaterialApp(
       home: ChangeNotifierProvider<DonationProvider>(
         create: (_) => DonationProvider(mockRepository),
-        child: const Scaffold(
-          body: DonationSheet(),
-        ),
+        child: const Scaffold(body: DonationSheet()),
       ),
     );
   }
@@ -44,9 +44,9 @@ void main() {
 
     await tester.pumpWidget(createTestableWidget());
     await tester.pump();
-    
+
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    
+
     // Clean up
     completer.complete([]);
     await tester.pumpAndSettle();
@@ -54,7 +54,13 @@ void main() {
 
   testWidgets('DonationSheet renders header and products', (WidgetTester tester) async {
     final mockProducts = [
-      const DonationProduct(id: '1', name: 'Coffee', description: 'Buy a coffee', formattedPrice: '\$2.00', isSubscription: false),
+      const DonationProduct(
+        id: '1',
+        name: 'Coffee',
+        description: 'Buy a coffee',
+        formattedPrice: '\$2.00',
+        isSubscription: false,
+      ),
     ];
     when(() => mockRepository.getDonationProducts()).thenAnswer((_) async => mockProducts);
 

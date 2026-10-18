@@ -2,12 +2,6 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 class SummaryTrendCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final String? subtitle;
-  final IconData? icon;
-  final Widget? child;
-
   const SummaryTrendCard({
     super.key,
     required this.title,
@@ -16,6 +10,11 @@ class SummaryTrendCard extends StatelessWidget {
     this.icon,
     this.child,
   });
+  final String title;
+  final String value;
+  final String? subtitle;
+  final IconData? icon;
+  final Widget? child;
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +25,9 @@ class SummaryTrendCard extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
-        decoration: AppTheme.glassDecoration(isDark: Theme.of(context).brightness == Brightness.dark).copyWith(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        decoration: AppTheme.glassDecoration(
+          isDark: Theme.of(context).brightness == Brightness.dark,
+        ).copyWith(borderRadius: BorderRadius.circular(24)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -38,39 +37,30 @@ class SummaryTrendCard extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: themeColor.withValues(alpha: 0.8),
-                        letterSpacing: 0.5,
-                      ),
-                ),
-                if (icon != null)
-                  Icon(
-                    icon,
-                    color: themeColor.withValues(alpha: 0.6),
-                    size: 20,
+                    color: themeColor.withValues(alpha: 0.8),
+                    letterSpacing: 0.5,
                   ),
+                ),
+                if (icon != null) Icon(icon, color: themeColor.withValues(alpha: 0.6), size: 20),
               ],
             ),
             const SizedBox(height: 12),
             Text(
               value,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: themeColor,
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(color: themeColor, fontWeight: FontWeight.bold),
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 4),
               Text(
                 subtitle!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600]!.withValues(alpha: 0.7),
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]!.withValues(alpha: 0.7)),
               ),
             ],
-            if (child != null) ...[
-              const SizedBox(height: 20),
-              child!,
-            ],
+            if (child != null) ...[const SizedBox(height: 20), child!],
           ],
         ),
       ),

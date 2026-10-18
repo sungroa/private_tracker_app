@@ -5,16 +5,6 @@ import '../../domain/models/symptom_log.dart';
 import '../theme/app_theme.dart';
 
 class DaySummarySheet extends StatelessWidget {
-  static final DateFormat _fullDateFormatter = DateFormat('EEEE, MMMM d, yyyy');
-
-  final DateTime selectedDay;
-  final bool isPredictedBleeding;
-  final bool isPredictedFertility;
-  final SymptomLog? symptomLog;
-  final CycleLog? cycleLog;
-  final VoidCallback onEditDailyLog;
-  final VoidCallback onEditPeriodLog;
-
   const DaySummarySheet({
     super.key,
     required this.selectedDay,
@@ -25,6 +15,15 @@ class DaySummarySheet extends StatelessWidget {
     required this.onEditDailyLog,
     required this.onEditPeriodLog,
   });
+  static final DateFormat _fullDateFormatter = DateFormat('EEEE, MMMM d, yyyy');
+
+  final DateTime selectedDay;
+  final bool isPredictedBleeding;
+  final bool isPredictedFertility;
+  final SymptomLog? symptomLog;
+  final CycleLog? cycleLog;
+  final VoidCallback onEditDailyLog;
+  final VoidCallback onEditPeriodLog;
 
   @override
   Widget build(BuildContext context) {
@@ -33,10 +32,8 @@ class DaySummarySheet extends StatelessWidget {
 
     final String formattedDate = _fullDateFormatter.format(selectedDay);
 
-    final bool hasAnyData = isPredictedBleeding || 
-                            isPredictedFertility || 
-                            cycleLog != null || 
-                            symptomLog != null;
+    final bool hasAnyData =
+        isPredictedBleeding || isPredictedFertility || cycleLog != null || symptomLog != null;
 
     return Container(
       decoration: BoxDecoration(
@@ -59,7 +56,9 @@ class DaySummarySheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -74,7 +73,7 @@ class DaySummarySheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            
+
             // Content
             Flexible(
               child: SingleChildScrollView(
@@ -98,7 +97,7 @@ class DaySummarySheet extends StatelessWidget {
                           ),
                         ),
                       ),
-                    
+
                     if (isPredictedBleeding || isPredictedFertility) ...[
                       _SectionHeader(title: "Predictions", isDark: isDark),
                       if (isPredictedBleeding)
@@ -174,7 +173,7 @@ class DaySummarySheet extends StatelessWidget {
                 ),
               ),
             ),
-            
+
             // Action Buttons
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -204,7 +203,10 @@ class DaySummarySheet extends StatelessWidget {
                         onEditDailyLog();
                       },
                       icon: const Icon(Icons.edit_note_rounded, size: 20),
-                      label: Text(symptomLog == null ? "ADD LOG" : "EDIT LOG", style: const TextStyle(fontWeight: FontWeight.w700)),
+                      label: Text(
+                        symptomLog == null ? "ADD LOG" : "EDIT LOG",
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primary,
                         foregroundColor: isDark ? AppTheme.backgroundDarkColor : Colors.white,
@@ -226,10 +228,9 @@ class DaySummarySheet extends StatelessWidget {
 }
 
 class _NotesBox extends StatelessWidget {
+  const _NotesBox({required this.notes, required this.isDark});
   final String notes;
   final bool isDark;
-
-  const _NotesBox({required this.notes, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -241,17 +242,15 @@ class _NotesBox extends StatelessWidget {
         color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.1)
+              : Colors.black.withValues(alpha: 0.05),
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.notes_rounded, 
-            size: 16, 
-            color: isDark ? Colors.white38 : Colors.black38
-          ),
+          Icon(Icons.notes_rounded, size: 16, color: isDark ? Colors.white38 : Colors.black38),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -272,10 +271,9 @@ class _NotesBox extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.isDark});
   final String title;
   final bool isDark;
-
-  const _SectionHeader({required this.title, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -296,12 +294,6 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _SummaryItem extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String? subtitle;
-  final bool isDark;
-
   const _SummaryItem({
     required this.icon,
     required this.color,
@@ -309,6 +301,11 @@ class _SummaryItem extends StatelessWidget {
     this.subtitle,
     required this.isDark,
   });
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String? subtitle;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
@@ -351,7 +348,7 @@ class _SummaryItem extends StatelessWidget {
                       fontFamily: AppTheme.fontFamily,
                     ),
                   ),
-                ]
+                ],
               ],
             ),
           ),

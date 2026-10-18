@@ -9,20 +9,14 @@ import 'local_database_manager.dart';
 import 'model_mapper.dart';
 
 /// Specialized service for orchestrating complex backup and restore workflows.
-/// 
-/// 🏛️ **Architecture**: Decoupled from [EncryptedStorageService] to satisfy the 
-/// Single Responsibility Principle (SRP). It coordinates high-level operations 
+///
+/// 🏛️ **Architecture**: Decoupled from [EncryptedStorageService] to satisfy the
+/// Single Responsibility Principle (SRP). It coordinates high-level operations
 /// across multiple data sources and the [BackupRestoreService].
-/// 
-/// 🔄 **Atomic Operations**: This service ensures that restoration is "atomic" 
+///
+/// 🔄 **Atomic Operations**: This service ensures that restoration is "atomic"
 /// by wiping existing boxes before applying a new state, preventing data pollution.
 class BackupOrchestrator {
-  final BackupRestoreService _backupService;
-  final LocalDatabaseManager _dbManager;
-  final CycleDataSource _cycleDataSource;
-  final SymptomDataSource _symptomDataSource;
-  final TagDataSource _tagDataSource;
-
   BackupOrchestrator({
     required this._backupService,
     required this._dbManager,
@@ -30,6 +24,11 @@ class BackupOrchestrator {
     required this._symptomDataSource,
     required this._tagDataSource,
   });
+  final BackupRestoreService _backupService;
+  final LocalDatabaseManager _dbManager;
+  final CycleDataSource _cycleDataSource;
+  final SymptomDataSource _symptomDataSource;
+  final TagDataSource _tagDataSource;
 
   /// Creates a password-protected, AES-encrypted, and GZIP-compressed backup file.
   Future<File> exportEncryptedBackup(String userPassword) async {
@@ -75,19 +74,19 @@ class BackupOrchestrator {
     final List<dynamic> symptomLogsJson = data['symptomLogs'] ?? [];
 
     if (tagsJson.isEmpty && cycleLogsJson.isEmpty && symptomLogsJson.isEmpty) {
-      return; 
+      return;
     }
 
     final Map<String, CustomTagDto> tagsToPut = Map.fromEntries(
-      tagsJson.map((tagMap) => _createTagEntry(Map<String, dynamic>.from(tagMap)))
+      tagsJson.map((tagMap) => _createTagEntry(Map<String, dynamic>.from(tagMap))),
     );
 
     final Map<String, CycleLogDto> cyclesToPut = Map.fromEntries(
-      cycleLogsJson.map((logMap) => _createCycleEntry(Map<String, dynamic>.from(logMap)))
+      cycleLogsJson.map((logMap) => _createCycleEntry(Map<String, dynamic>.from(logMap))),
     );
 
     final Map<String, SymptomLogDto> symptomsToPut = Map.fromEntries(
-      symptomLogsJson.map((logMap) => _createSymptomEntry(Map<String, dynamic>.from(logMap)))
+      symptomLogsJson.map((logMap) => _createSymptomEntry(Map<String, dynamic>.from(logMap))),
     );
 
     await _cycleDataSource.clear();
@@ -115,22 +114,22 @@ class BackupOrchestrator {
 
     if (customTags.isNotEmpty) {
       await _tagDataSource.putAll({
-        for (var tag in customTags) tag.id: ModelMapper.customTagToDto(tag)
+        for (var tag in customTags) tag.id: ModelMapper.customTagToDto(tag),
       });
     }
-    
+
     if (cycleLogs.isNotEmpty) {
       await _cycleDataSource.putAll({
-        for (var log in cycleLogs) log.id: ModelMapper.cycleLogToDto(log)
+        for (var log in cycleLogs) log.id: ModelMapper.cycleLogToDto(log),
       });
     }
-    
+
     if (symptomLogs.isNotEmpty) {
       await _symptomDataSource.putAll({
-        for (var log in symptomLogs) log.id: ModelMapper.symptomLogToDto(log)
+        for (var log in symptomLogs) log.id: ModelMapper.symptomLogToDto(log),
       });
     }
-    
+
     await _dbManager.updateLastModified();
   }
 

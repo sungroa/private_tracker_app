@@ -2,14 +2,11 @@ import 'package:local_auth/local_auth.dart';
 import '../utils/security_logger.dart';
 
 class AuthService {
-  final LocalAuthentication _auth;
-
-  AuthService({
-    LocalAuthentication? auth,
-  })  : _auth = auth ?? LocalAuthentication();
+  AuthService({LocalAuthentication? auth}) : _auth = auth ?? LocalAuthentication();
 
   // For testing
   AuthService.test(this._auth);
+  final LocalAuthentication _auth;
 
   /// Checks if device has biometric hardware support.
   Future<bool> isHardwareSupported() async {
@@ -27,14 +24,21 @@ class AuthService {
         persistAcrossBackgrounding: false,
         biometricOnly: false,
       );
-      SecurityLogger.logInfo("AuthService: Authentication request completed. Result: $didAuthenticate");
+      SecurityLogger.logInfo(
+        "AuthService: Authentication request completed. Result: $didAuthenticate",
+      );
       return didAuthenticate;
     } on LocalAuthException catch (e) {
-      SecurityLogger.logError("AuthService: LocalAuthException during authentication [${e.code}]", error: e);
+      SecurityLogger.logError(
+        "AuthService: LocalAuthException during authentication [${e.code}]",
+        error: e,
+      );
       if (e.code == LocalAuthExceptionCode.noCredentialsSet) {
-        // (W10) Device has no security lock (PIN/Bio) configured. 
+        // (W10) Device has no security lock (PIN/Bio) configured.
         // We treat this as "authenticated" since there is no challenge possible.
-        SecurityLogger.logInfo("AuthService: No device security configured. Proceeding by default.");
+        SecurityLogger.logInfo(
+          "AuthService: No device security configured. Proceeding by default.",
+        );
         return true;
       }
       return false;

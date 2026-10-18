@@ -1,11 +1,11 @@
-import 'package:uuid/uuid.dart';
+import 'package:private_tracker_app/domain/models/custom_tag.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
-import 'package:private_tracker_app/domain/models/custom_tag.dart';
+import 'package:uuid/uuid.dart';
 
 /// Centralized factory for creating domain models in tests.
-/// 
-/// Following "Technical Excellence" principles, this ensures that tests 
+///
+/// Following "Technical Excellence" principles, this ensures that tests
 /// don't break every time a new required field is added to a domain model.
 class TestModelFactory {
   static const _uuid = Uuid();
@@ -57,15 +57,7 @@ class TestModelFactory {
   }
 
   /// Creates a [CustomTag] for testing.
-  static CustomTag createTag({
-    String? id,
-    String name = 'Test Tag',
-    DateTime? updatedAt,
-  }) {
-    return CustomTag(
-      id: id ?? _uuid.v4(),
-      name: name,
-      updatedAt: updatedAt ?? DateTime.now(),
-    );
+  static CustomTag createTag({String? id, String name = 'Test Tag', DateTime? updatedAt}) {
+    return CustomTag(id: id ?? _uuid.v4(), name: name, updatedAt: updatedAt ?? DateTime.now());
   }
 }

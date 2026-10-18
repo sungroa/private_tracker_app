@@ -3,14 +3,13 @@ import '../../domain/repositories/tag_repository.dart';
 import '../storage/data_sources/tag_data_source.dart';
 
 /// Implementation of [TagRepository] using Hive.
-/// 
-/// 🏛️ **Architecture**: Provides localized storage and management for 
+///
+/// 🏛️ **Architecture**: Provides localized storage and management for
 /// user-defined health categories. Interfaces with [TagDataSource] to handle
 /// DTO mapping and persistence.
 class TagRepositoryImpl implements TagRepository {
-  final TagDataSource _dataSource;
-
   TagRepositoryImpl(this._dataSource);
+  final TagDataSource _dataSource;
 
   @override
   Future<List<CustomTag>> getTags() async {

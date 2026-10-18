@@ -3,14 +3,13 @@ import '../../domain/repositories/symptom_log_repository.dart';
 import '../storage/data_sources/symptom_data_source.dart';
 
 /// Implementation of [SymptomLogRepository] using Hive.
-/// 
+///
 /// 🏛️ **Architecture**: Mediates between the presentation layer (via Use Cases)
 /// and the high-performance Hive data store. It ensures all data retrieval
 /// is asynchronous to maintain UI responsiveness.
 class SymptomLogRepositoryImpl implements SymptomLogRepository {
-  final SymptomDataSource _dataSource;
-
   SymptomLogRepositoryImpl(this._dataSource);
+  final SymptomDataSource _dataSource;
 
   @override
   Future<List<SymptomLog>> getSymptomLogs() async {

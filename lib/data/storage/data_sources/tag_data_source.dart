@@ -1,13 +1,13 @@
 import 'package:private_tracker_app/core/registry/hive_registry.dart';
 import 'package:private_tracker_app/domain/models/custom_tag.dart';
-import '../local_database_manager.dart';
+
 import '../hive_dtos.dart';
+import '../local_database_manager.dart';
 import '../model_mapper.dart';
 import 'local_data_source.dart';
 
 class TagDataSource extends LocalDataSource<CustomTagDto> {
-  TagDataSource(LocalDatabaseManager dbManager)
-      : super(dbManager, HiveRegistry.customTagBox);
+  TagDataSource(LocalDatabaseManager dbManager) : super(dbManager, HiveRegistry.customTagBox);
 
   Future<List<CustomTag>> getCustomTags() async {
     final dtos = await getAll();

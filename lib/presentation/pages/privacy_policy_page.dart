@@ -9,10 +9,7 @@ class PrivacyPolicyPage extends StatefulWidget {
   static Future<void> show(BuildContext context) {
     return Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const PrivacyPolicyPage(),
-        fullscreenDialog: true,
-      ),
+      MaterialPageRoute(builder: (context) => const PrivacyPolicyPage(), fullscreenDialog: true),
     );
   }
 
@@ -26,7 +23,9 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _loadPrivacyPolicyFuture ??= DefaultAssetBundle.of(context).loadString('assets/docs/privacy_policy.md');
+    _loadPrivacyPolicyFuture ??= DefaultAssetBundle.of(
+      context,
+    ).loadString('assets/docs/privacy_policy.md');
   }
 
   @override
@@ -63,13 +62,10 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-              
+
               if (snapshot.hasError) {
                 return Center(
-                  child: Text(
-                    "Error loading privacy policy",
-                    style: TextStyle(color: primary),
-                  ),
+                  child: Text("Error loading privacy policy", style: TextStyle(color: primary)),
                 );
               }
 
@@ -96,20 +92,14 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
                     fontFamily: AppTheme.fontFamily,
                     height: 1.6,
                   ),
-                  listBullet: TextStyle(
-                    color: primary,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  listBullet: TextStyle(color: primary, fontWeight: FontWeight.bold),
                   strong: TextStyle(
                     color: isDark ? Colors.white : Colors.black,
                     fontWeight: FontWeight.w700,
                   ),
                   horizontalRuleDecoration: BoxDecoration(
                     border: Border(
-                      top: BorderSide(
-                        color: primary.withValues(alpha: 0.2),
-                        width: 1.0,
-                      ),
+                      top: BorderSide(color: primary.withValues(alpha: 0.2), width: 1.0),
                     ),
                   ),
                 ),

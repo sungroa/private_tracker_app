@@ -1,26 +1,23 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'symptom_logging_sheet.dart';
-import 'cycle_logging_sheet.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 import '../../domain/models/cycle_log.dart';
 import '../theme/app_theme.dart';
-import 'dart:math' as math;
-import 'package:private_tracker_app/domain/models/symptom_log.dart';
+import 'cycle_logging_sheet.dart';
+import 'symptom_logging_sheet.dart';
 
 enum LoggingType {
   /// Daily log
   daily,
 
   /// Cycle log
-  cycle
+  cycle,
 }
 
 class UnifiedLoggingSheet extends StatefulWidget {
-  final DateTime selectedDay;
-  final SymptomLog? symptomLog;
-  final CycleLog? cycleLog;
-  final LoggingType initialType;
-
   const UnifiedLoggingSheet({
     super.key,
     required this.selectedDay,
@@ -28,6 +25,10 @@ class UnifiedLoggingSheet extends StatefulWidget {
     this.cycleLog,
     this.initialType = LoggingType.daily,
   });
+  final DateTime selectedDay;
+  final SymptomLog? symptomLog;
+  final CycleLog? cycleLog;
+  final LoggingType initialType;
 
   @override
   State<UnifiedLoggingSheet> createState() => _UnifiedLoggingSheetState();
@@ -142,19 +143,20 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
                   ),
                 );
               },
-              child: _currentType == LoggingType.daily
-                  ? SymptomLoggingSheet(
-                      key: const ValueKey('daily_sheet'),
-                      selectedDay: widget.selectedDay,
-                      symptomLog: widget.symptomLog,
-                      isEmbedded: true,
-                    )
-                  : CycleLoggingSheet(
-                      key: const ValueKey('cycle_sheet'),
-                      selectedDay: widget.selectedDay,
-                      cycleLog: widget.cycleLog,
-                      isEmbedded: true,
-                    ),
+              child: switch (_currentType) {
+                LoggingType.daily => SymptomLoggingSheet(
+                  key: const ValueKey('daily_sheet'),
+                  selectedDay: widget.selectedDay,
+                  symptomLog: widget.symptomLog,
+                  isEmbedded: true,
+                ),
+                LoggingType.cycle => CycleLoggingSheet(
+                  key: const ValueKey('cycle_sheet'),
+                  selectedDay: widget.selectedDay,
+                  cycleLog: widget.cycleLog,
+                  isEmbedded: true,
+                ),
+              },
             ),
           ),
         ],
@@ -164,12 +166,6 @@ class _UnifiedLoggingSheetState extends State<UnifiedLoggingSheet> {
 }
 
 class _SwitcherButton extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final IconData icon;
-  final bool isDark;
-
   const _SwitcherButton({
     required this.label,
     required this.isSelected,
@@ -177,6 +173,11 @@ class _SwitcherButton extends StatelessWidget {
     required this.icon,
     required this.isDark,
   });
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final IconData icon;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +199,7 @@ class _SwitcherButton extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ]
               : [],
         ),
@@ -210,9 +211,7 @@ class _SwitcherButton extends StatelessWidget {
               size: 20,
               color: isSelected
                   ? (isDark ? AppTheme.primaryDarkColor : AppTheme.primaryColor)
-                  : (isDark
-                      ? Colors.white.withValues(alpha: 0.4)
-                      : Colors.grey[500]),
+                  : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[500]),
             ),
             const SizedBox(width: 8),
             Text(
@@ -222,9 +221,7 @@ class _SwitcherButton extends StatelessWidget {
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected
                     ? (isDark ? Colors.white : AppTheme.primaryColor)
-                    : (isDark
-                        ? Colors.white.withValues(alpha: 0.4)
-                        : Colors.grey[600]),
+                    : (isDark ? Colors.white.withValues(alpha: 0.4) : Colors.grey[600]),
                 fontFamily: AppTheme.fontFamily,
               ),
             ),

@@ -16,7 +16,9 @@ void main() {
     mockRepository = MockDonationRepository();
     supporterStreamController = StreamController<bool>.broadcast();
 
-    when(() => mockRepository.isSupporterStream).thenAnswer((_) => supporterStreamController.stream);
+    when(
+      () => mockRepository.isSupporterStream,
+    ).thenAnswer((_) => supporterStreamController.stream);
     when(() => mockRepository.isSupporter()).thenAnswer((_) async => false);
     when(() => mockRepository.getDonationProducts()).thenAnswer((_) async => []);
   });
@@ -32,14 +34,20 @@ void main() {
   group('DonationProvider Tests', () {
     test('initialization should load products', () async {
       final mockProducts = [
-        const DonationProduct(id: '1', name: 'P1', description: '...', formattedPrice: '\$1', isSubscription: false),
+        const DonationProduct(
+          id: '1',
+          name: 'P1',
+          description: '...',
+          formattedPrice: '\$1',
+          isSubscription: false,
+        ),
       ];
       when(() => mockRepository.getDonationProducts()).thenAnswer((_) async => mockProducts);
 
       initProvider();
-      
+
       // Wait for all async init tasks to complete
-      await Future.delayed(const Duration(milliseconds: 100));
+      await pumpEventQueue();
 
       expect(provider.products, mockProducts);
       expect(provider.isLoading, isFalse);
@@ -47,7 +55,13 @@ void main() {
 
     test('loadProducts should update products and clear loading state', () async {
       final mockProducts = [
-        const DonationProduct(id: '1', name: 'P1', description: '...', formattedPrice: '\$1', isSubscription: false),
+        const DonationProduct(
+          id: '1',
+          name: 'P1',
+          description: '...',
+          formattedPrice: '\$1',
+          isSubscription: false,
+        ),
       ];
       when(() => mockRepository.getDonationProducts()).thenAnswer((_) async => mockProducts);
 
@@ -70,7 +84,13 @@ void main() {
     });
 
     test('purchase should set error if repository fails', () async {
-      const product = DonationProduct(id: '1', name: 'P1', description: '...', formattedPrice: '\$1', isSubscription: false);
+      const product = DonationProduct(
+        id: '1',
+        name: 'P1',
+        description: '...',
+        formattedPrice: '\$1',
+        isSubscription: false,
+      );
       when(() => mockRepository.purchase(product)).thenAnswer((_) async => false);
 
       initProvider();
@@ -83,10 +103,10 @@ void main() {
     test('supporter stream updates should update provider state', () async {
       initProvider();
       supporterStreamController.add(true);
-      
+
       // Wait for stream listener to trigger
-      await Future.delayed(Duration.zero);
-      
+      await pumpEventQueue();
+
       expect(provider.isSupporter, isTrue);
     });
   });

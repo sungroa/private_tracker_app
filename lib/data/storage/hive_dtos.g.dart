@@ -50,9 +50,7 @@ class CycleLogDtoAdapter extends TypeAdapter<CycleLogDto> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is CycleLogDtoAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
+      other is CycleLogDtoAdapter && runtimeType == other.runtimeType && typeId == other.typeId;
 }
 
 class SymptomLogDtoAdapter extends TypeAdapter<SymptomLogDto> {
@@ -108,9 +106,7 @@ class SymptomLogDtoAdapter extends TypeAdapter<SymptomLogDto> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is SymptomLogDtoAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
+      other is SymptomLogDtoAdapter && runtimeType == other.runtimeType && typeId == other.typeId;
 }
 
 class CustomTagDtoAdapter extends TypeAdapter<CustomTagDto> {
@@ -151,7 +147,5 @@ class CustomTagDtoAdapter extends TypeAdapter<CustomTagDto> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is CustomTagDtoAdapter &&
-          runtimeType == other.runtimeType &&
-          typeId == other.typeId;
+      other is CustomTagDtoAdapter && runtimeType == other.runtimeType && typeId == other.typeId;
 }

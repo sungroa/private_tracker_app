@@ -1,16 +1,18 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../../data/storage/encrypted_storage_service.dart';
+import '../../presentation/providers/cloud_sync_provider.dart';
 import '../../presentation/providers/cycle_provider.dart';
 import '../../presentation/providers/symptom_provider.dart';
 import '../../presentation/providers/tag_provider.dart';
-import '../../presentation/providers/cloud_sync_provider.dart';
-import '../utils/security_logger.dart';
 import '../services/notification_service.dart';
-import 'package:provider/provider.dart';
+import '../utils/security_logger.dart';
 
 /// Service responsible for coordinated application initialization.
-/// 
+///
 /// [AppInitializer] follows "Technical Excellence" by:
 /// 1. Orchestrating async startup tasks outside the UI tree.
 /// 2. Ensuring thread-safe initialization of storage and providers.
@@ -20,7 +22,7 @@ class AppInitializer {
   bool get isInitialized => _isInitialized;
 
   /// Orchestrates all startup tasks.
-  /// 
+  ///
   /// This should be called after successful authentication.
   Future<void> initialize(BuildContext context, {String? basePath}) async {
     if (_isInitialized) return;

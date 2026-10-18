@@ -1,12 +1,13 @@
-import 'dart:math';
 import 'dart:developer' as developer;
+import 'dart:math';
+
 import 'package:collection/collection.dart';
 
 /// Specialized calculator for menstruation cycle length forecasting.
-/// 
-/// 💼 **Domain Context**: This forecaster implements a "Cold Start to Hybrid ARIMA" 
-/// pipeline. It is designed to handle the high variance of early tracking 
-/// (cold start) while providing sophisticated statistical forecasting once 
+///
+/// 💼 **Domain Context**: This forecaster implements a "Cold Start to Hybrid ARIMA"
+/// pipeline. It is designed to handle the high variance of early tracking
+/// (cold start) while providing sophisticated statistical forecasting once
 /// enough historical data is available.
 class CycleLengthForecaster {
   static const int defaultCycleLength = 28;
@@ -14,8 +15,8 @@ class CycleLengthForecaster {
   static const int maxBiologicalCycle = 45;
 
   /// Predicts the length of the next cycle based on historical data.
-  /// 
-  /// [history] An array of past cycle lengths in chronological order 
+  ///
+  /// [history] An array of past cycle lengths in chronological order
   /// (oldest to newest).
   static int predictNextLength(List<int> history) {
     final n = history.length;
@@ -41,7 +42,7 @@ class CycleLengthForecaster {
   /// removes it, and returns the average of the remaining values.
   static double _calculateSoftTrimmedMean(List<int> history) {
     final median = _calculateMedian(history.map((e) => e.toDouble()).toList());
-    
+
     double maxDistance = -1;
     int indexToRemove = -1;
 
@@ -60,9 +61,7 @@ class CycleLengthForecaster {
   /// Phase 2: Hybrid Pipeline (n >= 8)
   static int _executeHybridPipeline(List<int> history) {
     // 1. Lookback window (most recent 12 cycles)
-    final lookback = history.length > 12 
-        ? history.sublist(history.length - 12) 
-        : history;
+    final lookback = history.length > 12 ? history.sublist(history.length - 12) : history;
 
     final lookbackDouble = lookback.map((e) => e.toDouble()).toList();
 
@@ -70,7 +69,7 @@ class CycleLengthForecaster {
     final iqr = _calculateIQR(lookbackDouble);
     final q1 = _calculatePercentile(lookbackDouble, 25);
     final q3 = _calculatePercentile(lookbackDouble, 75);
-    
+
     final lowerBound = q1 - (1.5 * iqr);
     final upperBound = q3 + (1.5 * iqr);
 
@@ -79,9 +78,12 @@ class CycleLengthForecaster {
 
     for (int i = 0; i < lookback.length; i++) {
       final val = lookback[i];
-      final isAnomaly = val < lowerBound || val > upperBound || 
-                         val < minBiologicalCycle || val > maxBiologicalCycle;
-      
+      final isAnomaly =
+          val < lowerBound ||
+          val > upperBound ||
+          val < minBiologicalCycle ||
+          val > maxBiologicalCycle;
+
       if (isAnomaly) {
         anomalyIndices.add(i);
       } else {
@@ -90,7 +92,9 @@ class CycleLengthForecaster {
     }
 
     // 3. Imputation (Do Not Drop Data)
-    final medianOfCleanData = _calculateMedian(nonAnomalousData.isEmpty ? [defaultCycleLength.toDouble()] : nonAnomalousData);
+    final medianOfCleanData = _calculateMedian(
+      nonAnomalousData.isEmpty ? [defaultCycleLength.toDouble()] : nonAnomalousData,
+    );
     final cleanedHistory = List<double>.from(lookbackDouble);
     for (final index in anomalyIndices) {
       cleanedHistory[index] = medianOfCleanData;
@@ -107,8 +111,11 @@ class CycleLengthForecaster {
 
     // Safety Clamp: Ensure predictions remain within biological norms
     final clamped = prediction.clamp(minBiologicalCycle, maxBiologicalCycle);
-    
-    developer.log('Pipeline: n=${history.length}, Raw Prediction=$prediction, Clamped=$clamped', name: 'PrivacyTracker.Prediction');
+
+    developer.log(
+      'Pipeline: n=${history.length}, Raw Prediction=$prediction, Clamped=$clamped',
+      name: 'PrivacyTracker.Prediction',
+    );
     return clamped;
   }
 
@@ -126,18 +133,18 @@ class CycleLengthForecaster {
 
     // Try fitting ARIMA(1, 1, 1) on the differenced series
     // AR(1): Y'_t = phi * Y'_{t-1} + error_t + theta * error_{t-1}
-    
+
     final params = _fitArima111(differenced);
     final phi = params[0];
     final theta = params[1];
-    
+
     // Last values
     final lastYPrime = differenced.last;
     final lastError = params[2]; // estimated error of the last point
 
     // Predict next differenced value
     final nextYPrime = phi * lastYPrime + theta * lastError;
-    
+
     // Undo differencing
     return series.last + nextYPrime;
   }
@@ -156,7 +163,7 @@ class CycleLengthForecaster {
         double sse = 0;
         double prevError = 0;
         double currentError = 0;
-        
+
         for (int i = 1; i < series.length; i++) {
           final prediction = phi * series[i - 1] + theta * prevError;
           currentError = series[i] - prediction;
@@ -175,7 +182,7 @@ class CycleLengthForecaster {
 
     // Refinement step for best params (optional, but good for accuracy)
     // For brevity and "lightweight" requirement, this 10x10 grid is usually enough for cycle data.
-    
+
     return [bestPhi, bestTheta, finalLastError];
   }
 
@@ -220,7 +227,7 @@ class CycleLengthForecaster {
     final sorted = List<double>.from(data)..sort();
     final trimCount = (data.length * trimPercentage).round();
     if (trimCount * 2 >= data.length) return _calculateMedian(data);
-    
+
     final trimmed = sorted.sublist(trimCount, data.length - trimCount);
     return _calculateAverage(trimmed);
   }

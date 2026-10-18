@@ -4,7 +4,7 @@ import '../../domain/models/symptom_log.dart';
 import 'hive_dtos.dart';
 
 /// Static utility class to handle Domain <-> Map and Domain <-> DTO conversion.
-/// 
+///
 /// This class lives in the Data layer to keep Domain models pure and
 /// decoupled from serialization formats (like JSON/Map or Hive DTOs).
 class ModelMapper {
@@ -77,7 +77,7 @@ class ModelMapper {
       symptoms: List<String>.from(map['symptoms']),
       moodRating: map['moodRating'] ?? 3,
       notes: map['notes'],
-      basalBodyTemperature: map['basalBodyTemperature']?.toDouble(),
+      basalBodyTemperature: (map['basalBodyTemperature'] as num?)?.toDouble(),
       cervicalFluidType: map['cervicalFluidType'],
       lhTestPositive: map['lhTestPositive'],
       updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : DateTime.now(),

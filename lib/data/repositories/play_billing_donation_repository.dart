@@ -7,18 +7,8 @@ import '../storage/secure_key_storage.dart';
 
 /// Implementation of [IDonationRepository] using Google Play Billing.
 class PlayBillingDonationRepository implements IDonationRepository {
-  final SecureKeyStorage _keyStorage;
-  final InAppPurchase _iap;
-  
-  final StreamController<bool> _supporterController = StreamController<bool>.broadcast();
-  late StreamSubscription<List<PurchaseDetails>> _subscription;
-
-  static const String _consumableId = 'tip_coffee_consumable';
-  static const String _subscriptionId = 'support_monthly_tier1';
-  static const Set<String> _productIds = {_consumableId, _subscriptionId};
-
-  PlayBillingDonationRepository(this._keyStorage, {InAppPurchase? iap}) 
-      : _iap = iap ?? InAppPurchase.instance {
+  PlayBillingDonationRepository(this._keyStorage, {InAppPurchase? iap})
+    : _iap = iap ?? InAppPurchase.instance {
     _subscription = _iap.purchaseStream.listen(
       _onPurchaseUpdate,
       onDone: () => _subscription.cancel(),
@@ -26,6 +16,15 @@ class PlayBillingDonationRepository implements IDonationRepository {
     );
     _initSupporterStatus();
   }
+  final SecureKeyStorage _keyStorage;
+  final InAppPurchase _iap;
+
+  final StreamController<bool> _supporterController = StreamController<bool>.broadcast();
+  late StreamSubscription<List<PurchaseDetails>> _subscription;
+
+  static const String _consumableId = 'tip_coffee_consumable';
+  static const String _subscriptionId = 'support_monthly_tier1';
+  static const Set<String> _productIds = {_consumableId, _subscriptionId};
 
   Future<void> _initSupporterStatus() async {
     final status = await isSupporter();
@@ -50,8 +49,10 @@ class PlayBillingDonationRepository implements IDonationRepository {
     }
 
     if (response.productDetails.isEmpty) {
-      debugPrint("PrivacyTracker.Donations: No products found for IDs: $_productIds. "
-                 "Check if they are active in the Google Play Console.");
+      debugPrint(
+        "PrivacyTracker.Donations: No products found for IDs: $_productIds. "
+        "Check if they are active in the Google Play Console.",
+      );
       return [];
     }
 
@@ -98,7 +99,7 @@ class PlayBillingDonationRepository implements IDonationRepository {
       } else if (purchaseDetails.status == PurchaseStatus.error) {
         // Handle error
       } else if (purchaseDetails.status == PurchaseStatus.purchased ||
-                 purchaseDetails.status == PurchaseStatus.restored) {
+          purchaseDetails.status == PurchaseStatus.restored) {
         _handleSuccessfulPurchase(purchaseDetails);
       }
 
@@ -110,9 +111,9 @@ class PlayBillingDonationRepository implements IDonationRepository {
 
   Future<void> _handleSuccessfulPurchase(PurchaseDetails purchaseDetails) async {
     // In a real app, you should verify the purchase with your backend here.
-    // Since this is a privacy-first app without a mandatory backend, we trust 
+    // Since this is a privacy-first app without a mandatory backend, we trust
     // the Play Store response and persist locally.
-    
+
     await _keyStorage.setSupporterStatus(true);
     _supporterController.add(true);
   }

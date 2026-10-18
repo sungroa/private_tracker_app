@@ -1,9 +1,9 @@
-import '../models/trends.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
+import '../models/trends.dart';
 
 /// Utility for analyzing symptom frequency and mood trends.
-/// 
+///
 /// 💼 **Domain Context**: Provides categorical analysis of health biomarkers,
 /// identifying prevalent patterns in user-reported data.
 class SymptomAnalyzer {
@@ -16,15 +16,14 @@ class SymptomAnalyzer {
       }
     }
 
-    final sorted = counts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+    final sorted = counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
     return sorted.take(5).toList();
   }
 
   static List<MoodPoint> getMoodHistory(List<SymptomLog> logs) {
     final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
-    
+
     final recentLogs = logs.where((l) => l.date.isAfter(thirtyDaysAgo)).toList()
       ..sort((a, b) => a.date.compareTo(b.date));
 

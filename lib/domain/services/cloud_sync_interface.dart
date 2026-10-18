@@ -2,10 +2,9 @@ import 'dart:typed_data';
 
 /// Exception thrown by CloudSyncInterface operations to handle network, auth, or quota errors gracefully.
 class CloudSyncException implements Exception {
+  CloudSyncException(this.message, [this.originalError]);
   final String message;
   final dynamic originalError;
-
-  CloudSyncException(this.message, [this.originalError]);
 
   // (N2) Standardized error strings
   static const String authFailed = 'Failed to authenticate with cloud storage';
@@ -41,7 +40,11 @@ abstract class CloudSyncInterface {
   /// [checksum] The integrity checksum of the file.
   /// [extraMetadata] Optional key-value pairs to store with the file (e.g., encryption salt).
   /// Should throw [CloudSyncException] on network, quota, or other upload errors.
-  Future<void> uploadEncryptedBackup(Uint8List payload, String checksum, {Map<String, String?>? extraMetadata});
+  Future<void> uploadEncryptedBackup(
+    Uint8List payload,
+    String checksum, {
+    Map<String, String?>? extraMetadata,
+  });
 
   /// Downloads the encrypted backup from the cloud storage.
   ///
@@ -59,7 +62,7 @@ abstract class CloudSyncInterface {
   Future<void> deleteCloudData();
 
   /// Fetches the application-specific metadata (properties) associated with the latest backup.
-  /// 
+  ///
   /// Returns a map of properties, or null if no backup exists.
   Future<Map<String, String?>?> fetchLatestCloudMetadata();
 

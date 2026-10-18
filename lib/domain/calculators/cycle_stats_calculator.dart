@@ -2,9 +2,9 @@ import '../models/cycle_log.dart';
 import 'cycle_length_forecaster.dart';
 
 /// Statistical utilities for menstruation cycle data analysis.
-/// 
-/// 💼 **Domain Context**: This calculator handles the aggregation of historical 
-/// data for long-term trends. It delegates complex forecasting logic to 
+///
+/// 💼 **Domain Context**: This calculator handles the aggregation of historical
+/// data for long-term trends. It delegates complex forecasting logic to
 /// [CycleLengthForecaster] to ensure consistency between displays and projections.
 class CycleStatsCalculator {
   static const int defaultCycleLength = 28;
@@ -17,9 +17,7 @@ class CycleStatsCalculator {
 
     final lengths = <int>[];
     for (int i = 0; i < sortedLogs.length - 1; i++) {
-      lengths.add(
-        sortedLogs[i].startDate.difference(sortedLogs[i + 1].startDate).inDays,
-      );
+      lengths.add(sortedLogs[i].startDate.difference(sortedLogs[i + 1].startDate).inDays);
     }
 
     // Forecaster expects oldest to newest

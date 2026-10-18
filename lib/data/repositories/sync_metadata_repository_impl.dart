@@ -1,16 +1,15 @@
-import '../../domain/repositories/sync_metadata_repository.dart';
 import '../../core/registry/hive_registry.dart';
+import '../../domain/repositories/sync_metadata_repository.dart';
 import '../storage/local_database_manager.dart';
 
 /// Implementation of [ISyncMetadataRepository] for tracking synchronization state.
-/// 
+///
 /// 🏛️ **Architecture**: Provides persistence for sync-related bookkeeping
-/// (checksums and local modification flags). It utilizes the [HiveRegistry.metaBox] 
+/// (checksums and local modification flags). It utilizes the [HiveRegistry.metaBox]
 /// for specialized metadata storage.
 class SyncMetadataRepositoryImpl implements ISyncMetadataRepository {
-  final LocalDatabaseManager _dbManager;
-
   SyncMetadataRepositoryImpl(this._dbManager);
+  final LocalDatabaseManager _dbManager;
 
   @override
   Future<String?> getLastSyncChecksum() async {

@@ -1,8 +1,8 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/domain/trends_calculator.dart';
 import 'package:private_tracker_app/presentation/analytics/widgets/bbt_chart.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 void main() {
   testWidgets('BbtChart renders LineChart when data is present', (WidgetTester tester) async {
@@ -13,9 +13,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: BbtChart(bbtHistory: bbtHistory),
-        ),
+        home: Scaffold(body: BbtChart(bbtHistory: bbtHistory)),
       ),
     );
 
@@ -25,9 +23,7 @@ void main() {
   testWidgets('BbtChart shows empty state message when no data', (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(
-          body: BbtChart(bbtHistory: []),
-        ),
+        home: Scaffold(body: BbtChart(bbtHistory: [])),
       ),
     );
 

@@ -3,15 +3,14 @@ import '../../domain/repositories/cycle_log_repository.dart';
 import '../storage/data_sources/cycle_data_source.dart';
 
 /// Implementation of [CycleLogRepository] using Hive as the persistence layer.
-/// 
-/// 🏛️ **Architecture**: This class implements the Repository Pattern, acting 
+///
+/// 🏛️ **Architecture**: This class implements the Repository Pattern, acting
 /// as a mediator between the Domain Use Cases and the low-level [CycleDataSource].
-/// It ensures that all data access is asynchronous and follows the domain 
+/// It ensures that all data access is asynchronous and follows the domain
 /// interface contract.
 class CycleLogRepositoryImpl implements CycleLogRepository {
-  final CycleDataSource _dataSource;
-
   CycleLogRepositoryImpl(this._dataSource);
+  final CycleDataSource _dataSource;
 
   @override
   Future<List<CycleLog>> getCycleLogs() async {

@@ -1,13 +1,13 @@
 import 'package:private_tracker_app/core/registry/hive_registry.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
-import '../local_database_manager.dart';
+
 import '../hive_dtos.dart';
+import '../local_database_manager.dart';
 import '../model_mapper.dart';
 import 'local_data_source.dart';
 
 class SymptomDataSource extends LocalDataSource<SymptomLogDto> {
-  SymptomDataSource(LocalDatabaseManager dbManager)
-      : super(dbManager, HiveRegistry.symptomLogBox);
+  SymptomDataSource(LocalDatabaseManager dbManager) : super(dbManager, HiveRegistry.symptomLogBox);
 
   Future<List<SymptomLog>> getSymptomLogsForMonth(DateTime month) async {
     final dtos = await getAll();

@@ -1,62 +1,58 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:private_tracker_app/core/services/clock.dart';
+import 'package:private_tracker_app/data/repositories/cycle_log_repository_impl.dart';
+import 'package:private_tracker_app/data/repositories/symptom_log_repository_impl.dart';
+import 'package:private_tracker_app/data/repositories/tag_repository_impl.dart';
+import 'package:private_tracker_app/data/storage/data_export_service.dart';
+import 'package:private_tracker_app/data/storage/data_sources/cycle_data_source.dart';
+import 'package:private_tracker_app/data/storage/data_sources/data_seeding_service.dart';
+import 'package:private_tracker_app/data/storage/data_sources/symptom_data_source.dart';
+import 'package:private_tracker_app/data/storage/data_sources/tag_data_source.dart';
+import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
+import 'package:private_tracker_app/data/storage/local_database_manager.dart';
+import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
+import 'package:private_tracker_app/domain/cycle_calculator.dart';
+import 'package:private_tracker_app/domain/models/custom_tag.dart';
 import 'package:private_tracker_app/domain/repositories/symptom_log_repository.dart';
 import 'package:private_tracker_app/domain/repositories/tag_repository.dart';
-import 'package:private_tracker_app/data/repositories/symptom_log_repository_impl.dart';
-import 'package:private_tracker_app/data/repositories/cycle_log_repository_impl.dart';
-import 'package:private_tracker_app/data/repositories/tag_repository_impl.dart';
-import 'package:private_tracker_app/presentation/sheets/symptom_logging_sheet.dart';
-import 'package:private_tracker_app/presentation/sheets/cycle_logging_sheet.dart';
-import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
-import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
-import 'package:private_tracker_app/data/storage/local_database_manager.dart';
-import 'package:private_tracker_app/data/storage/data_export_service.dart';
-import 'package:private_tracker_app/data/storage/data_sources/data_seeding_service.dart';
-import 'package:provider/provider.dart';
-import 'package:provider/single_child_widget.dart';
-import 'package:private_tracker_app/presentation/theme/app_theme.dart';
+import 'package:private_tracker_app/domain/trends_calculator.dart';
+import 'package:private_tracker_app/domain/usecases/add_tag_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/delete_cycle_log_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/delete_symptom_log_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/delete_tag_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/get_cycle_logs_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/get_symptom_logs_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/get_tags_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/save_cycle_log_use_case.dart';
+import 'package:private_tracker_app/domain/usecases/save_symptom_log_use_case.dart';
 import 'package:private_tracker_app/presentation/providers/cycle_provider.dart';
 import 'package:private_tracker_app/presentation/providers/symptom_provider.dart';
 import 'package:private_tracker_app/presentation/providers/tag_provider.dart';
-import 'package:private_tracker_app/domain/usecases/get_cycle_logs_use_case.dart';
-import 'package:private_tracker_app/domain/usecases/save_cycle_log_use_case.dart';
-import 'package:private_tracker_app/domain/usecases/delete_cycle_log_use_case.dart';
-import 'package:private_tracker_app/domain/usecases/get_symptom_logs_use_case.dart';
-import 'package:private_tracker_app/domain/usecases/save_symptom_log_use_case.dart';
-import 'package:private_tracker_app/domain/usecases/delete_symptom_log_use_case.dart';
-import 'package:private_tracker_app/domain/usecases/get_tags_use_case.dart';
-import 'package:private_tracker_app/domain/usecases/add_tag_use_case.dart';
-import 'package:private_tracker_app/domain/usecases/delete_tag_use_case.dart';
-import 'package:private_tracker_app/data/storage/data_sources/cycle_data_source.dart';
-import 'package:private_tracker_app/data/storage/data_sources/symptom_data_source.dart';
-import 'package:private_tracker_app/data/storage/data_sources/tag_data_source.dart';
+import 'package:private_tracker_app/presentation/sheets/cycle_logging_sheet.dart';
+import 'package:private_tracker_app/presentation/sheets/symptom_logging_sheet.dart';
+import 'package:private_tracker_app/presentation/theme/app_theme.dart';
+import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 import 'package:uuid/uuid.dart';
-import 'package:private_tracker_app/domain/models/custom_tag.dart';
-import 'package:private_tracker_app/domain/trends_calculator.dart';
-import 'package:private_tracker_app/domain/cycle_calculator.dart';
-import 'package:private_tracker_app/core/services/clock.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 
 void main() {
-  Widget buildTestableWidget({
-    required Widget child,
-    required List<SingleChildWidget> providers,
-  }) {
+  Widget buildTestableWidget({required Widget child, required List<SingleChildWidget> providers}) {
     return MaterialApp(
       theme: AppTheme.lightTheme,
       home: MultiProvider(
         providers: providers,
         child: Scaffold(
           body: Navigator(
-            onGenerateRoute: (settings) => MaterialPageRoute(
-              builder: (context) => child,
-            ),
+            onGenerateRoute: (settings) => MaterialPageRoute(builder: (context) => child),
           ),
         ),
       ),
@@ -73,11 +69,13 @@ void main() {
     late LocalDatabaseManager dbManager;
 
     setUp(() async {
-      tempDir = await Directory.systemTemp.createTemp('hive_test_${DateTime.now().microsecondsSinceEpoch}');
+      tempDir = await Directory.systemTemp.createTemp(
+        'hive_test_${DateTime.now().microsecondsSinceEpoch}',
+      );
       final hiveDir = Directory('${tempDir.path}/hive');
       await hiveDir.create();
       Hive.init(hiveDir.path);
-      
+
       mockStorage = MockFlutterSecureStorage();
       dbManager = LocalDatabaseManager();
       symptomDataSource = SymptomDataSource(dbManager);
@@ -93,19 +91,24 @@ void main() {
         symptomDataSource: symptomDataSource,
         tagDataSource: tagDataSource,
       );
-      
+
       final key = Hive.generateSecureKey();
-      when(() => mockStorage.read(key: any(named: 'key'))).thenAnswer((_) async => base64UrlEncode(key));
-      when(() => mockStorage.write(key: any(named: 'key'), value: any(named: 'value'))).thenAnswer((_) async => {});
+      when(
+        () => mockStorage.read(key: any(named: 'key')),
+      ).thenAnswer((_) async => base64UrlEncode(key));
+      when(
+        () => mockStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async => {});
 
       await storageService.initialize(basePath: hiveDir.path).timeout(const Duration(seconds: 5));
-      
+
       if ((await tagDataSource.getCustomTags()).isEmpty) {
-        await tagDataSource.saveTag(CustomTag(
-          id: const Uuid().v4(),
-          name: 'Cramps',
-          updatedAt: DateTime.now(),
-        ));
+        await tagDataSource.saveTag(
+          CustomTag(id: const Uuid().v4(), name: 'Cramps', updatedAt: DateTime.now()),
+        );
       }
     });
 
@@ -129,24 +132,30 @@ void main() {
           child: SymptomLoggingSheet(selectedDay: DateTime.now()),
           providers: [
             Provider<EncryptedStorageService>.value(value: storageService),
-            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(symptomDataSource)),
+            Provider<SymptomLogRepository>(
+              create: (_) => SymptomLogRepositoryImpl(symptomDataSource),
+            ),
             Provider<TagRepository>(create: (_) => TagRepositoryImpl(tagDataSource)),
-            ChangeNotifierProvider(create: (_) {
-              final repo = SymptomLogRepositoryImpl(symptomDataSource);
-              return SymptomProvider(
-                GetSymptomLogsUseCase(repo),
-                SaveSymptomLogUseCase(repo),
-                DeleteSymptomLogUseCase(repo),
-              );
-            }),
-            ChangeNotifierProvider(create: (_) {
-              final repo = TagRepositoryImpl(tagDataSource);
-              return TagProvider(
-                GetTagsUseCase(repo),
-                AddTagUseCase(repo),
-                DeleteTagUseCase(repo),
-              );
-            }),
+            ChangeNotifierProvider(
+              create: (_) {
+                final repo = SymptomLogRepositoryImpl(symptomDataSource);
+                return SymptomProvider(
+                  GetSymptomLogsUseCase(repo),
+                  SaveSymptomLogUseCase(repo),
+                  DeleteSymptomLogUseCase(repo),
+                );
+              },
+            ),
+            ChangeNotifierProvider(
+              create: (_) {
+                final repo = TagRepositoryImpl(tagDataSource);
+                return TagProvider(
+                  GetTagsUseCase(repo),
+                  AddTagUseCase(repo),
+                  DeleteTagUseCase(repo),
+                );
+              },
+            ),
           ],
         ),
       );
@@ -160,18 +169,20 @@ void main() {
           child: CycleLoggingSheet(selectedDay: DateTime.now()),
           providers: [
             Provider<EncryptedStorageService>.value(value: storageService),
-            ChangeNotifierProvider(create: (_) {
-              final cycleRepo = CycleLogRepositoryImpl(cycleDataSource);
-              final symptomRepo = SymptomLogRepositoryImpl(symptomDataSource);
-              final clock = SystemClock();
-              final calculator = CycleCalculator(clock);
-              final trendsCalculator = TrendsCalculator(calculator);
-              return CycleProvider(
-                GetCycleLogsUseCase(cycleRepo, symptomRepo, trendsCalculator),
-                SaveCycleLogUseCase(cycleRepo),
-                DeleteCycleLogUseCase(cycleRepo),
-              );
-            }),
+            ChangeNotifierProvider(
+              create: (_) {
+                final cycleRepo = CycleLogRepositoryImpl(cycleDataSource);
+                final symptomRepo = SymptomLogRepositoryImpl(symptomDataSource);
+                final clock = SystemClock();
+                final calculator = CycleCalculator(clock);
+                final trendsCalculator = TrendsCalculator(calculator);
+                return CycleProvider(
+                  GetCycleLogsUseCase(cycleRepo, symptomRepo, trendsCalculator),
+                  SaveCycleLogUseCase(cycleRepo),
+                  DeleteCycleLogUseCase(cycleRepo),
+                );
+              },
+            ),
           ],
         ),
       );
@@ -190,24 +201,30 @@ void main() {
           child: SymptomLoggingSheet(selectedDay: date),
           providers: [
             Provider<EncryptedStorageService>.value(value: storageService),
-            Provider<SymptomLogRepository>(create: (_) => SymptomLogRepositoryImpl(symptomDataSource)),
+            Provider<SymptomLogRepository>(
+              create: (_) => SymptomLogRepositoryImpl(symptomDataSource),
+            ),
             Provider<TagRepository>(create: (_) => TagRepositoryImpl(tagDataSource)),
-            ChangeNotifierProvider(create: (_) {
-              final repo = SymptomLogRepositoryImpl(symptomDataSource);
-              return SymptomProvider(
-                GetSymptomLogsUseCase(repo),
-                SaveSymptomLogUseCase(repo),
-                DeleteSymptomLogUseCase(repo),
-              );
-            }),
-            ChangeNotifierProvider(create: (_) {
-              final repo = TagRepositoryImpl(tagDataSource);
-              return TagProvider(
-                GetTagsUseCase(repo),
-                AddTagUseCase(repo),
-                DeleteTagUseCase(repo),
-              );
-            }),
+            ChangeNotifierProvider(
+              create: (_) {
+                final repo = SymptomLogRepositoryImpl(symptomDataSource);
+                return SymptomProvider(
+                  GetSymptomLogsUseCase(repo),
+                  SaveSymptomLogUseCase(repo),
+                  DeleteSymptomLogUseCase(repo),
+                );
+              },
+            ),
+            ChangeNotifierProvider(
+              create: (_) {
+                final repo = TagRepositoryImpl(tagDataSource);
+                return TagProvider(
+                  GetTagsUseCase(repo),
+                  AddTagUseCase(repo),
+                  DeleteTagUseCase(repo),
+                );
+              },
+            ),
           ],
         ),
       );
@@ -217,13 +234,13 @@ void main() {
       await tester.pump();
 
       final saveButton = find.byKey(const Key('symptom_save_button'));
-      
+
       await tester.runAsync(() async {
         await tester.tap(saveButton);
         // Important: let the async save operation complete in its own isolate/future
         await Future.delayed(const Duration(milliseconds: 200));
       });
-      
+
       await safePump(tester);
 
       final logs = await symptomDataSource.getSymptomLogsForMonth(date);
@@ -241,31 +258,33 @@ void main() {
           child: CycleLoggingSheet(selectedDay: date),
           providers: [
             Provider<EncryptedStorageService>.value(value: storageService),
-            ChangeNotifierProvider(create: (_) {
-              final cycleRepo = CycleLogRepositoryImpl(cycleDataSource);
-              final symptomRepo = SymptomLogRepositoryImpl(symptomDataSource);
-              final clock = SystemClock();
-              final calculator = CycleCalculator(clock);
-              final trendsCalculator = TrendsCalculator(calculator);
-              return CycleProvider(
-                GetCycleLogsUseCase(cycleRepo, symptomRepo, trendsCalculator),
-                SaveCycleLogUseCase(cycleRepo),
-                DeleteCycleLogUseCase(cycleRepo),
-              );
-            }),
+            ChangeNotifierProvider(
+              create: (_) {
+                final cycleRepo = CycleLogRepositoryImpl(cycleDataSource);
+                final symptomRepo = SymptomLogRepositoryImpl(symptomDataSource);
+                final clock = SystemClock();
+                final calculator = CycleCalculator(clock);
+                final trendsCalculator = TrendsCalculator(calculator);
+                return CycleProvider(
+                  GetCycleLogsUseCase(cycleRepo, symptomRepo, trendsCalculator),
+                  SaveCycleLogUseCase(cycleRepo),
+                  DeleteCycleLogUseCase(cycleRepo),
+                );
+              },
+            ),
           ],
         ),
       );
 
       await tester.pump();
       final saveButton = find.text('Add Cycle Log');
-      
+
       await tester.runAsync(() async {
         await tester.tap(saveButton);
         // Important: let the async save operation complete
         await Future.delayed(const Duration(milliseconds: 200));
       });
-      
+
       await safePump(tester);
 
       final logs = await cycleDataSource.getCycleLogs();

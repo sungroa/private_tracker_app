@@ -1,12 +1,17 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:flutter_timezone/flutter_timezone.dart';
-import 'dart:io' show Platform;
+
 import 'clock.dart';
 
 class NotificationService {
+  NotificationService({FlutterLocalNotificationsPlugin? notificationsPlugin, IClock? clock})
+    : _notificationsPlugin = notificationsPlugin ?? FlutterLocalNotificationsPlugin(),
+      _clock = clock ?? SystemClock();
   final FlutterLocalNotificationsPlugin _notificationsPlugin;
   final IClock _clock;
 
@@ -14,22 +19,15 @@ class NotificationService {
   static const int periodReminderId = 200;
   static const int fertilityReminderId = 300;
 
-  NotificationService({
-    FlutterLocalNotificationsPlugin? notificationsPlugin,
-    IClock? clock,
-  }) : _notificationsPlugin = notificationsPlugin ?? FlutterLocalNotificationsPlugin(),
-       _clock = clock ?? SystemClock();
-
   /// Initializes the notification service.
   Future<void> initialize() async {
     debugPrint('[PrivacyTracker.Notifications] Initializing NotificationService...');
     // Initialize timezone data
     tz.initializeTimeZones();
-    
-    // Get device timezone
+
     try {
-      final dynamic locationData = await FlutterTimezone.getLocalTimezone();
-      final String timeZoneName = locationData is String ? locationData : locationData.identifier;
+      final TimezoneInfo locationData = await FlutterTimezone.getLocalTimezone();
+      final String timeZoneName = locationData.identifier;
       tz.setLocalLocation(tz.getLocation(timeZoneName));
       debugPrint('[PrivacyTracker.Notifications] Timezone set to: $timeZoneName');
     } catch (e) {
@@ -37,10 +35,12 @@ class NotificationService {
       tz.setLocalLocation(tz.getLocation('UTC'));
     }
 
-    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('ic_notification');
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings(
+      'ic_notification',
+    );
     const DarwinInitializationSettings iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: false, 
-      requestBadgePermission: false, 
+      requestAlertPermission: false,
+      requestBadgePermission: false,
       requestSoundPermission: false,
     );
 
@@ -57,7 +57,8 @@ class NotificationService {
     );
 
     // (W10) Explicitly create the channel to ensure it appears in Android settings
-    final androidPlugin = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlugin = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin != null) {
       await androidPlugin.createNotificationChannel(
         const AndroidNotificationChannel(
@@ -145,7 +146,9 @@ class NotificationService {
 
     // Don't schedule if the date is in the past
     if (scheduledDate.isBefore(tz.TZDateTime.from(_clock.now(), tz.local))) {
-      debugPrint('[PrivacyTracker.Notifications] Skipping notification $id: Scheduled date is in the past.');
+      debugPrint(
+        '[PrivacyTracker.Notifications] Skipping notification $id: Scheduled date is in the past.',
+      );
       return;
     }
 
@@ -185,24 +188,20 @@ class NotificationService {
   /// Requests permissions (for iOS and Android 13+).
   Future<bool> requestPermissions() async {
     if (Platform.isAndroid) {
-      final AndroidFlutterLocalNotificationsPlugin? androidPlugin =
-          _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      
+      final AndroidFlutterLocalNotificationsPlugin? androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
       final bool? androidGranted = await androidPlugin?.requestNotificationsPermission();
-      
+
       // On Android < 13, requestNotificationsPermission returns null (implicitly granted).
       return (androidGranted ?? true);
     } else if (Platform.isIOS) {
       final bool? iosGranted = await _notificationsPlugin
           .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          );
+          ?.requestPermissions(alert: true, badge: true, sound: true);
       return iosGranted ?? false;
     }
-    
+
     return false;
   }
 }

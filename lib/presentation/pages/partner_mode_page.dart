@@ -1,23 +1,20 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../domain/services/partner_sharing_service.dart';
-import '../../domain/models/shared_phase_data.dart';
-import '../../data/storage/partner_storage_service.dart';
-import '../theme/app_theme.dart';
 import 'package:provider/provider.dart';
+
+import '../../data/storage/partner_storage_service.dart';
+import '../../domain/models/shared_phase_data.dart';
+import '../../domain/services/partner_sharing_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/glass_background.dart';
 
 class PartnerModePage extends StatefulWidget {
+  const PartnerModePage({super.key, this.initialPayload, this.initialKey});
   final String? initialPayload;
   final String? initialKey;
-
-  const PartnerModePage({
-    super.key,
-    this.initialPayload,
-    this.initialKey,
-  });
 
   @override
   State<PartnerModePage> createState() => _PartnerModePageState();
@@ -37,7 +34,7 @@ class _PartnerModePageState extends State<PartnerModePage> {
   Future<void> _initializeApp() async {
     // Initialization is now handled by LocalDatabaseManager via MultiProvider
     final storage = context.read<PartnerStorageService>();
-    
+
     if (widget.initialPayload != null && widget.initialKey != null) {
       _processPayload(widget.initialPayload!, widget.initialKey!);
     } else {
@@ -74,22 +71,28 @@ class _PartnerModePageState extends State<PartnerModePage> {
     }
   }
 
-  void _resetApp() async {
-    HapticFeedback.mediumImpact();
+  Future<void> _resetApp() async {
+    unawaited(HapticFeedback.mediumImpact());
     final partnerService = context.read<PartnerStorageService>();
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset Partner Mode?', style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold)),
-        content: const Text('This will clear the current shared partner data. You will need a new link or QR to see it again.', style: TextStyle(fontFamily: AppTheme.fontFamily)),
+        title: const Text(
+          'Reset Partner Mode?',
+          style: TextStyle(fontFamily: AppTheme.fontFamily, fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'This will clear the current shared partner data. You will need a new link or QR to see it again.',
+          style: TextStyle(fontFamily: AppTheme.fontFamily),
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear Data', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Clear Data',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -145,13 +148,13 @@ class _PartnerModePageState extends State<PartnerModePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (_data == null && !_isScanning) 
+                if (_data == null && !_isScanning)
                   _buildEmptyState(isDark, primary)
                 else if (_isScanning)
                   _buildScanner(isDark, primary)
                 else if (_data != null)
                   _buildDashboard(isDark, primary),
-                
+
                 const SizedBox(height: 32),
               ],
             ),
@@ -190,7 +193,7 @@ class _PartnerModePageState extends State<PartnerModePage> {
             "Scan your partner's QR code or use a shared link to see their cycle predictions securely.",
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 16, 
+              fontSize: 16,
               color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54,
               fontFamily: AppTheme.fontFamily,
               fontWeight: FontWeight.w500,
@@ -203,7 +206,9 @@ class _PartnerModePageState extends State<PartnerModePage> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               gradient: LinearGradient(
-                colors: isDark ? [AppTheme.primaryDarkColor, AppTheme.accentDarkColor] : [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.8)],
+                colors: isDark
+                    ? [AppTheme.primaryDarkColor, AppTheme.accentDarkColor]
+                    : [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.8)],
               ),
             ),
             child: ElevatedButton.icon(
@@ -211,15 +216,18 @@ class _PartnerModePageState extends State<PartnerModePage> {
                 HapticFeedback.mediumImpact();
                 setState(() => _isScanning = true);
               },
-              icon: Icon(Icons.qr_code_scanner_rounded, color: isDark ? AppTheme.backgroundDarkColor : Colors.white),
+              icon: Icon(
+                Icons.qr_code_scanner_rounded,
+                color: isDark ? AppTheme.backgroundDarkColor : Colors.white,
+              ),
               label: Text(
-                "SCAN QR CODE", 
+                "SCAN QR CODE",
                 style: TextStyle(
-                  color: isDark ? AppTheme.backgroundDarkColor : Colors.white, 
+                  color: isDark ? AppTheme.backgroundDarkColor : Colors.white,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
                   fontSize: 15,
-                )
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.transparent,
@@ -241,7 +249,7 @@ class _PartnerModePageState extends State<PartnerModePage> {
           Text(
             "Scan Partner's QR",
             style: TextStyle(
-              fontSize: 24, 
+              fontSize: 24,
               fontWeight: FontWeight.w800,
               color: primary,
               fontFamily: AppTheme.fontFamily,
@@ -266,7 +274,9 @@ class _PartnerModePageState extends State<PartnerModePage> {
                           if (rawValue != null) {
                             final uri = Uri.tryParse(rawValue);
                             if (uri != null) {
-                              final result = context.read<PartnerSharingService>().parseDeepLink(uri);
+                              final result = context.read<PartnerSharingService>().parseDeepLink(
+                                uri,
+                              );
                               if (result != null) {
                                 _processPayload(result['data']!, result['key']!);
                                 break;
@@ -286,13 +296,13 @@ class _PartnerModePageState extends State<PartnerModePage> {
           TextButton(
             onPressed: () => setState(() => _isScanning = false),
             child: Text(
-              "CANCEL SCAN", 
+              "CANCEL SCAN",
               style: TextStyle(
-                color: primary, 
+                color: primary,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1,
                 fontSize: 14,
-              )
+              ),
             ),
           ),
         ],
@@ -313,20 +323,64 @@ class _PartnerModePageState extends State<PartnerModePage> {
           child: Stack(
             children: [
               Positioned(
-                top: 0, left: 0,
-                child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(top: BorderSide(color: primary, width: 6), left: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(topLeft: Radius.circular(32)))),
+                top: 0,
+                left: 0,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: primary, width: 6),
+                      left: BorderSide(color: primary, width: 6),
+                    ),
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(32)),
+                  ),
+                ),
               ),
               Positioned(
-                top: 0, right: 0,
-                child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(top: BorderSide(color: primary, width: 6), right: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(topRight: Radius.circular(32)))),
+                top: 0,
+                right: 0,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: primary, width: 6),
+                      right: BorderSide(color: primary, width: 6),
+                    ),
+                    borderRadius: const BorderRadius.only(topRight: Radius.circular(32)),
+                  ),
+                ),
               ),
               Positioned(
-                bottom: 0, left: 0,
-                child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(bottom: BorderSide(color: primary, width: 6), left: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(32)))),
+                bottom: 0,
+                left: 0,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: primary, width: 6),
+                      left: BorderSide(color: primary, width: 6),
+                    ),
+                    borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(32)),
+                  ),
+                ),
               ),
               Positioned(
-                bottom: 0, right: 0,
-                child: Container(width: 40, height: 40, decoration: BoxDecoration(border: Border(bottom: BorderSide(color: primary, width: 6), right: BorderSide(color: primary, width: 6)), borderRadius: const BorderRadius.only(bottomRight: Radius.circular(32)))),
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: primary, width: 6),
+                      right: BorderSide(color: primary, width: 6),
+                    ),
+                    borderRadius: const BorderRadius.only(bottomRight: Radius.circular(32)),
+                  ),
+                ),
               ),
             ],
           ),
@@ -339,8 +393,9 @@ class _PartnerModePageState extends State<PartnerModePage> {
     final now = DateTime.now();
     final nextPeriod = _data!.nextPeriodDate;
     final daysUntil = nextPeriod.difference(now).inDays;
-    
-    final inWindow = now.isAfter(_data!.fertilityWindowStart) && now.isBefore(_data!.fertilityWindowEnd);
+
+    final inWindow =
+        now.isAfter(_data!.fertilityWindowStart) && now.isBefore(_data!.fertilityWindowEnd);
     final daysUntilWindow = _data!.fertilityWindowStart.difference(now).inDays;
 
     return Expanded(
@@ -364,41 +419,44 @@ class _PartnerModePageState extends State<PartnerModePage> {
             Text(
               "Read-only view of shared predictions.",
               style: TextStyle(
-                fontSize: 16, 
+                fontSize: 16,
                 color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black38,
                 fontFamily: AppTheme.fontFamily,
                 fontStyle: FontStyle.italic,
               ),
             ),
             const SizedBox(height: 48),
-            
+
             // Period Countdown
             _InfoCard(
               title: "NEXT PERIOD",
-              value: daysUntil > 0 ? "In $daysUntil days" : (daysUntil == 0 ? "Today" : "${daysUntil.abs()} days ago"),
+              value: daysUntil > 0
+                  ? "In $daysUntil days"
+                  : (daysUntil == 0 ? "Today" : "${daysUntil.abs()} days ago"),
               subValue: DateFormat('MMMM d, yyyy').format(nextPeriod),
               icon: Icons.water_drop_rounded,
               color: Colors.redAccent,
               isDark: isDark,
             ),
-            
+
             const SizedBox(height: 20),
-            
+
             // Fertility Window
             _InfoCard(
               title: "FERTILITY WINDOW",
-              value: inWindow 
-                  ? "Active Now" 
+              value: inWindow
+                  ? "Active Now"
                   : (daysUntilWindow > 0 ? "In $daysUntilWindow days" : "Window Over"),
-              subValue: "${DateFormat('MMM d').format(_data!.fertilityWindowStart)} - ${DateFormat('MMM d').format(_data!.fertilityWindowEnd)}",
+              subValue:
+                  "${DateFormat('MMM d').format(_data!.fertilityWindowStart)} - ${DateFormat('MMM d').format(_data!.fertilityWindowEnd)}",
               icon: Icons.bubble_chart_rounded,
               color: Colors.greenAccent,
               isActive: inWindow,
               isDark: isDark,
             ),
-            
+
             const SizedBox(height: 48),
-            
+
             Container(
               padding: const EdgeInsets.all(24),
               decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 28),
@@ -411,7 +469,12 @@ class _PartnerModePageState extends State<PartnerModePage> {
                       const SizedBox(width: 8),
                       Text(
                         "PRIVACY NOTICE",
-                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: primary, letterSpacing: 1.2),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          color: primary,
+                          letterSpacing: 1.2,
+                        ),
                       ),
                     ],
                   ),
@@ -419,10 +482,10 @@ class _PartnerModePageState extends State<PartnerModePage> {
                   Text(
                     "Predictions are based on historical cycle patterns. This data is stored only on your device and is not shared with any servers.",
                     style: TextStyle(
-                      color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54, 
-                      fontSize: 14, 
+                      color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black54,
+                      fontSize: 14,
                       height: 1.5,
-                      fontFamily: AppTheme.fontFamily
+                      fontFamily: AppTheme.fontFamily,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -434,16 +497,16 @@ class _PartnerModePageState extends State<PartnerModePage> {
                         style: TextStyle(
                           color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black38,
                           fontSize: 12,
-                          fontFamily: AppTheme.fontFamily
+                          fontFamily: AppTheme.fontFamily,
                         ),
                       ),
                       Text(
                         DateFormat('MMM d, h:mm a').format(_data!.generatedAt),
                         style: TextStyle(
-                          fontWeight: FontWeight.w700, 
+                          fontWeight: FontWeight.w700,
                           color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.black45,
                           fontSize: 12,
-                          fontFamily: AppTheme.fontFamily
+                          fontFamily: AppTheme.fontFamily,
                         ),
                       ),
                     ],
@@ -459,14 +522,6 @@ class _PartnerModePageState extends State<PartnerModePage> {
 }
 
 class _InfoCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final String subValue;
-  final IconData icon;
-  final Color color;
-  final bool isActive;
-  final bool isDark;
-
   const _InfoCard({
     required this.title,
     required this.value,
@@ -476,6 +531,13 @@ class _InfoCard extends StatelessWidget {
     required this.isDark,
     this.isActive = false,
   });
+  final String title;
+  final String value;
+  final String subValue;
+  final IconData icon;
+  final Color color;
+  final bool isActive;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
@@ -483,13 +545,15 @@ class _InfoCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(28),
         decoration: AppTheme.glassDecoration(isDark: isDark, borderRadius: 32).copyWith(
-          boxShadow: isActive ? [
-            BoxShadow(
-              color: color.withValues(alpha: 0.2),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            )
-          ] : null,
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.2),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           children: [
@@ -509,8 +573,8 @@ class _InfoCard extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 11, 
-                      fontWeight: FontWeight.w900, 
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
                       color: isDark ? Colors.white.withValues(alpha: 0.3) : Colors.black38,
                       letterSpacing: 1.5,
                     ),
@@ -521,7 +585,9 @@ class _InfoCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
-                      color: isActive ? color : (isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87),
+                      color: isActive
+                          ? color
+                          : (isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87),
                       fontFamily: AppTheme.fontFamily,
                     ),
                   ),
@@ -529,7 +595,7 @@ class _InfoCard extends StatelessWidget {
                   Text(
                     subValue,
                     style: TextStyle(
-                      fontSize: 14, 
+                      fontSize: 14,
                       color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.black45,
                       fontFamily: AppTheme.fontFamily,
                       fontWeight: FontWeight.w500,

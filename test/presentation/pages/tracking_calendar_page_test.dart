@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:provider/provider.dart';
 import 'package:private_tracker_app/presentation/pages/tracking_calendar_page.dart';
 import 'package:private_tracker_app/presentation/providers/cycle_provider.dart';
 import 'package:private_tracker_app/presentation/providers/symptom_provider.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class MockCycleProvider extends Mock implements CycleProvider {}
+
 class MockSymptomProvider extends Mock implements SymptomProvider {}
 
 void main() {
@@ -23,11 +24,11 @@ void main() {
     when(() => mockCycleProvider.predictedPeriodStarts).thenReturn([]);
     when(() => mockCycleProvider.predictedFertilityDates).thenReturn([]);
     when(() => mockSymptomProvider.symptomMap).thenReturn({});
-    
+
     // For _showUnifiedSheet lookups
     when(() => mockSymptomProvider.getSymptomByDate(any())).thenReturn(null);
     when(() => mockCycleProvider.getEventByDate(any())).thenReturn(null);
-    
+
     // For _showDaySummary lookups
     when(() => mockCycleProvider.isPredictedBleeding(any())).thenReturn(false);
     when(() => mockCycleProvider.isPredictedFertility(any())).thenReturn(false);
@@ -39,11 +40,7 @@ void main() {
         ChangeNotifierProvider<CycleProvider>.value(value: mockCycleProvider),
         ChangeNotifierProvider<SymptomProvider>.value(value: mockSymptomProvider),
       ],
-      child: const MaterialApp(
-        home: Scaffold(
-          body: TrackingCalendarPage(),
-        ),
-      ),
+      child: const MaterialApp(home: Scaffold(body: TrackingCalendarPage())),
     );
   }
 
@@ -83,11 +80,11 @@ void main() {
     // In the picker, select "JANUARY" and "2025" (if not already selected)
     // For simplicity, we'll just find the "CONFIRM" button after some scrolling simulations
     // or just assume the initial selection is confirmed.
-    
+
     // Find Confirm button
     final confirmButton = find.text('CONFIRM');
     expect(confirmButton, findsOneWidget);
-    
+
     await tester.tap(confirmButton);
     await tester.pumpAndSettle();
 

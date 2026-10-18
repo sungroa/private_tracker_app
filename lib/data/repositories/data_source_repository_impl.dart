@@ -1,21 +1,21 @@
 import 'dart:typed_data';
+
+import '../../domain/models/custom_tag.dart';
 import '../../domain/models/cycle_log.dart';
 import '../../domain/models/symptom_log.dart';
-import '../../domain/models/custom_tag.dart';
 import '../../domain/repositories/data_source_repository.dart';
-import '../storage/encrypted_storage_service.dart';
 import '../storage/backup_orchestrator.dart';
+import '../storage/encrypted_storage_service.dart';
 
 /// Implementation of [IDataSourceRepository] for high-level data orchestration.
-/// 
-/// 🏛️ **Architecture**: This implementation acts as a structural facade, 
-/// delegating low-level operations to [EncryptedStorageService] and complex 
+///
+/// 🏛️ **Architecture**: This implementation acts as a structural facade,
+/// delegating low-level operations to [EncryptedStorageService] and complex
 /// sync/backup logic to [BackupOrchestrator].
 class DataSourceRepositoryImpl implements IDataSourceRepository {
+  DataSourceRepositoryImpl(this._storageService, this._backupOrchestrator);
   final EncryptedStorageService _storageService;
   final BackupOrchestrator _backupOrchestrator;
-
-  DataSourceRepositoryImpl(this._storageService, this._backupOrchestrator);
 
   @override
   Future<Map<String, dynamic>> getAllDataAsMap() async {

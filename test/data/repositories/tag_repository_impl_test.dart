@@ -21,9 +21,7 @@ void main() {
 
   group('TagRepositoryImpl Tests', () {
     test('getTags should return all tags from data source', () async {
-      final tags = [
-        CustomTag(id: '1', name: 'T1', updatedAt: DateTime.now()),
-      ];
+      final tags = [CustomTag(id: '1', name: 'T1', updatedAt: DateTime.now())];
       when(() => mockDataSource.getCustomTags()).thenAnswer((_) async => tags);
 
       final result = await repository.getTags();

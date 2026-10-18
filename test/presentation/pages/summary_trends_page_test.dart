@@ -26,9 +26,9 @@ void main() {
 
   testWidgets('renders "No data available yet" when trends are null', (WidgetTester tester) async {
     when(() => mockProvider.trends).thenReturn(null);
-    
+
     await tester.pumpWidget(createWidget());
-    
+
     expect(find.text('No data available yet.'), findsOneWidget);
   });
 

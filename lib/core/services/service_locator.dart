@@ -1,10 +1,12 @@
+import 'package:app_links/app_links.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import '../../data/repositories/cycle_log_repository_impl.dart';
 import '../../data/repositories/data_source_repository_impl.dart';
+import '../../data/repositories/play_billing_donation_repository.dart';
 import '../../data/repositories/symptom_log_repository_impl.dart';
 import '../../data/repositories/sync_metadata_repository_impl.dart';
 import '../../data/repositories/tag_repository_impl.dart';
-import '../../data/repositories/play_billing_donation_repository.dart';
 import '../../data/storage/backup_orchestrator.dart';
 import '../../data/storage/backup_restore_service.dart';
 import '../../data/storage/data_export_service.dart';
@@ -17,14 +19,16 @@ import '../../data/storage/google_drive_sync_repository.dart';
 import '../../data/storage/local_database_manager.dart';
 import '../../data/storage/partner_storage_service.dart';
 import '../../data/storage/secure_key_storage.dart';
+import '../../domain/cycle_calculator.dart';
 import '../../domain/repositories/cycle_log_repository.dart';
 import '../../domain/repositories/data_source_repository.dart';
+import '../../domain/repositories/donation_repository.dart';
 import '../../domain/repositories/symptom_log_repository.dart';
 import '../../domain/repositories/sync_metadata_repository.dart';
 import '../../domain/repositories/tag_repository.dart';
-import '../../domain/repositories/donation_repository.dart';
 import '../../domain/services/cloud_sync_interface.dart';
 import '../../domain/services/partner_sharing_service.dart';
+import '../../domain/trends_calculator.dart';
 import '../../domain/usecases/add_tag_use_case.dart';
 import '../../domain/usecases/delete_cycle_log_use_case.dart';
 import '../../domain/usecases/delete_symptom_log_use_case.dart';
@@ -37,104 +41,101 @@ import '../../domain/usecases/save_symptom_log_use_case.dart';
 import '../../domain/usecases/sync_data_use_case.dart';
 import 'app_initializer.dart';
 import 'auth_service.dart';
+import 'clock.dart';
 import 'notification_orchestrator.dart';
 import 'notification_service.dart';
 import 'preferences_service.dart';
-import 'package:app_links/app_links.dart';
-import 'clock.dart';
-import '../../domain/cycle_calculator.dart';
-import '../../domain/trends_calculator.dart';
 
 /// A simple service locator to manage application dependencies.
-/// 
-/// Following "Technical Excellence" principles, this centralizes dependency 
+///
+/// Following "Technical Excellence" principles, this centralizes dependency
 /// orchestration, removing the burden from the UI layer.
 class ServiceLocator {
-  static final ServiceLocator _instance = ServiceLocator._internal();
   factory ServiceLocator() => _instance;
   ServiceLocator._internal();
+  static final ServiceLocator _instance = ServiceLocator._internal();
 
   // --- Core Domain Services ---
-  
+
   /// Coordinates the application startup sequence and data warm-up.
   late final AppInitializer appInitializer;
-  
+
   /// Manages high-level partner data sharing logic and permissions.
   late final PartnerSharingService partnerSharingService;
-  
+
   /// Handles user authentication and session persistency.
   late final AuthService authService;
-  
+
   /// Low-level key-value storage for application settings.
   late final PreferencesService preferencesService;
-  
+
   /// Orchestrates local push notifications (period reminders, etc).
   late final NotificationService notificationService;
-  
+
   /// High-level logic for scheduling data-driven notifications.
   late final NotificationOrchestrator notificationOrchestrator;
-  
+
   /// Handles deep links for partner connection and invitations.
   late final AppLinks appLinks;
 
   /// Provides the current time.
   late final IClock clock;
-  
+
   /// Core engine for menstruation cycle predictions.
   late final CycleCalculator cycleCalculator;
 
   /// Facade for aggregating cycle trends and statistics.
   late final TrendsCalculator trendsCalculator;
-  
+
   // --- Storage & Data Infrastructure ---
-  
+
   /// Bridge to the platform's Secure Storage (KeyChain/KeyStore).
   late final SecureKeyStorage keyStorage;
-  
+
   /// Singleton manager for the Hive database health and instance lifecycle.
   late final LocalDatabaseManager dbManager;
-  
+
   /// Handles the physical export and import of SQLite/Hive database files.
   late final BackupRestoreService backupService;
-  
+
   /// Serializes application state into shareable JSON/CSV formats.
   late final DataExportService exportService;
-  
+
   /// Responsible for importing initial sample data if requested.
   late final DataSeedingService seedingService;
-  
+
   /// Specialized storage for partner identification and shared metadata.
   late final PartnerStorageService partnerStorage;
-  
+
   /// Low-level Hive data source for [CycleLog] persistent storage.
   late final CycleDataSource cycleDataSource;
-  
+
   /// Low-level Hive data source for [SymptomLog] persistent storage.
   late final SymptomDataSource symptomDataSource;
-  
+
   /// Low-level Hive data source for [CustomTag] persistent storage.
   late final TagDataSource tagDataSource;
-  
+
   /// Orchestrator for all repository-level storage operations including encryption.
   late final EncryptedStorageService encryptedStorage;
-  
+
   /// High-level service for coordinating atomic backups and restores.
   late final BackupOrchestrator backupOrchestrator;
 
   // --- Domain Repositories ---
-  
+
   /// Repository for managing menstruation cycle records.
   late final CycleLogRepository cycleRepository;
-  
+
   /// Repository for managing symptom and mood logs.
   late final SymptomLogRepository symptomRepository;
-  
+
   /// Repository for managing user-defined custom categories/tags.
   late final TagRepository tagRepository;
-  
+
   /// Internal repository for tracking sync timestamps and checksums.
   late final ISyncMetadataRepository syncMetadataRepository;
-  
+
   /// Unified access point for complex data export/import operations.
   late final IDataSourceRepository dataSourceRepository;
 
@@ -142,44 +143,44 @@ class ServiceLocator {
   late final IDonationRepository donationRepository;
 
   // --- Domain Use Cases ---
-  
+
   /// Core use case for fetching and predicting cycle trends.
   late final GetCycleLogsUseCase getCycleLogsUseCase;
-  
+
   /// Use case for creating or updating a cycle entry.
   late final SaveCycleLogUseCase saveCycleLogUseCase;
-  
+
   /// Use case for removing a specific cycle entry.
   late final DeleteCycleLogUseCase deleteCycleLogUseCase;
-  
+
   /// Use case for retrieving historical symptom logs.
   late final GetSymptomLogsUseCase getSymptomLogsUseCase;
-  
+
   /// Use case for logging symptoms and moods.
   late final SaveSymptomLogUseCase saveSymptomLogUseCase;
-  
+
   /// Use case for deleting symptom records.
   late final DeleteSymptomLogUseCase deleteSymptomLogUseCase;
-  
+
   /// Use case for listing all custom tags.
   late final GetTagsUseCase getTagsUseCase;
-  
+
   /// Use case for adding a new user-defined tag.
   late final AddTagUseCase addTagUseCase;
-  
+
   /// Use case for deleting a custom tag.
   late final DeleteTagUseCase deleteTagUseCase;
 
   // --- Cloud Infrastructure ---
-  
+
   /// Interface to remote storage providers (Google Drive, iCloud).
   late final CloudSyncInterface cloudSync;
-  
+
   /// Orchestrates the record-level LWW merge process.
   late final SyncDataUseCase syncUseCase;
 
   /// Initializes all application services.
-  /// 
+  ///
   /// Dependencies are resolved in their natural order of creation.
   void setup({
     AuthService? auth,
@@ -217,7 +218,7 @@ class ServiceLocator {
     backupService = BackupRestoreService();
     exportService = DataExportService();
     seedingService = DataSeedingService();
-    
+
     partnerStorage = PartnerStorageService(dbManager);
     cycleDataSource = cycleDs ?? CycleDataSource(dbManager);
     symptomDataSource = symptomDs ?? SymptomDataSource(dbManager);
@@ -251,14 +252,10 @@ class ServiceLocator {
     donationRepository = donations ?? PlayBillingDonationRepository(keyStorage);
 
     // 5. Use Cases
-    getCycleLogsUseCase = GetCycleLogsUseCase(
-      cycleRepository, 
-      symptomRepository, 
-      trendsCalculator,
-    );
+    getCycleLogsUseCase = GetCycleLogsUseCase(cycleRepository, symptomRepository, trendsCalculator);
     saveCycleLogUseCase = SaveCycleLogUseCase(cycleRepository);
     deleteCycleLogUseCase = DeleteCycleLogUseCase(cycleRepository);
-    
+
     getSymptomLogsUseCase = GetSymptomLogsUseCase(symptomRepository);
     saveSymptomLogUseCase = SaveSymptomLogUseCase(symptomRepository);
     deleteSymptomLogUseCase = DeleteSymptomLogUseCase(symptomRepository);

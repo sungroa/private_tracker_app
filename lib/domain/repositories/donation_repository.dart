@@ -1,12 +1,12 @@
 import '../models/donation_product.dart';
 
 /// Interface for donation operations.
-/// 
+///
 /// Completely abstracts the underlying billing platform (e.g., Google Play Billing).
 abstract class IDonationRepository {
   /// Stream that emits true if the user is currently a "Supporter".
-  /// 
-  /// This typically means they have an active subscription or have made a 
+  ///
+  /// This typically means they have an active subscription or have made a
   /// recent one-time donation.
   Stream<bool> get isSupporterStream;
 
@@ -14,7 +14,7 @@ abstract class IDonationRepository {
   Future<List<DonationProduct>> getDonationProducts();
 
   /// Initiates the purchase flow for a specific [product].
-  /// 
+  ///
   /// Returns true if the purchase was successful.
   Future<bool> purchase(DonationProduct product);
 

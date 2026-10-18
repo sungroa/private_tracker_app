@@ -2,11 +2,32 @@ import 'package:collection/collection.dart';
 import 'package:meta/meta.dart';
 
 /// Represents a daily health log entry containing symptoms, mood, and FAM metrics.
-/// 
+///
 /// This model encapsulates all daily data points except for primary cycle information.
 /// It uses [UnmodifiableListView] for [symptoms] to ensure domain model immutability.
 @immutable
 class SymptomLog {
+  /// Creates a [SymptomLog] with validation.
+  ///
+  /// Following "Technical Excellence" principles, the constructor is now "pure".
+  SymptomLog({
+    required this.id,
+    required this.date,
+    required List<String> symptoms,
+    required this.moodRating,
+    this.notes,
+    this.basalBodyTemperature,
+    this.cervicalFluidType,
+    this.lhTestPositive,
+    required this.updatedAt,
+  }) : symptoms = UnmodifiableListView(List.from(symptoms)),
+       assert(moodRating >= 1 && moodRating <= 5, 'Mood rating must be between 1 and 5'),
+       assert(
+         basalBodyTemperature == null ||
+             (basalBodyTemperature >= 35.0 && basalBodyTemperature <= 110.0),
+         'BBT must be a physiologically valid temperature',
+       );
+
   /// Unique identifier for the log entry.
   final String id;
 
@@ -34,25 +55,8 @@ class SymptomLog {
   /// The last time this record was modified.
   final DateTime updatedAt;
 
-  /// Creates a [SymptomLog] with validation.
-  /// 
-  /// Following "Technical Excellence" principles, the constructor is now "pure".
-  SymptomLog({
-    required this.id,
-    required this.date,
-    required List<String> symptoms,
-    required this.moodRating,
-    this.notes,
-    this.basalBodyTemperature,
-    this.cervicalFluidType,
-    this.lhTestPositive,
-    required this.updatedAt,
-  })  : symptoms = UnmodifiableListView(List.from(symptoms)),
-        assert(moodRating >= 1 && moodRating <= 5, 'Mood rating must be between 1 and 5'),
-        assert(basalBodyTemperature == null || (basalBodyTemperature >= 35.0 && basalBodyTemperature <= 110.0), 'BBT must be a physiologically valid temperature');
-
   /// Creates a copy of this object with potentially changed values.
-  /// (W5) Uses Sentinel pattern to distinguish between null (no change) and 
+  /// (W5) Uses Sentinel pattern to distinguish between null (no change) and
   /// explicitly providing a null value for nullable fields.
   SymptomLog copyWith({
     String? id,
@@ -71,15 +75,18 @@ class SymptomLog {
       symptoms: symptoms ?? this.symptoms,
       moodRating: moodRating ?? this.moodRating,
       notes: notes == _sentinel ? this.notes : (notes as String?),
-      basalBodyTemperature: basalBodyTemperature == _sentinel ? this.basalBodyTemperature : (basalBodyTemperature as double?),
-      cervicalFluidType: cervicalFluidType == _sentinel ? this.cervicalFluidType : (cervicalFluidType as String?),
+      basalBodyTemperature: basalBodyTemperature == _sentinel
+          ? this.basalBodyTemperature
+          : (basalBodyTemperature as double?),
+      cervicalFluidType: cervicalFluidType == _sentinel
+          ? this.cervicalFluidType
+          : (cervicalFluidType as String?),
       lhTestPositive: lhTestPositive == _sentinel ? this.lhTestPositive : (lhTestPositive as bool?),
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   static const _sentinel = Object();
-
 
   @override
   bool operator ==(Object other) {
@@ -112,7 +119,7 @@ class SymptomLog {
   }
 
   /// --- Domain Constants ---
-  
+
   /// The standard neutral mood rating.
   static const int neutralMood = 3;
 }

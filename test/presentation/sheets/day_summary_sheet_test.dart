@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:private_tracker_app/presentation/sheets/day_summary_sheet.dart';
-import 'package:private_tracker_app/domain/models/symptom_log.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+import 'package:private_tracker_app/presentation/sheets/day_summary_sheet.dart';
 
 void main() {
   Widget buildTestableWidget(Widget child) {
-    return MaterialApp(
-      home: Scaffold(
-        body: child,
-      ),
-    );
+    return MaterialApp(home: Scaffold(body: child));
   }
 
   group('DaySummarySheet Tests', () {

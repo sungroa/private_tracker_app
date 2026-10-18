@@ -1,17 +1,19 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
-import '../../domain/usecases/sync_data_use_case.dart';
-import '../../core/services/preferences_service.dart';
-import '../../core/utils/security_logger.dart';
-import '../../core/utils/key_derivation_util.dart';
-import '../../data/storage/secure_key_storage.dart';
-import '../../domain/services/cloud_sync_interface.dart';
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
+
+import '../../core/services/preferences_service.dart';
+import '../../core/utils/key_derivation_util.dart';
+import '../../core/utils/security_logger.dart';
+import '../../data/storage/secure_key_storage.dart';
+import '../../domain/services/cloud_sync_interface.dart';
+import '../../domain/usecases/sync_data_use_case.dart';
+
 /// State management provider for cloud synchronization (Google Drive / iCloud).
-/// 
-/// 🎨 **Presentation Architecture**: Coordinates the async sync workflow and 
-/// maintains the UI state for synchronization status, errors, and last-sync 
+///
+/// 🎨 **Presentation Architecture**: Coordinates the async sync workflow and
+/// maintains the UI state for synchronization status, errors, and last-sync
 /// timestamps.
 ///
 /// 🔄 **State Machine**:
@@ -19,13 +21,19 @@ import 'dart:convert';
 /// of encrypted cloud backups:
 /// - **Disabled**: Cloud sync is off. No network calls are made.
 /// - **Syncing**: An active upload/download/merge operation is running in the background.
-/// - **Recovery Required**: A cloud backup exists and is protected by a passphrase, but 
-///   the local device does not have the key. All sync operations are blocked until the user 
+/// - **Recovery Required**: A cloud backup exists and is protected by a passphrase, but
+///   the local device does not have the key. All sync operations are blocked until the user
 ///   provides the passphrase to derive the key.
-/// - **Orphan Key**: The cloud backup was encrypted using a machine-generated key that 
-///   has since been lost (e.g., due to an OS-level Keystore wipe). The backup is permanently 
+/// - **Orphan Key**: The cloud backup was encrypted using a machine-generated key that
+///   has since been lost (e.g., due to an OS-level Keystore wipe). The backup is permanently
 ///   irrecoverable and must be overwritten.
 class CloudSyncProvider with ChangeNotifier {
+  CloudSyncProvider({
+    required this._syncUseCase,
+    required this._prefs,
+    required this._keyStorage,
+    required this._cloudSync,
+  });
   final SyncDataUseCase _syncUseCase;
   final PreferencesService _prefs;
   final SecureKeyStorage _keyStorage;
@@ -35,11 +43,12 @@ class CloudSyncProvider with ChangeNotifier {
   bool _isInitialized = false;
   bool _isGoogleDriveEnabled = false;
   bool _isiCloudEnabled = false;
+
   /// UI State: True if the user has successfully entered their recovery passphrase
-  /// and the key is available locally. If false while [isCloudEnabled] is true, 
+  /// and the key is available locally. If false while [isCloudEnabled] is true,
   /// the app may need to prompt for recovery.
   bool _isRecoveryEnabled = false;
-  
+
   bool _isOrphanKey = false;
 
   /// True if the cloud storage contains at least one backup file.
@@ -50,20 +59,13 @@ class CloudSyncProvider with ChangeNotifier {
   /// True when [checkRecoveryStatus] failed (e.g. auth error). When set,
   /// sync is suppressed until a successful recovery check clears this.
   bool _recoveryCheckFailed = false;
-  
+
   /// Cryptographic State: The salt found in the cloud backup's metadata.
-  /// If this is non-null AND [_isRecoveryEnabled] is false, it means we have 
+  /// If this is non-null AND [_isRecoveryEnabled] is false, it means we have
   /// discovered a password-protected backup but haven't unlocked it yet.
   String? _pendingRecoverySalt;
   String? _lastError;
   DateTime? _lastSyncTime;
-
-  CloudSyncProvider({
-    required this._syncUseCase,
-    required this._prefs,
-    required this._keyStorage,
-    required this._cloudSync,
-  });
 
   bool get isSyncing => _isSyncing;
   bool get isInitialized => _isInitialized;
@@ -71,6 +73,7 @@ class CloudSyncProvider with ChangeNotifier {
   bool get isiCloudEnabled => _isiCloudEnabled;
   bool get isCloudEnabled => (_isGoogleDriveEnabled || _isiCloudEnabled) && _isInitialized;
   bool get isRecoveryEnabled => _isRecoveryEnabled;
+
   /// True when the cloud backup was encrypted with a random machine key that has
   /// since been wiped from the Android Keystore. The data is irrecoverable;
   /// the user must overwrite with local data or reset cloud sync.
@@ -79,25 +82,36 @@ class CloudSyncProvider with ChangeNotifier {
   String? get pendingRecoverySalt => _pendingRecoverySalt;
   String? get lastError => _lastError;
   DateTime? get lastSyncTime => _lastSyncTime;
-  
-  bool get requiresRecoveryPrompt => isCloudEnabled && !isRecoveryEnabled && pendingRecoverySalt != null;
+
+  bool get requiresRecoveryPrompt =>
+      isCloudEnabled && !isRecoveryEnabled && pendingRecoverySalt != null;
 
   /// True when cloud sync is enabled but no backup exists yet and no passphrase
   /// has been configured. The user must set a passphrase before the first upload.
   bool get needsInitialSetup =>
-      isCloudEnabled && !_isRecoveryEnabled && !_cloudBackupExists &&
-      _pendingRecoverySalt == null && !_isOrphanKey;
+      isCloudEnabled &&
+      !_isRecoveryEnabled &&
+      !_cloudBackupExists &&
+      _pendingRecoverySalt == null &&
+      !_isOrphanKey;
 
   /// True when cloud sync is enabled and an existing backup was encrypted with
   /// a machine-generated key (no recovery salt). The user must set a passphrase
   /// so their backup becomes recoverable on new devices.
   bool get needsPassphraseMigration =>
-      isCloudEnabled && !_isRecoveryEnabled && _cloudBackupExists &&
-      _pendingRecoverySalt == null && !_isOrphanKey;
+      isCloudEnabled &&
+      !_isRecoveryEnabled &&
+      _cloudBackupExists &&
+      _pendingRecoverySalt == null &&
+      !_isOrphanKey;
 
   /// True when any form of setup is required before sync can proceed.
   bool get needsAnySetup =>
-      requiresRecoveryPrompt || needsInitialSetup || needsPassphraseMigration || _isOrphanKey || _recoveryCheckFailed;
+      requiresRecoveryPrompt ||
+      needsInitialSetup ||
+      needsPassphraseMigration ||
+      _isOrphanKey ||
+      _recoveryCheckFailed;
 
   /// Initializes the provider's state from local storage and optionally probes the cloud.
   ///
@@ -111,7 +125,7 @@ class CloudSyncProvider with ChangeNotifier {
     _isGoogleDriveEnabled = await _prefs.isCloudSyncEnabled();
     _isRecoveryEnabled = await _prefs.isRecoveryPassphraseSet();
     _lastSyncTime = await _prefs.getLastSyncTime();
-    
+
     _isInitialized = true;
     notifyListeners();
 
@@ -125,7 +139,8 @@ class CloudSyncProvider with ChangeNotifier {
         'isRecoveryEnabled=$_isRecoveryEnabled, '
         'pendingRecoverySalt=${_pendingRecoverySalt != null ? "<set>" : "null"}, '
         'requiresRecoveryPrompt=$requiresRecoveryPrompt, '
-        'isOrphanKey=$_isOrphanKey');
+        'isOrphanKey=$_isOrphanKey',
+      );
     }
   }
 
@@ -144,13 +159,14 @@ class CloudSyncProvider with ChangeNotifier {
       _recoveryCheckFailed = false;
       if (_pendingRecoverySalt != null) {
         SecurityLogger.logInfo(
-            "Cloud Sync: Recovery salt detected in cloud backup. Recovery card will be shown.");
+          "Cloud Sync: Recovery salt detected in cloud backup. Recovery card will be shown.",
+        );
       } else if (_cloudBackupExists) {
         SecurityLogger.logInfo(
-            "Cloud Sync: Backup exists but has no recovery salt (machine-key encrypted). Migration required.");
+          "Cloud Sync: Backup exists but has no recovery salt (machine-key encrypted). Migration required.",
+        );
       } else {
-        SecurityLogger.logInfo(
-            "Cloud Sync: No cloud backup found. Initial setup required.");
+        SecurityLogger.logInfo("Cloud Sync: No cloud backup found. Initial setup required.");
       }
       notifyListeners();
       return true;
@@ -158,8 +174,9 @@ class CloudSyncProvider with ChangeNotifier {
       _recoveryCheckFailed = true;
       _lastError = "Cloud authentication failed. Please try again.";
       SecurityLogger.logError(
-          "Cloud Sync: Recovery check failed — sync suppressed until next successful check",
-          error: e);
+        "Cloud Sync: Recovery check failed — sync suppressed until next successful check",
+        error: e,
+      );
       notifyListeners();
       return false;
     }
@@ -176,15 +193,15 @@ class CloudSyncProvider with ChangeNotifier {
       final salt = KeyDerivationUtil.generateSalt();
       final saltString = base64UrlEncode(salt);
       final key = KeyDerivationUtil.deriveKey(passphrase, salt);
-      
+
       // Update local storage
       await _keyStorage.setCloudSyncKey(key);
       await _prefs.setRecoveryPassphraseSet(true);
       await _prefs.setRecoverySalt(saltString);
-      
+
       // Also update domain-level metadata
       await _syncUseCase.setRecoverySalt(saltString);
-      
+
       _isRecoveryEnabled = true;
       _pendingRecoverySalt = null;
 
@@ -195,9 +212,9 @@ class CloudSyncProvider with ChangeNotifier {
       // invoked immediately after a dialog dismissal.
       _isSyncing = true;
       notifyListeners();
-      
-      await _syncUseCase.forceFullUpload(); 
-      
+
+      await _syncUseCase.forceFullUpload();
+
       notifyListeners();
     } catch (e) {
       _lastError = "Failed to setup recovery: $e";
@@ -291,26 +308,26 @@ class CloudSyncProvider with ChangeNotifier {
       saltToUse = await _prefs.getRecoverySalt();
     }
     if (saltToUse == null) return;
-    
+
     _isSyncing = true;
     notifyListeners();
 
     try {
       final saltBytes = base64Url.decode(saltToUse);
       final key = KeyDerivationUtil.deriveKey(passphrase, saltBytes);
-      
+
       // Update local storage
       await _keyStorage.setCloudSyncKey(key);
       await _prefs.setRecoveryPassphraseSet(true);
       await _prefs.setRecoverySalt(saltToUse);
       await _syncUseCase.setRecoverySalt(saltToUse);
-      
+
       _isRecoveryEnabled = true;
       _pendingRecoverySalt = null;
-      
+
       notifyListeners();
       await sync();
-      
+
       // If sync() failed and suppressed the exception by reverting to recovery mode,
       // the passphrase must have been incorrect.
       if (!_isRecoveryEnabled || _pendingRecoverySalt != null) {
@@ -336,19 +353,19 @@ class CloudSyncProvider with ChangeNotifier {
       await _cloudSync.authenticate();
       SecurityLogger.logInfo("Cloud Sync Reset: Deleting all files from appDataFolder...");
       await _cloudSync.deleteCloudData();
-      
+
       SecurityLogger.logInfo("Cloud Sync Reset: Clearing local metadata and keys...");
       await _syncUseCase.clearLocalMetadata();
       await _keyStorage.deleteCloudSyncKey();
-      
+
       await _prefs.setRecoveryPassphraseSet(false);
       await _prefs.setRecoverySalt(null);
       _lastSyncTime = null;
       await _prefs.setLastSyncTime(null);
-      
+
       _isRecoveryEnabled = false;
       _pendingRecoverySalt = null;
-      
+
       SecurityLogger.logInfo("Cloud Sync Reset: SUCCESS. Environment is now pristine.");
     } catch (e, stack) {
       SecurityLogger.logError("Cloud Sync Reset: FAILED", error: e, stackTrace: stack);
@@ -363,7 +380,7 @@ class CloudSyncProvider with ChangeNotifier {
     _isGoogleDriveEnabled = enabled;
     await _prefs.setCloudSyncEnabled(enabled);
     notifyListeners();
-    
+
     if (enabled) {
       final checkOk = await checkRecoveryStatus();
       // (W12) Guard: Only sync if recovery check succeeded AND no setup pending.
@@ -374,7 +391,8 @@ class CloudSyncProvider with ChangeNotifier {
           "Cloud Sync: Setup required before sync. "
           "checkOk=$checkOk, initialSetup=$needsInitialSetup, "
           "migration=$needsPassphraseMigration, "
-          "recovery=$requiresRecoveryPrompt, orphan=$_isOrphanKey");
+          "recovery=$requiresRecoveryPrompt, orphan=$_isOrphanKey",
+        );
       }
     } else {
       // (W13) Force a clean sign-out when disabling so the next attempt starts fresh.
@@ -386,7 +404,7 @@ class CloudSyncProvider with ChangeNotifier {
   Future<void> toggleICloud(bool enabled) async {
     _isiCloudEnabled = enabled;
     notifyListeners();
-    
+
     if (enabled) {
       await checkRecoveryStatus();
       await sync();
@@ -409,7 +427,8 @@ class CloudSyncProvider with ChangeNotifier {
     // guarantees a CRITICAL FAILURE (wrong or missing decryption key).
     if (needsAnySetup) {
       SecurityLogger.logInfo(
-          "Cloud Sync: Sync suppressed — setup/migration/recovery is required first.");
+        "Cloud Sync: Sync suppressed — setup/migration/recovery is required first.",
+      );
       return;
     }
 
@@ -420,30 +439,33 @@ class CloudSyncProvider with ChangeNotifier {
     try {
       SecurityLogger.logInfo("Cloud Sync: Initiating background synchronization...");
       final changed = await _syncUseCase.execute();
-      
+
       final now = DateTime.now();
       _lastSyncTime = now;
       await _prefs.setLastSyncTime(now);
-      
+
       SecurityLogger.logInfo("Cloud Sync: Sync logic finished. Changes applied: $changed");
     } catch (e, stack) {
       if (e is CloudSyncException && e.message == CloudSyncException.recoveryRequired) {
-        SecurityLogger.logInfo("Cloud Sync: Recovery required. Suppressing error UI for card transition.");
+        SecurityLogger.logInfo(
+          "Cloud Sync: Recovery required. Suppressing error UI for card transition.",
+        );
         // (W15) The locally stored key is PROVABLY wrong — decryption failed.
         // Force _isRecoveryEnabled=false so requiresRecoveryPrompt can become
         // true and the orange recovery card appears in Settings.
         _isRecoveryEnabled = false;
         await _prefs.setRecoveryPassphraseSet(false);
-        
+
         // Fetch the latest salt from cloud so the recovery prompt uses the correct salt
         // for key derivation (especially critical if passphrase was rotated on another device).
         await checkRecoveryStatus();
-        
+
         if (_pendingRecoverySalt == null) {
           _pendingRecoverySalt = await _prefs.getRecoverySalt() ?? 'pending';
           SecurityLogger.logInfo(
-              "Cloud Sync: Using local prefs salt as fallback. "
-              "pendingRecoverySalt=${_pendingRecoverySalt != null ? '<set>' : 'null'}");
+            "Cloud Sync: Using local prefs salt as fallback. "
+            "pendingRecoverySalt=${_pendingRecoverySalt != null ? '<set>' : 'null'}",
+          );
         }
         _lastError = null;
       } else if (e is CloudSyncException && e.message == CloudSyncException.orphanKey) {
@@ -451,7 +473,9 @@ class CloudSyncProvider with ChangeNotifier {
         _isOrphanKey = true;
         _lastError = null; // Card UI handles this — no snackbar needed
       } else if (requiresRecoveryPrompt) {
-        SecurityLogger.logInfo("Cloud Sync: App is in recovery state. Suppressing technical error.");
+        SecurityLogger.logInfo(
+          "Cloud Sync: App is in recovery state. Suppressing technical error.",
+        );
         _lastError = null;
       } else {
         SecurityLogger.logError("Cloud Sync: Orchestration failure", error: e, stackTrace: stack);

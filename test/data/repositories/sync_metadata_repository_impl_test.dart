@@ -6,6 +6,7 @@ import 'package:private_tracker_app/data/repositories/sync_metadata_repository_i
 import 'package:private_tracker_app/data/storage/local_database_manager.dart';
 
 class MockLocalDatabaseManager extends Mock implements LocalDatabaseManager {}
+
 class MockStringBox extends Mock implements Box<String> {}
 
 void main() {

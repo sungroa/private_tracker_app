@@ -53,6 +53,7 @@ coverage/
 
 # Agent internal files
 .agent/
+.agents/
 
 # Temporary log files
 test_output.txt

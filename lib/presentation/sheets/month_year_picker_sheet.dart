@@ -5,12 +5,8 @@ import '../theme/app_theme.dart';
 
 /// A premium glassmorphic bottom sheet for selecting a specific month and year.
 class MonthYearPickerSheet extends StatefulWidget {
+  const MonthYearPickerSheet({super.key, required this.initialDate});
   final DateTime initialDate;
-
-  const MonthYearPickerSheet({
-    super.key,
-    required this.initialDate,
-  });
 
   @override
   State<MonthYearPickerSheet> createState() => _MonthYearPickerSheetState();
@@ -24,8 +20,18 @@ class _MonthYearPickerSheetState extends State<MonthYearPickerSheet> {
   late int _selectedYear;
 
   final List<String> _months = [
-    'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-    'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+    'JANUARY',
+    'FEBRUARY',
+    'MARCH',
+    'APRIL',
+    'MAY',
+    'JUNE',
+    'JULY',
+    'AUGUST',
+    'SEPTEMBER',
+    'OCTOBER',
+    'NOVEMBER',
+    'DECEMBER',
   ];
 
   late List<int> _years;
@@ -42,11 +48,12 @@ class _MonthYearPickerSheetState extends State<MonthYearPickerSheet> {
 
     // If initial year is outside this range, expand it
     if (_selectedYear < _years.first) {
-      _years = List.generate(_years.length + (_years.first - _selectedYear), 
-          (index) => _selectedYear + index);
+      _years = List.generate(
+        _years.length + (_years.first - _selectedYear),
+        (index) => _selectedYear + index,
+      );
     } else if (_selectedYear > _years.last) {
-      _years = List.generate(_selectedYear - _years.first + 1, 
-          (index) => _years.first + index);
+      _years = List.generate(_selectedYear - _years.first + 1, (index) => _years.first + index);
     }
 
     _monthController = FixedExtentScrollController(initialItem: _selectedMonth - 1);
@@ -80,7 +87,9 @@ class _MonthYearPickerSheetState extends State<MonthYearPickerSheet> {
         right: 24,
       ),
       decoration: BoxDecoration(
-        color: isDark ? AppTheme.backgroundDarkColor.withValues(alpha: 0.8) : Colors.white.withValues(alpha: 0.8),
+        color: isDark
+            ? AppTheme.backgroundDarkColor.withValues(alpha: 0.8)
+            : Colors.white.withValues(alpha: 0.8),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: ClipRRect(
@@ -100,7 +109,7 @@ class _MonthYearPickerSheetState extends State<MonthYearPickerSheet> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               Text(
                 'SELECT DATE',
                 style: TextStyle(
@@ -147,13 +156,9 @@ class _MonthYearPickerSheetState extends State<MonthYearPickerSheet> {
                         ),
                       ),
                     ),
-                    
+
                     // Separator
-                    Container(
-                      width: 1,
-                      height: 100,
-                      color: primary.withValues(alpha: 0.1),
-                    ),
+                    Container(width: 1, height: 100, color: primary.withValues(alpha: 0.1)),
 
                     // Year Picker
                     Expanded(
@@ -187,12 +192,11 @@ class _MonthYearPickerSheetState extends State<MonthYearPickerSheet> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 32),
 
               // Selection Highlight (Visual guide)
               // Actually, I'll put the highlight behind the pickers for a better look
-              
               SizedBox(
                 width: double.infinity,
                 height: 56,

@@ -1,25 +1,30 @@
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
-import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
-import 'package:private_tracker_app/data/storage/local_database_manager.dart';
-import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
-import 'package:private_tracker_app/data/storage/data_export_service.dart';
-import 'package:private_tracker_app/data/storage/data_sources/data_seeding_service.dart';
-import 'package:private_tracker_app/data/storage/backup_orchestrator.dart';
-import 'package:private_tracker_app/data/storage/data_sources/cycle_data_source.dart';
-import 'package:private_tracker_app/data/storage/data_sources/symptom_data_source.dart';
-import 'package:private_tracker_app/data/storage/data_sources/tag_data_source.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:private_tracker_app/data/storage/backup_orchestrator.dart';
+import 'package:private_tracker_app/data/storage/backup_restore_service.dart';
+import 'package:private_tracker_app/data/storage/data_export_service.dart';
+import 'package:private_tracker_app/data/storage/data_sources/cycle_data_source.dart';
+import 'package:private_tracker_app/data/storage/data_sources/data_seeding_service.dart';
+import 'package:private_tracker_app/data/storage/data_sources/symptom_data_source.dart';
+import 'package:private_tracker_app/data/storage/data_sources/tag_data_source.dart';
+import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
+import 'package:private_tracker_app/data/storage/local_database_manager.dart';
+import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
+
 import '../helpers/test_model_factory.dart';
 
 class MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
-class MockPathProviderPlatform extends Mock with MockPlatformInterfaceMixin implements PathProviderPlatform {}
+
+class MockPathProviderPlatform extends Mock
+    with MockPlatformInterfaceMixin
+    implements PathProviderPlatform {}
 
 void main() {
   group('EncryptedStorageService & BackupOrchestrator Tests', () {
@@ -35,12 +40,14 @@ void main() {
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('hive_test');
       Hive.init(tempDir.path);
-      
+
       mockStorage = MockFlutterSecureStorage();
       final mockPathProvider = MockPathProviderPlatform();
       PathProviderPlatform.instance = mockPathProvider;
       when(() => mockPathProvider.getTemporaryPath()).thenAnswer((_) async => tempDir.path);
-      when(() => mockPathProvider.getApplicationDocumentsPath()).thenAnswer((_) async => tempDir.path);
+      when(
+        () => mockPathProvider.getApplicationDocumentsPath(),
+      ).thenAnswer((_) async => tempDir.path);
 
       dbManager = LocalDatabaseManager();
       cycleDataSource = CycleDataSource(dbManager);
@@ -66,8 +73,15 @@ void main() {
       );
 
       final key = Hive.generateSecureKey();
-      when(() => mockStorage.read(key: any(named: 'key'))).thenAnswer((_) async => base64UrlEncode(key));
-      when(() => mockStorage.write(key: any(named: 'key'), value: any(named: 'value'))).thenAnswer((_) async => {});
+      when(
+        () => mockStorage.read(key: any(named: 'key')),
+      ).thenAnswer((_) async => base64UrlEncode(key));
+      when(
+        () => mockStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async => {});
 
       await storageService.initialize(basePath: tempDir.path);
     });
@@ -96,14 +110,12 @@ void main() {
     });
 
     test('getSymptomLogsForMonth should filter correctly', () async {
-      await symptomDataSource.saveSymptomLog(TestModelFactory.createSymptomLog(
-        date: DateTime(2026, 3, 28),
-        symptoms: const ['Cramps'],
-      ));
-      await symptomDataSource.saveSymptomLog(TestModelFactory.createSymptomLog(
-        date: DateTime(2026, 4, 1),
-        symptoms: const ['Bloating'],
-      ));
+      await symptomDataSource.saveSymptomLog(
+        TestModelFactory.createSymptomLog(date: DateTime(2026, 3, 28), symptoms: const ['Cramps']),
+      );
+      await symptomDataSource.saveSymptomLog(
+        TestModelFactory.createSymptomLog(date: DateTime(2026, 4, 1), symptoms: const ['Bloating']),
+      );
 
       final marchLogs = await symptomDataSource.getSymptomLogsForMonth(DateTime(2026, 3, 1));
       expect(marchLogs.length, 1);
@@ -119,24 +131,31 @@ void main() {
 
       final allLogs = await cycleDataSource.getCycleLogs();
       expect(allLogs.length, 2);
-      expect(allLogs.first.startDate, DateTime(2026, 3, 1)); 
+      expect(allLogs.first.startDate, DateTime(2026, 3, 1));
     });
 
     test('exportDataToCsv should format CSV string correctly', () async {
       await cycleDataSource.clear();
       await symptomDataSource.clear();
 
-      await cycleDataSource.saveCycleLog(TestModelFactory.createCycleLog(startDate: DateTime(2026, 3, 1), notes: 'Cycle note'));
-      await symptomDataSource.saveSymptomLog(TestModelFactory.createSymptomLog(
-        date: DateTime(2026, 3, 5),
-        symptoms: const ['Cramps', 'Fatigue'],
-        moodRating: 3,
-        notes: 'Symptom note',
-      ));
+      await cycleDataSource.saveCycleLog(
+        TestModelFactory.createCycleLog(startDate: DateTime(2026, 3, 1), notes: 'Cycle note'),
+      );
+      await symptomDataSource.saveSymptomLog(
+        TestModelFactory.createSymptomLog(
+          date: DateTime(2026, 3, 5),
+          symptoms: const ['Cramps', 'Fatigue'],
+          moodRating: 3,
+          notes: 'Symptom note',
+        ),
+      );
 
       final csvString = await storageService.exportDataToCsv();
-      
-      expect(csvString, contains('Date,Type,End Date,Symptoms,Mood,Flow,BBT,Fluid,LH Test,Notes,Last Updated,ID'));
+
+      expect(
+        csvString,
+        contains('Date,Type,End Date,Symptoms,Mood,Flow,BBT,Fluid,LH Test,Notes,Last Updated,ID'),
+      );
       expect(csvString, contains('2026-03-01,Cycle,,,,3/5,,,,Cycle note'));
       expect(csvString, contains('2026-03-05,Symptom,,Cramps; Fatigue,3,,,,,Symptom note'));
     });
@@ -147,7 +166,7 @@ void main() {
       final tag = TestModelFactory.createTag(name: 'New Symptom');
       await tagDataSource.saveTag(tag);
       expect((await tagDataSource.getCustomTags()).length, 1);
-      
+
       await tagDataSource.delete(tag.id);
       expect((await tagDataSource.getCustomTags()).length, 0);
     });
@@ -158,10 +177,9 @@ void main() {
       await tagDataSource.clear();
 
       await cycleDataSource.saveCycleLog(TestModelFactory.createCycleLog(notes: 'Backup test'));
-      await symptomDataSource.saveSymptomLog(TestModelFactory.createSymptomLog(
-        symptoms: const ['Cramps'],
-        moodRating: 5,
-      ));
+      await symptomDataSource.saveSymptomLog(
+        TestModelFactory.createSymptomLog(symptoms: const ['Cramps'], moodRating: 5),
+      );
       await tagDataSource.saveTag(TestModelFactory.createTag(name: 'Backup Tag'));
 
       // 2. Export

@@ -1,25 +1,26 @@
 import 'dart:developer' as developer;
-import 'models/cycle_log.dart';
-import 'calculators/cycle_length_forecaster.dart';
+
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
 import '../core/services/clock.dart';
 import '../core/utils/date_time_extensions.dart';
+import 'calculators/cycle_length_forecaster.dart';
+import 'models/cycle_log.dart';
 
 /// Core domain logic for menstruation cycle analysis and predictions.
-/// 
+///
 /// 💼 **Domain Context**: This calculator is the brain of the prediction engine.
 /// It uses a hybrid approach:
-/// 1. **Sympto-Thermal Method (STM)**: If BBT data is available, it uses the 
+/// 1. **Sympto-Thermal Method (STM)**: If BBT data is available, it uses the
 /// 3-over-6 rule for mathematical confirmation of ovulation.
-/// 2. **Statistical Fallback**: For users without BBT tracking, it uses 
+/// 2. **Statistical Fallback**: For users without BBT tracking, it uses
 /// weighted historical averages with outlier removal.
 class CycleCalculator {
+  CycleCalculator(this._clock);
   // Average cycle length (default 28 days)
   static const int defaultCycleLength = 28;
 
   final IClock _clock;
-
-  CycleCalculator(this._clock);
 
   /// Predicts the next period start date based on previous logs.
   ///
@@ -30,7 +31,12 @@ class CycleCalculator {
     List<SymptomLog>? symptomLogs,
     double threshold = 0.2,
   ]) {
-    final results = predictFuturePeriods(cycleLogs, symptomLogs: symptomLogs, threshold: threshold, count: 1);
+    final results = predictFuturePeriods(
+      cycleLogs,
+      symptomLogs: symptomLogs,
+      threshold: threshold,
+      count: 1,
+    );
     return results.isEmpty ? null : results.first;
   }
 
@@ -65,8 +71,9 @@ class CycleCalculator {
     // --- Build historical cycle-length series (oldest → newest) ---
     final lengths = <int>[];
     for (int i = 0; i < sortedCycleEvents.length - 1; i++) {
-      final length = sortedCycleEvents[i].startDate
-          .daysDifference(sortedCycleEvents[i + 1].startDate);
+      final length = sortedCycleEvents[i].startDate.daysDifference(
+        sortedCycleEvents[i + 1].startDate,
+      );
       if (length >= 15) {
         lengths.add(length);
       } else {
@@ -169,8 +176,7 @@ class CycleCalculator {
   DateTime? confirmOvulation(List<SymptomLog> logs, {double threshold = 0.2}) {
     if (logs.length < 9) return null;
 
-    final sorted = List<SymptomLog>.from(logs)
-      ..sort((a, b) => a.date.compareTo(b.date));
+    final sorted = List<SymptomLog>.from(logs)..sort((a, b) => a.date.compareTo(b.date));
 
     DateTime? latestConfirmed;
 
@@ -233,6 +239,7 @@ class CycleCalculator {
     }
 
     final end = latest.endDate!;
-    return now.isAfter(latest.startDate) && now.isBefore(DateTime(end.year, end.month, end.day + 1));
+    return now.isAfter(latest.startDate) &&
+        now.isBefore(DateTime(end.year, end.month, end.day + 1));
   }
 }

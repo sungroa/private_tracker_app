@@ -1,9 +1,11 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../domain/models/donation_product.dart';
 import '../providers/donation_provider.dart';
 import '../theme/app_theme.dart';
-import '../../domain/models/donation_product.dart';
 
 class DonationSheet extends StatelessWidget {
   const DonationSheet({super.key});
@@ -21,7 +23,7 @@ class DonationSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
-    
+
     return Container(
       padding: EdgeInsets.only(bottom: bottomPadding),
       child: ClipRRect(
@@ -84,10 +86,7 @@ class _Header extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: primary.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: primary.withValues(alpha: 0.1), shape: BoxShape.circle),
           child: Icon(Icons.favorite_rounded, size: 40, color: primary),
         ),
         const SizedBox(height: 20),
@@ -148,18 +147,11 @@ class _ProductList extends StatelessWidget {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: _ProductCard(
-                      product: product,
-                      onTap: () => provider.purchase(product),
-                    ),
+                    child: _ProductCard(product: product, onTap: () => provider.purchase(product)),
                   ),
                 ),
               if (provider.products.isEmpty && !provider.isLoading)
-                const Expanded(
-                  child: Center(
-                    child: Text("No products available at the moment."),
-                  ),
-                ),
+                const Expanded(child: Center(child: Text("No products available at the moment."))),
             ],
           ),
         );
@@ -169,13 +161,9 @@ class _ProductList extends StatelessWidget {
 }
 
 class _ProductCard extends StatelessWidget {
+  const _ProductCard({required this.product, required this.onTap});
   final DonationProduct product;
   final VoidCallback onTap;
-
-  const _ProductCard({
-    required this.product,
-    required this.onTap,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -199,16 +187,11 @@ class _ProductCard extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: product.isSubscription
                   ? AppGradients.accentGradient
-                  : [
-                      primary.withValues(alpha: 0.1),
-                      primary.withValues(alpha: 0.05),
-                    ],
+                  : [primary.withValues(alpha: 0.1), primary.withValues(alpha: 0.05)],
             ),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: product.isSubscription
-                  ? Colors.transparent
-                  : primary.withValues(alpha: 0.2),
+              color: product.isSubscription ? Colors.transparent : primary.withValues(alpha: 0.2),
               width: 1.5,
             ),
           ),
@@ -226,7 +209,9 @@ class _ProductCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: product.isSubscription ? Colors.white : (isDark ? Colors.white : Colors.black87),
+                  color: product.isSubscription
+                      ? Colors.white
+                      : (isDark ? Colors.white : Colors.black87),
                 ),
               ),
               const SizedBox(height: 4),
@@ -239,13 +224,7 @@ class _ProductCard extends StatelessWidget {
                 ),
               ),
               if (product.isSubscription)
-                const Text(
-                  "/ month",
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.white70,
-                  ),
-                ),
+                const Text("/ month", style: TextStyle(fontSize: 10, color: Colors.white70)),
             ],
           ),
         ),

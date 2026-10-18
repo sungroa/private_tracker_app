@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:private_tracker_app/core/services/preferences_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   late PreferencesService preferencesService;
@@ -44,18 +44,12 @@ void main() {
     // --- Notification Time ---
 
     test('getNotificationTime returns default 20:00 when nothing is stored', () async {
-      expect(
-        await preferencesService.getNotificationTime(),
-        const TimeOfDay(hour: 20, minute: 0),
-      );
+      expect(await preferencesService.getNotificationTime(), const TimeOfDay(hour: 20, minute: 0));
     });
 
     test('getNotificationTime returns stored value after setNotificationTime', () async {
       await preferencesService.setNotificationTime(const TimeOfDay(hour: 9, minute: 5));
-      expect(
-        await preferencesService.getNotificationTime(),
-        const TimeOfDay(hour: 9, minute: 5),
-      );
+      expect(await preferencesService.getNotificationTime(), const TimeOfDay(hour: 9, minute: 5));
     });
 
     // --- Cloud Sync ---

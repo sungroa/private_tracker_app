@@ -1,14 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:private_tracker_app/domain/models/symptom_log.dart';
+import 'package:private_tracker_app/domain/usecases/delete_symptom_log_use_case.dart';
 import 'package:private_tracker_app/domain/usecases/get_symptom_logs_use_case.dart';
 import 'package:private_tracker_app/domain/usecases/save_symptom_log_use_case.dart';
-import 'package:private_tracker_app/domain/usecases/delete_symptom_log_use_case.dart';
 import 'package:private_tracker_app/presentation/providers/symptom_provider.dart';
-import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
 class MockGetSymptomLogsUseCase extends Mock implements GetSymptomLogsUseCase {}
+
 class MockSaveSymptomLogUseCase extends Mock implements SaveSymptomLogUseCase {}
+
 class MockDeleteSymptomLogUseCase extends Mock implements DeleteSymptomLogUseCase {}
+
 class FakeSymptomLog extends Fake implements SymptomLog {}
 
 void main() {
@@ -38,7 +41,7 @@ void main() {
 
   test('initialize loads logs via use case', () async {
     await provider.initialize();
-    
+
     verify(() => mockGetUseCase.execute()).called(1);
     expect(provider.symptomLogs, isEmpty);
   });
@@ -62,7 +65,7 @@ void main() {
     verify(() => mockSaveUseCase.execute(log)).called(1);
     verify(() => mockGetUseCase.execute()).called(1);
     expect(provider.symptomLogs, [log]);
-    
+
     expect(listenerCallCount, 2);
   });
 
@@ -87,7 +90,7 @@ void main() {
   test('deleteSymptomLog calls use case and reloads logs', () async {
     when(() => mockDeleteUseCase.execute(any())).thenAnswer((_) async {});
     when(() => mockGetUseCase.execute()).thenAnswer((_) async => []);
-    
+
     await provider.deleteSymptomLog('test-id');
 
     verify(() => mockDeleteUseCase.execute('test-id')).called(1);

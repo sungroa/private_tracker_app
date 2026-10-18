@@ -2,16 +2,18 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:private_tracker_app/presentation/providers/cloud_sync_provider.dart';
-import 'package:private_tracker_app/domain/usecases/sync_data_use_case.dart';
 import 'package:private_tracker_app/core/services/preferences_service.dart';
-
 import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/domain/services/cloud_sync_interface.dart';
+import 'package:private_tracker_app/domain/usecases/sync_data_use_case.dart';
+import 'package:private_tracker_app/presentation/providers/cloud_sync_provider.dart';
 
 class MockSyncDataUseCase extends Mock implements SyncDataUseCase {}
+
 class MockPreferencesService extends Mock implements PreferencesService {}
+
 class MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
+
 class MockCloudSyncInterface extends Mock implements CloudSyncInterface {}
 
 void main() {
@@ -32,7 +34,7 @@ void main() {
     mockPrefs = MockPreferencesService();
     mockKeyStorage = MockSecureKeyStorage();
     mockCloudSync = MockCloudSyncInterface();
-    
+
     provider = CloudSyncProvider(
       syncUseCase: mockSyncUseCase,
       prefs: mockPrefs,
@@ -71,9 +73,9 @@ void main() {
       when(() => mockSyncUseCase.execute()).thenAnswer((_) async => true);
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
       // Return non-null metadata with salt so recovery is not triggered
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
-        (_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='},
-      );
+      when(
+        () => mockCloudSync.fetchLatestCloudMetadata(),
+      ).thenAnswer((_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='});
 
       await provider.init();
       await provider.sync();
@@ -90,9 +92,9 @@ void main() {
       when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockSyncUseCase.execute()).thenThrow(Exception('Sync failed'));
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
-        (_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='},
-      );
+      when(
+        () => mockCloudSync.fetchLatestCloudMetadata(),
+      ).thenAnswer((_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='});
 
       await provider.init();
       await provider.sync();
@@ -102,26 +104,29 @@ void main() {
       verify(() => mockSyncUseCase.execute()).called(1);
     });
 
-    test('toggleGoogleDrive updates prefs and triggers sync when enabled and passphrase set', () async {
-      when(() => mockPrefs.setCloudSyncEnabled(true)).thenAnswer((_) async => {});
-      when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => true);
-      when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => true);
-      when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
-      when(() => mockSyncUseCase.execute()).thenAnswer((_) async => true);
-      when(() => mockPrefs.setLastSyncTime(any())).thenAnswer((_) async => {});
-      when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
-      // Cloud has a backup with salt — passphrase is set so sync proceeds
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
-        (_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='},
-      );
+    test(
+      'toggleGoogleDrive updates prefs and triggers sync when enabled and passphrase set',
+      () async {
+        when(() => mockPrefs.setCloudSyncEnabled(true)).thenAnswer((_) async => {});
+        when(() => mockPrefs.isCloudSyncEnabled()).thenAnswer((_) async => true);
+        when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => true);
+        when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
+        when(() => mockSyncUseCase.execute()).thenAnswer((_) async => true);
+        when(() => mockPrefs.setLastSyncTime(any())).thenAnswer((_) async => {});
+        when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
+        // Cloud has a backup with salt — passphrase is set so sync proceeds
+        when(
+          () => mockCloudSync.fetchLatestCloudMetadata(),
+        ).thenAnswer((_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='});
 
-      await provider.init();
-      await provider.toggleGoogleDrive(true);
+        await provider.init();
+        await provider.toggleGoogleDrive(true);
 
-      expect(provider.isGoogleDriveEnabled, true);
-      verify(() => mockPrefs.setCloudSyncEnabled(true)).called(1);
-      verify(() => mockSyncUseCase.execute()).called(1);
-    });
+        expect(provider.isGoogleDriveEnabled, true);
+        verify(() => mockPrefs.setCloudSyncEnabled(true)).called(1);
+        verify(() => mockSyncUseCase.execute()).called(1);
+      },
+    );
 
     test('toggleGoogleDrive sets needsInitialSetup when no cloud backup exists', () async {
       when(() => mockPrefs.setCloudSyncEnabled(true)).thenAnswer((_) async => {});
@@ -145,9 +150,9 @@ void main() {
       when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => false);
       when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
-        (_) async => {'checksum': 'abc'},
-      );
+      when(
+        () => mockCloudSync.fetchLatestCloudMetadata(),
+      ).thenAnswer((_) async => {'checksum': 'abc'});
 
       await provider.init();
       await provider.toggleGoogleDrive(true);
@@ -166,9 +171,9 @@ void main() {
       when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
       // Cloud metadata contains a recovery_salt → requiresRecoveryPrompt becomes true
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
-        (_) async => {'recovery_salt': 'dGVzdHNhbHQ=', 'checksum': 'abc'},
-      );
+      when(
+        () => mockCloudSync.fetchLatestCloudMetadata(),
+      ).thenAnswer((_) async => {'recovery_salt': 'dGVzdHNhbHQ=', 'checksum': 'abc'});
 
       await provider.init();
       await provider.toggleGoogleDrive(true);
@@ -222,8 +227,9 @@ void main() {
       when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer((_) async => null);
       when(() => mockCloudSync.downloadEncryptedBackup()).thenAnswer((_) async => fakePayload);
       // verifyCloudDecrypt throws — simulates wrong key
-      when(() => mockSyncUseCase.verifyCloudDecrypt(any(), any()))
-          .thenThrow(Exception('Integrity check failed: Incorrect key or corrupted backup'));
+      when(
+        () => mockSyncUseCase.verifyCloudDecrypt(any(), any()),
+      ).thenThrow(Exception('Integrity check failed: Incorrect key or corrupted backup'));
 
       await provider.init();
       await provider.changePassphrase('wrongPass', 'newPass456');
@@ -238,13 +244,13 @@ void main() {
       when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
       // Backup exists with a salt so the sync guard doesn't block us
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
-        (_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='},
-      );
+      when(
+        () => mockCloudSync.fetchLatestCloudMetadata(),
+      ).thenAnswer((_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='});
       // execute() throws the orphanKey CloudSyncException
-      when(() => mockSyncUseCase.execute()).thenThrow(
-        CloudSyncException(CloudSyncException.orphanKey),
-      );
+      when(
+        () => mockSyncUseCase.execute(),
+      ).thenThrow(CloudSyncException(CloudSyncException.orphanKey));
 
       await provider.init();
       await provider.sync();
@@ -258,9 +264,9 @@ void main() {
       when(() => mockPrefs.isRecoveryPassphraseSet()).thenAnswer((_) async => true);
       when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
-        (_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='},
-      );
+      when(
+        () => mockCloudSync.fetchLatestCloudMetadata(),
+      ).thenAnswer((_) async => {'checksum': 'abc', 'recovery_salt': 'dGVzdA=='});
       when(() => mockCloudSync.deleteCloudData()).thenAnswer((_) async => {});
       when(() => mockSyncUseCase.clearLocalMetadata()).thenAnswer((_) async => {});
       when(() => mockSyncUseCase.execute()).thenAnswer((_) async => false);
@@ -268,9 +274,9 @@ void main() {
 
       await provider.init();
       // Manually place provider in orphan key state
-      when(() => mockSyncUseCase.execute()).thenThrow(
-        CloudSyncException(CloudSyncException.orphanKey),
-      );
+      when(
+        () => mockSyncUseCase.execute(),
+      ).thenThrow(CloudSyncException(CloudSyncException.orphanKey));
       await provider.sync();
       expect(provider.isOrphanKey, true);
 
@@ -291,9 +297,9 @@ void main() {
       when(() => mockPrefs.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockCloudSync.authenticate()).thenAnswer((_) async => {});
       // Backup exists without salt = migration needed
-      when(() => mockCloudSync.fetchLatestCloudMetadata()).thenAnswer(
-        (_) async => {'checksum': 'abc'},
-      );
+      when(
+        () => mockCloudSync.fetchLatestCloudMetadata(),
+      ).thenAnswer((_) async => {'checksum': 'abc'});
       when(() => mockSyncUseCase.execute()).thenAnswer((_) async => false);
       when(() => mockSyncUseCase.forceFullUpload()).thenAnswer((_) async => {});
       when(() => mockSyncUseCase.setRecoverySalt(any())).thenAnswer((_) async => {});

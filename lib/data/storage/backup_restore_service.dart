@@ -1,16 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:archive/archive.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter/foundation.dart' show compute;
 import 'package:path_provider/path_provider.dart';
 import 'package:pointycastle/export.dart' as pc;
-import '../../domain/models/cycle_log.dart';
+
 import '../../domain/models/custom_tag.dart';
+import '../../domain/models/cycle_log.dart';
 import '../../domain/models/symptom_log.dart';
 import 'model_mapper.dart';
-
 
 class BackupRestoreService {
   static const int currentVersion = 2;
@@ -28,7 +29,7 @@ class BackupRestoreService {
     final compressedBytes = _serializeAndCompress(cycleEvents, symptomLogs, customTags);
     final iv = encrypt.IV.fromSecureRandom(ivLength);
     final rawKeyBytes = Uint8List.fromList(encryptionKey);
-    
+
     // Derive separate keys for ENC and MAC to satisfy key separation principle
     final encKey = encrypt.Key(_calculateHmac(rawKeyBytes, utf8.encode("ENCRYPTION")));
     final hmacKey = _calculateHmac(rawKeyBytes, utf8.encode("AUTHENTICATION"));
@@ -36,13 +37,16 @@ class BackupRestoreService {
     final encrypter = encrypt.Encrypter(encrypt.AES(encKey, mode: encrypt.AESMode.sic));
     final encrypted = encrypter.encryptBytes(compressedBytes, iv: iv);
 
-    final dummySalt = Uint8List(saltLength); 
+    final dummySalt = Uint8List(saltLength);
     final finalPayload = BytesBuilder();
     finalPayload.addByte(currentVersion);
     finalPayload.add(dummySalt);
     finalPayload.add(iv.bytes);
-    
-    final hmac = _calculateHmac(hmacKey, _buildHmacPayload(currentVersion, dummySalt, iv.bytes, encrypted.bytes));
+
+    final hmac = _calculateHmac(
+      hmacKey,
+      _buildHmacPayload(currentVersion, dummySalt, iv.bytes, encrypted.bytes),
+    );
     finalPayload.add(hmac);
     finalPayload.add(encrypted.bytes);
 
@@ -60,14 +64,17 @@ class BackupRestoreService {
 
     final salt = encrypt.IV.fromSecureRandom(saltLength).bytes;
     final iv = encrypt.IV.fromSecureRandom(ivLength);
-    
+
     final keyBytes = await _deriveKeyFromPassword(userPassword, Uint8List.fromList(salt));
     final key = encrypt.Key(keyBytes);
     final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.sic));
     final encrypted = encrypter.encryptBytes(compressedBytes, iv: iv);
 
     final hmacKey = await _deriveHmacKeyFromPassword(userPassword, Uint8List.fromList(salt));
-    final hmac = _calculateHmac(hmacKey, _buildHmacPayload(currentVersion, salt, iv.bytes, encrypted.bytes));
+    final hmac = _calculateHmac(
+      hmacKey,
+      _buildHmacPayload(currentVersion, salt, iv.bytes, encrypted.bytes),
+    );
 
     final finalPayload = BytesBuilder();
     finalPayload.addByte(currentVersion);
@@ -77,13 +84,19 @@ class BackupRestoreService {
     finalPayload.add(encrypted.bytes);
 
     final tempDir = await getTemporaryDirectory();
-    final file = File('${tempDir.path}/private_tracker_backup_${DateTime.now().millisecondsSinceEpoch}.enc');
+    final file = File(
+      '${tempDir.path}/private_tracker_backup_${DateTime.now().millisecondsSinceEpoch}.enc',
+    );
     await file.writeAsBytes(finalPayload.toBytes());
-    
+
     return file;
   }
 
-  Uint8List _serializeAndCompress(List<CycleLog> cycleEvents, List<SymptomLog> symptomLogs, List<CustomTag> customTags) {
+  Uint8List _serializeAndCompress(
+    List<CycleLog> cycleEvents,
+    List<SymptomLog> symptomLogs,
+    List<CustomTag> customTags,
+  ) {
     final data = {
       'version': 1,
       'createdAt': DateTime.now().toIso8601String(),
@@ -112,7 +125,10 @@ class BackupRestoreService {
     final hmacKey = _calculateHmac(rawKeyBytes, utf8.encode("AUTHENTICATION"));
     final encKey = encrypt.Key(_calculateHmac(rawKeyBytes, utf8.encode("ENCRYPTION")));
 
-    final calculatedHmac = _calculateHmac(hmacKey, _buildHmacPayload(currentVersion, bytes.sublist(1, 1 + saltLength), iv.bytes, ciphertext));
+    final calculatedHmac = _calculateHmac(
+      hmacKey,
+      _buildHmacPayload(currentVersion, bytes.sublist(1, 1 + saltLength), iv.bytes, ciphertext),
+    );
 
     if (!_compareUint8Lists(providedHmac, calculatedHmac)) {
       throw Exception("Integrity check failed: Incorrect key or corrupted backup");
@@ -139,7 +155,7 @@ class BackupRestoreService {
     if (bytes.isEmpty) throw Exception("Invalid backup file: empty");
 
     final firstByte = bytes[0];
-    
+
     if (firstByte == currentVersion) {
       return await _importAuthenticatedBackup(bytes, userPassword);
     } else {
@@ -148,7 +164,10 @@ class BackupRestoreService {
     }
   }
 
-  Future<Map<String, dynamic>> _importAuthenticatedBackup(Uint8List bytes, String userPassword) async {
+  Future<Map<String, dynamic>> _importAuthenticatedBackup(
+    Uint8List bytes,
+    String userPassword,
+  ) async {
     const headerSize = 1 + saltLength + ivLength + hmacLength;
     if (bytes.length < headerSize) throw Exception("Invalid backup file: header too small");
 
@@ -160,8 +179,11 @@ class BackupRestoreService {
 
     // 2. Verify HMAC
     final hmacKey = await _deriveHmacKeyFromPassword(userPassword, salt);
-    final calculatedHmac = _calculateHmac(hmacKey, _buildHmacPayload(currentVersion, salt, iv.bytes, ciphertext));
-    
+    final calculatedHmac = _calculateHmac(
+      hmacKey,
+      _buildHmacPayload(currentVersion, salt, iv.bytes, ciphertext),
+    );
+
     if (!_compareUint8Lists(providedHmac, calculatedHmac)) {
       throw Exception("Integrity check failed: Incorrect password or corrupted backup");
     }
@@ -186,7 +208,7 @@ class BackupRestoreService {
     final keyBytes = await _deriveKeyFromPassword(userPassword, salt);
     final key = encrypt.Key(keyBytes);
     final encrypter = encrypt.Encrypter(encrypt.AES(key, mode: encrypt.AESMode.cbc));
-    
+
     try {
       final decryptedBytes = encrypter.decryptBytes(encrypt.Encrypted(ciphertext), iv: iv);
       return _decompressAndParse(decryptedBytes);
@@ -202,17 +224,11 @@ class BackupRestoreService {
   }
 
   Future<Uint8List> _deriveKeyFromPassword(String password, Uint8List salt) async {
-    return compute(_deriveKeyWorker, {
-      'password': password,
-      'salt': salt,
-    });
+    return compute(_deriveKeyWorker, {'password': password, 'salt': salt});
   }
 
   Future<Uint8List> _deriveHmacKeyFromPassword(String password, Uint8List salt) async {
-    return compute(_deriveHmacKeyWorker, {
-      'password': password,
-      'salt': salt,
-    });
+    return compute(_deriveHmacKeyWorker, {'password': password, 'salt': salt});
   }
 
   Uint8List _calculateHmac(Uint8List key, Uint8List data) {
@@ -236,7 +252,7 @@ class BackupRestoreService {
 Uint8List _deriveKeyWorker(Map<String, dynamic> params) {
   final String password = params['password'] as String;
   final Uint8List salt = params['salt'] as Uint8List;
-  
+
   final pbkdf2 = pc.PBKDF2KeyDerivator(pc.HMac(pc.SHA256Digest(), 64));
   pbkdf2.init(pc.Pbkdf2Parameters(salt, 10000, 32));
   return pbkdf2.process(Uint8List.fromList(utf8.encode(password)));
@@ -245,7 +261,7 @@ Uint8List _deriveKeyWorker(Map<String, dynamic> params) {
 Uint8List _deriveHmacKeyWorker(Map<String, dynamic> params) {
   final String password = params['password'] as String;
   final Uint8List salt = params['salt'] as Uint8List;
-  
+
   final hmacSalt = Uint8List.fromList(salt + utf8.encode("HMAC_AUTH"));
   final pbkdf2 = pc.PBKDF2KeyDerivator(pc.HMac(pc.SHA256Digest(), 64));
   pbkdf2.init(pc.Pbkdf2Parameters(hmacSalt, 10000, 32));

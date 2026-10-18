@@ -29,13 +29,15 @@ void main() {
 
       await addTagUseCase.execute('New Tag');
 
-      verify(() => mockRepository.saveTag(any(that: isA<CustomTag>().having((t) => t.name, 'name', 'New Tag')))).called(1);
+      verify(
+        () => mockRepository.saveTag(
+          any(that: isA<CustomTag>().having((t) => t.name, 'name', 'New Tag')),
+        ),
+      ).called(1);
     });
 
     test('execute should not save if tag name already exists (case-insensitive)', () async {
-      final existingTags = [
-        CustomTag(id: '1', name: 'Exercise', updatedAt: DateTime.now()),
-      ];
+      final existingTags = [CustomTag(id: '1', name: 'Exercise', updatedAt: DateTime.now())];
       when(() => mockRepository.getTags()).thenAnswer((_) async => existingTags);
 
       await addTagUseCase.execute('exercise'); // Lowercase version of existing
@@ -44,9 +46,7 @@ void main() {
     });
 
     test('execute should trim whitespace when checking for duplicates', () async {
-      final existingTags = [
-        CustomTag(id: '1', name: 'Exercise', updatedAt: DateTime.now()),
-      ];
+      final existingTags = [CustomTag(id: '1', name: 'Exercise', updatedAt: DateTime.now())];
       when(() => mockRepository.getTags()).thenAnswer((_) async => existingTags);
 
       await addTagUseCase.execute('  Exercise  ');

@@ -5,15 +5,14 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 
-import '../../domain/services/cloud_sync_interface.dart';
 import '../../core/utils/security_logger.dart';
+import '../../domain/services/cloud_sync_interface.dart';
 
 /// An authenticated HTTP client that injects GoogleSignIn auth headers into requests.
 class GoogleAuthClient extends http.BaseClient {
+  GoogleAuthClient(this._headers, this._client);
   final Map<String, String> _headers;
   final http.Client _client;
-
-  GoogleAuthClient(this._headers, this._client);
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
@@ -30,6 +29,12 @@ class GoogleAuthClient extends http.BaseClient {
 
 /// Implementation of the CloudSyncInterface for Google Drive using the hidden appDataFolder.
 class GoogleDriveSyncRepository implements CloudSyncInterface {
+  GoogleDriveSyncRepository({
+    GoogleSignIn? googleSignIn,
+    // serverClientId is retained for API compatibility but initialize() is now
+    // called at app startup (main.dart), so it is no longer used here.
+    String? serverClientId,
+  }) : _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
   final GoogleSignIn _googleSignIn;
   drive.DriveApi? _driveApi;
   http.Client? _authClient;
@@ -41,13 +46,6 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
 
   String get _backupFileName =>
       kDebugMode ? 'private_tracker_backup_dev.enc' : 'private_tracker_backup.enc';
-
-  GoogleDriveSyncRepository({
-    GoogleSignIn? googleSignIn,
-    // serverClientId is retained for API compatibility but initialize() is now
-    // called at app startup (main.dart), so it is no longer used here.
-    String? serverClientId,
-  }) : _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
 
   /// Allows injecting a mock DriveApi for testing without needing to authenticate.
   void setMockDriveApi(drive.DriveApi api) {
@@ -79,10 +77,13 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       // --- Step 1: Try the cached account first (no network roundtrip). ---
       if (_cachedAccount != null) {
         SecurityLogger.logInfo("Google Drive: Reusing cached account for silent token refresh...");
-        authHeaders = await _cachedAccount!.authorizationClient
-            .authorizationHeaders([scope], promptIfNecessary: false);
+        authHeaders = await _cachedAccount!.authorizationClient.authorizationHeaders([
+          scope,
+        ], promptIfNecessary: false);
         if (authHeaders == null) {
-          SecurityLogger.logInfo("Google Drive: Cached token expired or insufficient. Fetching fresh account...");
+          SecurityLogger.logInfo(
+            "Google Drive: Cached token expired or insufficient. Fetching fresh account...",
+          );
           _cachedAccount = null; // invalidate stale cache
         }
       }
@@ -94,36 +95,38 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
         try {
           account = await _googleSignIn.attemptLightweightAuthentication();
         } catch (e) {
-          SecurityLogger.logInfo("Google Drive: Lightweight auth threw exception ($e). Falling back to interactive auth.");
+          SecurityLogger.logInfo(
+            "Google Drive: Lightweight auth threw exception ($e). Falling back to interactive auth.",
+          );
           account = null;
         }
 
         if (account == null) {
-          // Only reached if the user has never signed in, revoked access, or 
+          // Only reached if the user has never signed in, revoked access, or
           // their session needs re-authentication.
           SecurityLogger.logInfo(
-              "Google Drive: Lightweight auth failed. Requesting user sign-in...");
+            "Google Drive: Lightweight auth failed. Requesting user sign-in...",
+          );
           account = await _googleSignIn.authenticate();
         }
 
-        SecurityLogger.logInfo(
-            "Google Drive: Account obtained. Fetching authorization headers...");
+        SecurityLogger.logInfo("Google Drive: Account obtained. Fetching authorization headers...");
 
         // Attempt to fetch headers with the requested scope.
-        authHeaders = await account.authorizationClient
-            .authorizationHeaders([scope], promptIfNecessary: false);
+        authHeaders = await account.authorizationClient.authorizationHeaders([
+          scope,
+        ], promptIfNecessary: false);
 
         if (authHeaders == null) {
-          // (W12) Fallback: If headers are missing despite an account, it likely means 
+          // (W12) Fallback: If headers are missing despite an account, it likely means
           // the scope wasn't granted yet. Retry with a full authorization prompt.
-          SecurityLogger.logInfo("Google Drive: Silent headers failed. Retrying with full authorization...");
+          SecurityLogger.logInfo(
+            "Google Drive: Silent headers failed. Retrying with full authorization...",
+          );
           final auth = await account.authorizationClient.authorizeScopes([scope]);
           // Construct headers manually as authorizationHeaders is not defined on GoogleSignInClientAuthorization
-          authHeaders = {
-            'Authorization': 'Bearer ${auth.accessToken}',
-          };
+          authHeaders = {'Authorization': 'Bearer ${auth.accessToken}'};
         }
-
 
         // Cache the account so future calls skip Steps 1+2 entirely.
         _cachedAccount = account;
@@ -152,18 +155,18 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
   }
 
   @override
-  Future<void> uploadEncryptedBackup(Uint8List payload, String checksum,
-      {Map<String, String?>? extraMetadata}) async {
+  Future<void> uploadEncryptedBackup(
+    Uint8List payload,
+    String checksum, {
+    Map<String, String?>? extraMetadata,
+  }) async {
     _checkAuthenticated();
 
     try {
       final media = drive.Media(Stream.value(payload), payload.length);
 
       // Build the primary metadata map (appProperties supports nullable values).
-      final appPropertiesMap = <String, String?>{
-        'checksum': checksum,
-        ...?extraMetadata,
-      };
+      final appPropertiesMap = <String, String?>{'checksum': checksum, ...?extraMetadata};
 
       // Triple-redundant metadata storage so the recovery salt survives
       // across Drive API scope differences and device transitions:
@@ -185,8 +188,7 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
         ..description = recoverySalt != null ? 'salt:$recoverySalt' : null;
 
       // Upload the new backup
-      final newFile =
-          await _driveApi!.files.create(driveFile, uploadMedia: media);
+      final newFile = await _driveApi!.files.create(driveFile, uploadMedia: media);
       SecurityLogger.logInfo("Upload successful. File ID: ${newFile.id}");
 
       // Clean up old backups post-upload
@@ -232,17 +234,18 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
       }
 
       // Sort to get the most recent one just in case cleanup failed previously
-      allFiles.sort((a, b) => (b.createdTime ?? DateTime(0)).compareTo(a.createdTime ?? DateTime(0)));
+      allFiles.sort(
+        (a, b) => (b.createdTime ?? DateTime(0)).compareTo(a.createdTime ?? DateTime(0)),
+      );
       final latestBackup = allFiles.first;
       final fileId = latestBackup.id;
 
       if (fileId == null) throw CloudSyncException(CloudSyncException.backupIdMissing);
 
       SecurityLogger.logInfo("Found ${allFiles.length} files. Downloading latest (ID: $fileId)...");
-      final media = await _driveApi!.files.get(
-        fileId,
-        downloadOptions: drive.DownloadOptions.fullMedia,
-      ) as drive.Media;
+      final media =
+          await _driveApi!.files.get(fileId, downloadOptions: drive.DownloadOptions.fullMedia)
+              as drive.Media;
 
       // Drain the stream into a ByteBuilder to avoid temp files (W1 compliance)
       final builder = BytesBuilder(copy: false);
@@ -263,10 +266,10 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
     _checkAuthenticated();
     try {
       SecurityLogger.logInfo("Cloud Wipe: Initializing exhaustive search in appDataFolder...");
-      
+
       int deletedCount = 0;
       String? pageToken;
-      
+
       do {
         final fileList = await _driveApi!.files.list(
           q: "name = '$_backupFileName'",
@@ -284,15 +287,19 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
           break;
         }
 
-        SecurityLogger.logInfo("Cloud Wipe: Found ${files.length} files on current page. Deleting...");
+        SecurityLogger.logInfo(
+          "Cloud Wipe: Found ${files.length} files on current page. Deleting...",
+        );
         for (final f in files) {
           if (f.id != null) {
-            SecurityLogger.logInfo("Cloud Wipe: Deleting [${f.name}] (ID: ${f.id}, Size: ${f.size}, Created: ${f.createdTime})");
+            SecurityLogger.logInfo(
+              "Cloud Wipe: Deleting [${f.name}] (ID: ${f.id}, Size: ${f.size}, Created: ${f.createdTime})",
+            );
             await _driveApi!.files.delete(f.id!);
             deletedCount++;
           }
         }
-        
+
         pageToken = fileList.nextPageToken;
       } while (pageToken != null);
 
@@ -325,7 +332,9 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
         return null;
       }
 
-      allFiles.sort((a, b) => (b.createdTime ?? DateTime(0)).compareTo(a.createdTime ?? DateTime(0)));
+      allFiles.sort(
+        (a, b) => (b.createdTime ?? DateTime(0)).compareTo(a.createdTime ?? DateTime(0)),
+      );
       final latestBackup = allFiles.first;
 
       // (C3) Robust retrieval: check appProperties, then properties, then description
@@ -334,11 +343,11 @@ class GoogleDriveSyncRepository implements CloudSyncInterface {
         'name': latestBackup.name,
         'size': latestBackup.size,
       };
-      
+
       // 1. Initial maps
       if (latestBackup.appProperties != null) metadata.addAll(latestBackup.appProperties!);
       if (latestBackup.properties != null) metadata.addAll(latestBackup.properties!);
-      
+
       // 2. Description fallback for salt
       if (metadata['recovery_salt'] == null && latestBackup.description != null) {
         final desc = latestBackup.description!;

@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:private_tracker_app/domain/services/partner_sharing_service.dart';
-import 'package:private_tracker_app/domain/models/shared_phase_data.dart';
-import 'package:private_tracker_app/domain/cycle_calculator.dart';
 import 'package:private_tracker_app/core/services/clock.dart';
+import 'package:private_tracker_app/domain/cycle_calculator.dart';
+import 'package:private_tracker_app/domain/models/shared_phase_data.dart';
+import 'package:private_tracker_app/domain/services/partner_sharing_service.dart';
+
 import '../helpers/test_model_factory.dart';
 
 void main() {
@@ -17,8 +18,14 @@ void main() {
   group('PartnerSharingService Tests', () {
     test('generateEncryptedPayload should produce a valid payload and key', () {
       final cycleLogs = [
-        TestModelFactory.createCycleLog(startDate: DateTime(2026, 3, 1), endDate: DateTime(2026, 3, 5)),
-        TestModelFactory.createCycleLog(startDate: DateTime(2026, 2, 1), endDate: DateTime(2026, 2, 5)),
+        TestModelFactory.createCycleLog(
+          startDate: DateTime(2026, 3, 1),
+          endDate: DateTime(2026, 3, 5),
+        ),
+        TestModelFactory.createCycleLog(
+          startDate: DateTime(2026, 2, 1),
+          endDate: DateTime(2026, 2, 5),
+        ),
       ];
 
       final result = service.generateEncryptedPayload(cycleLogs: cycleLogs);
@@ -61,10 +68,7 @@ void main() {
     });
 
     test('decryptPayload should throw exception on invalid data', () {
-      expect(
-        () => service.decryptPayload('invalidpayload', 'some:key'),
-        throwsException,
-      );
+      expect(() => service.decryptPayload('invalidpayload', 'some:key'), throwsException);
     });
   });
 }

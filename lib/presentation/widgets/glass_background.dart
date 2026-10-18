@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
-/// A premium decorative background that features a linear gradient and 
+/// A premium decorative background that features a linear gradient and
 /// a large translucent circle in the top-right corner.
 ///
 /// This widget is intended to be used as the root background for pages
 /// to ensure that decorative elements transition smoothly during navigation.
 class GlassBackground extends StatelessWidget {
+  const GlassBackground({super.key, required this.child});
   final Widget child;
-
-  const GlassBackground({
-    super.key,
-    required this.child,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,13 +22,11 @@ class GlassBackground extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: isDark
-                  ? AppGradients.darkBackground
-                  : AppGradients.lightBackground,
+              colors: isDark ? AppGradients.darkBackground : AppGradients.lightBackground,
             ),
           ),
         ),
-        
+
         // Decorative Top-Right Circle
         Positioned(
           top: -150,
@@ -51,7 +45,7 @@ class GlassBackground extends StatelessWidget {
             ),
           ),
         ),
-        
+
         // Content Layer
         child,
       ],

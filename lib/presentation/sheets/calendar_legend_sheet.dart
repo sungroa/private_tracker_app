@@ -29,7 +29,9 @@ class CalendarLegendSheet extends StatelessWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -50,7 +52,7 @@ class CalendarLegendSheet extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 physics: const BouncingScrollPhysics(),
                 children: [
-                   _LegendItem(
+                  _LegendItem(
                     isDark: isDark,
                     title: "Logged Period",
                     description: "Dates where period flow is explicitly logged.",
@@ -73,7 +75,10 @@ class CalendarLegendSheet extends StatelessWidget {
                       height: 24,
                       decoration: BoxDecoration(
                         color: Colors.redAccent.withValues(alpha: 0.05),
-                        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.2), width: 1.5),
+                        border: Border.all(
+                          color: Colors.redAccent.withValues(alpha: 0.2),
+                          width: 1.5,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
@@ -83,10 +88,14 @@ class CalendarLegendSheet extends StatelessWidget {
                     isDark: isDark,
                     title: "Predicted Fertile Window",
                     description: "Dates you are most likely to be fertile.",
-                    leading: _buildMarker(Icons.circle, Colors.indigoAccent.withValues(alpha: 0.5), size: 12),
+                    leading: _buildMarker(
+                      Icons.circle,
+                      Colors.indigoAccent.withValues(alpha: 0.5),
+                      size: 12,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                   _LegendItem(
+                  _LegendItem(
                     isDark: isDark,
                     title: "Daily Log (Symptoms/Mood)",
                     description: "You have logged symptoms or mood for this day.",
@@ -121,28 +130,23 @@ class CalendarLegendSheet extends StatelessWidget {
       width: 24,
       height: 24,
       child: Center(
-        child: Icon(
-          icon,
-          size: size,
-          color: color,
-        ),
+        child: Icon(icon, size: size, color: color),
       ),
     );
   }
 }
 
 class _LegendItem extends StatelessWidget {
-  final bool isDark;
-  final String title;
-  final String description;
-  final Widget leading;
-
   const _LegendItem({
     required this.isDark,
     required this.title,
     required this.description,
     required this.leading,
   });
+  final bool isDark;
+  final String title;
+  final String description;
+  final Widget leading;
 
   @override
   Widget build(BuildContext context) {

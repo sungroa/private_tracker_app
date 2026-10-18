@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import '../../theme/app_theme.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
+import '../../theme/app_theme.dart';
 
 /// An individual day cell within the [CustomCalendarGrid].
 ///
@@ -15,18 +16,6 @@ import 'package:private_tracker_app/domain/models/symptom_log.dart';
 /// This widget is a [StatefulWidget] to support a tap-scale micro-animation
 /// that provides premium tactile feedback when the user selects a day.
 class CalendarDayCell extends StatefulWidget {
-  final DateTime date;
-  final bool isBleeding;
-  final bool isPredictedBleeding;
-  final bool isPredictedFertility;
-  final bool isStartOfSpan;
-  final bool isEndOfSpan;
-  final bool isSelected;
-  final bool isToday;
-  final bool isOutsideMonth;
-  final SymptomLog? symptomLog;
-  final VoidCallback onTap;
-
   const CalendarDayCell({
     super.key,
     required this.date,
@@ -41,6 +30,17 @@ class CalendarDayCell extends StatefulWidget {
     this.symptomLog,
     required this.onTap,
   });
+  final DateTime date;
+  final bool isBleeding;
+  final bool isPredictedBleeding;
+  final bool isPredictedFertility;
+  final bool isStartOfSpan;
+  final bool isEndOfSpan;
+  final bool isSelected;
+  final bool isToday;
+  final bool isOutsideMonth;
+  final SymptomLog? symptomLog;
+  final VoidCallback onTap;
 
   @override
   State<CalendarDayCell> createState() => _CalendarDayCellState();
@@ -170,23 +170,18 @@ class _CalendarDayCellState extends State<CalendarDayCell> {
                 curve: Curves.easeOutCubic,
                 width: widget.isSelected ? 40 : 36,
                 height: widget.isSelected ? 40 : 36,
-                decoration: widget.isSelected 
+                decoration: widget.isSelected
                     ? AppTheme.calendarSelectionDecoration(isDark: isDark)
                     : BoxDecoration(
                         shape: BoxShape.circle,
                         color: widget.isToday
-                                ? primary.withValues(alpha: 0.15)
-                                : Colors.transparent,
+                            ? primary.withValues(alpha: 0.15)
+                            : Colors.transparent,
                         border: widget.isToday
-                                ? Border.all(color: primary.withValues(alpha: 0.7), width: 1.5)
-                                : null,
+                            ? Border.all(color: primary.withValues(alpha: 0.7), width: 1.5)
+                            : null,
                         boxShadow: widget.isToday
-                            ? [
-                                BoxShadow(
-                                  color: primary.withValues(alpha: 0.2),
-                                  blurRadius: 6,
-                                ),
-                              ]
+                            ? [BoxShadow(color: primary.withValues(alpha: 0.2), blurRadius: 6)]
                             : null,
                       ),
                 child: Center(
@@ -196,11 +191,13 @@ class _CalendarDayCellState extends State<CalendarDayCell> {
                       color: widget.isSelected
                           ? (isDark ? Colors.white : AppTheme.primaryColor)
                           : widget.isOutsideMonth
-                              ? (isDark ? Colors.white38 : Colors.grey[500])
-                              : widget.isBleeding 
-                                  ? Colors.redAccent
-                                  : (isDark ? Colors.white : Colors.black87),
-                      fontWeight: widget.isToday || widget.isSelected || widget.isBleeding ? FontWeight.bold : FontWeight.normal,
+                          ? (isDark ? Colors.white38 : Colors.grey[500])
+                          : widget.isBleeding
+                          ? Colors.redAccent
+                          : (isDark ? Colors.white : Colors.black87),
+                      fontWeight: widget.isToday || widget.isSelected || widget.isBleeding
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                       fontSize: widget.isSelected ? 15 : 14,
                       fontFamily: AppTheme.fontFamily,
                     ),
@@ -215,9 +212,14 @@ class _CalendarDayCellState extends State<CalendarDayCell> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (widget.isPredictedFertility)
-                      _buildMarker(Icons.circle, Colors.indigoAccent.withValues(alpha: 0.5), size: 6),
+                      _buildMarker(
+                        Icons.circle,
+                        Colors.indigoAccent.withValues(alpha: 0.5),
+                        size: 6,
+                      ),
                     if (widget.symptomLog != null) ...[
-                      if (widget.symptomLog!.symptoms.isNotEmpty || widget.symptomLog!.moodRating != 3)
+                      if (widget.symptomLog!.symptoms.isNotEmpty ||
+                          widget.symptomLog!.moodRating != 3)
                         _buildMarker(Icons.brightness_1, Colors.purpleAccent, size: 4),
                       if (widget.symptomLog!.lhTestPositive == true)
                         _buildMarker(Icons.star_rounded, Colors.pinkAccent, size: 8),
@@ -237,11 +239,7 @@ class _CalendarDayCellState extends State<CalendarDayCell> {
   Widget _buildMarker(IconData icon, Color color, {double size = 6}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 1),
-      child: Icon(
-        icon,
-        size: size,
-        color: color,
-      ),
+      child: Icon(icon, size: size, color: color),
     );
   }
 }

@@ -1,12 +1,30 @@
 import 'package:meta/meta.dart';
 
 /// Represents a menstruation cycle entry (period log).
-/// 
+///
 /// This is a pure domain model, decoupled from persistence frameworks (like Hive).
-/// It follows the Clean Architecture principle that business objects should be 
+/// It follows the Clean Architecture principle that business objects should be
 /// frameworks-agnostic.
 @immutable
 class CycleLog {
+  /// Creates a [CycleLog] with validation.
+  ///
+  /// Following "Technical Excellence" principles, the constructor is now "pure".
+  /// ID generation and timestamping should be handled by a factory or the
+  /// repository layer before instantiation.
+  CycleLog({
+    required this.id,
+    required this.startDate,
+    this.endDate,
+    this.notes,
+    this.flowIntensity = 3,
+    required this.updatedAt,
+  }) : assert(flowIntensity >= 1 && flowIntensity <= 5, 'Flow intensity must be between 1 and 5'),
+       assert(
+         endDate == null || !endDate.isBefore(startDate),
+         'End date cannot be before start date',
+       );
+
   /// Unique identifier for the log entry.
   final String id;
 
@@ -25,23 +43,8 @@ class CycleLog {
   /// The last time this record was modified.
   final DateTime updatedAt;
 
-  /// Creates a [CycleLog] with validation.
-  /// 
-  /// Following "Technical Excellence" principles, the constructor is now "pure".
-  /// ID generation and timestamping should be handled by a factory or the 
-  /// repository layer before instantiation.
-  CycleLog({
-    required this.id,
-    required this.startDate,
-    this.endDate,
-    this.notes,
-    this.flowIntensity = 3,
-    required this.updatedAt,
-  })  : assert(flowIntensity >= 1 && flowIntensity <= 5, 'Flow intensity must be between 1 and 5'),
-        assert(endDate == null || !endDate.isBefore(startDate), 'End date cannot be before start date');
-
   /// Creates a copy of this object with potentially changed values.
-  /// (W5) Uses Sentinel pattern to distinguish between null (no change) and 
+  /// (W5) Uses Sentinel pattern to distinguish between null (no change) and
   /// explicitly providing a null value for nullable fields.
   CycleLog copyWith({
     String? id,
@@ -67,14 +70,15 @@ class CycleLog {
   /// (Maintenance: prefer copyWith(endDate: null) now that it supports it).
   CycleLog clearEndDate() => copyWith(endDate: null);
 
-
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is CycleLog &&
         other.id == id &&
         other.startDate.isAtSameMomentAs(startDate) &&
-        (other.endDate == null ? endDate == null : endDate != null && other.endDate!.isAtSameMomentAs(endDate!)) &&
+        (other.endDate == null
+            ? endDate == null
+            : endDate != null && other.endDate!.isAtSameMomentAs(endDate!)) &&
         other.notes == notes &&
         other.flowIntensity == flowIntensity &&
         other.updatedAt.isAtSameMomentAs(updatedAt);
@@ -82,14 +86,7 @@ class CycleLog {
 
   @override
   int get hashCode {
-    return Object.hash(
-      id,
-      startDate,
-      endDate,
-      notes,
-      flowIntensity,
-      updatedAt,
-    );
+    return Object.hash(id, startDate, endDate, notes, flowIntensity, updatedAt);
   }
 }
 

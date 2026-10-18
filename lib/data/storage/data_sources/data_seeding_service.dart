@@ -1,8 +1,9 @@
-import 'package:uuid/uuid.dart';
-import '../hive_dtos.dart';
-import '../../../domain/models/custom_tag.dart';
-import '../model_mapper.dart';
 import 'package:hive/hive.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../../domain/models/custom_tag.dart';
+import '../hive_dtos.dart';
+import '../model_mapper.dart';
 
 /// Service responsible for populating the database with default data on first run.
 ///
@@ -32,7 +33,7 @@ class DataSeedingService {
     for (var name in _defaultTags) {
       final deterministicId = uuid.v5(_tagNamespace, name);
       defaultIds.add(deterministicId);
-      
+
       if (!tagBox.containsKey(deterministicId)) {
         final tag = CustomTag(
           id: deterministicId,

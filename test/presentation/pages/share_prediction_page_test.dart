@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:private_tracker_app/domain/services/partner_sharing_service.dart';
 import 'package:private_tracker_app/presentation/pages/share_prediction_page.dart';
 import 'package:private_tracker_app/presentation/providers/cycle_provider.dart';
 import 'package:private_tracker_app/presentation/providers/symptom_provider.dart';
-import 'package:private_tracker_app/domain/services/partner_sharing_service.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class MockCycleProvider extends Mock implements CycleProvider {}
+
 class MockSymptomProvider extends Mock implements SymptomProvider {}
+
 class MockPartnerSharingService extends Mock implements PartnerSharingService {}
 
 void main() {
@@ -34,9 +36,7 @@ void main() {
         ChangeNotifierProvider<SymptomProvider>.value(value: mockSymptom),
         Provider<PartnerSharingService>.value(value: mockSharing),
       ],
-      child: const MaterialApp(
-        home: SharePredictionPage(),
-      ),
+      child: const MaterialApp(home: SharePredictionPage()),
     );
   }
 

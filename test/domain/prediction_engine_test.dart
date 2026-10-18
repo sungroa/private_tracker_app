@@ -109,9 +109,7 @@ void main() {
           DateTime.utc(2026, 8, 1),
         ];
         final result = PredictionEngine.predictAllFertilityWindows(periods);
-        final uniqueDays = result
-            .map((d) => '${d.year}-${d.month}-${d.day}')
-            .toSet();
+        final uniqueDays = result.map((d) => '${d.year}-${d.month}-${d.day}').toSet();
         expect(result.length, uniqueDays.length, reason: 'No duplicates allowed');
       });
     });

@@ -2,15 +2,14 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../local_database_manager.dart';
 
 /// Base class for local data sources to standardize Hive box interactions.
-/// 
+///
 /// Refactored to [Future]-based API to ensure "Technical Excellence":
 /// 1. Adheres to asynchronous repository patterns.
 /// 2. Decouples implementation from the specific in-memory nature of Hive.
 abstract class LocalDataSource<T> {
+  LocalDataSource(this._dbManager, this._boxName);
   final LocalDatabaseManager _dbManager;
   final String _boxName;
-
-  LocalDataSource(this._dbManager, this._boxName);
 
   /// Standard typed access to the underlying Hive box.
   Box<T> get box => _dbManager.getBox<T>(_boxName);
@@ -53,7 +52,7 @@ abstract class LocalDataSource<T> {
 
   /// Quick check for empty state.
   bool get isEmpty => box.isEmpty;
-  
+
   /// Provides direct access to values (prefer getAll for async consistency).
   Iterable<T> get values => box.values;
 }

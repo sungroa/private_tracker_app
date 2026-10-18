@@ -19,11 +19,11 @@ void main() {
     test('getOrCreateEncryptionKey should return existing key if present', () async {
       final dummyKey = List<int>.generate(32, (i) => i);
       final encoded = base64UrlEncode(dummyKey);
-      
+
       when(() => mockStorage.read(key: any(named: 'key'))).thenAnswer((_) async => encoded);
-      
+
       final key = await secureKeyStorage.getOrCreateEncryptionKey();
-      
+
       expect(key, dummyKey);
       verify(() => mockStorage.read(key: any(named: 'key'))).called(1);
     });
@@ -38,13 +38,23 @@ void main() {
         if (callCount++ == 0) return null;
         return encoded;
       });
-      when(() => mockStorage.write(key: any(named: 'key'), value: any(named: 'value'))).thenAnswer((_) async {});
+      when(
+        () => mockStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async {});
 
       final key = await secureKeyStorage.getOrCreateEncryptionKey();
-      
+
       expect(key, isA<List<int>>());
       expect(key.length, 32);
-      verify(() => mockStorage.write(key: any(named: 'key'), value: any(named: 'value'))).called(1);
+      verify(
+        () => mockStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).called(1);
     });
 
     test('getSupporterStatus returns true if value is "true"', () async {
@@ -54,9 +64,19 @@ void main() {
     });
 
     test('setSupporterStatus writes string value', () async {
-      when(() => mockStorage.write(key: any(named: 'key'), value: any(named: 'value'))).thenAnswer((_) async {});
+      when(
+        () => mockStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenAnswer((_) async {});
       await secureKeyStorage.setSupporterStatus(true);
-      verify(() => mockStorage.write(key: any(named: 'key'), value: 'true')).called(1);
+      verify(
+        () => mockStorage.write(
+          key: any(named: 'key'),
+          value: 'true',
+        ),
+      ).called(1);
     });
   });
 }

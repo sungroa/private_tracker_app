@@ -1,27 +1,34 @@
 import 'dart:io';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:private_tracker_app/main.dart';
 import 'package:private_tracker_app/core/services/auth_service.dart';
-import 'package:private_tracker_app/core/services/preferences_service.dart';
-import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
-import 'package:private_tracker_app/data/storage/local_database_manager.dart';
-import 'package:private_tracker_app/presentation/pages/home_page.dart';
-import 'package:private_tracker_app/core/services/service_locator.dart';
 import 'package:private_tracker_app/core/services/notification_service.dart';
+import 'package:private_tracker_app/core/services/preferences_service.dart';
+import 'package:private_tracker_app/core/services/service_locator.dart';
+import 'package:private_tracker_app/data/storage/local_database_manager.dart';
+import 'package:private_tracker_app/data/storage/secure_key_storage.dart';
 import 'package:private_tracker_app/domain/repositories/donation_repository.dart';
-import 'package:app_links/app_links.dart';
+import 'package:private_tracker_app/main.dart';
+import 'package:private_tracker_app/presentation/pages/home_page.dart';
 
 class MockAuthService extends Mock implements AuthService {}
+
 class MockPreferencesService extends Mock implements PreferencesService {}
+
 class MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
+
 class MockAppLinks extends Mock implements AppLinks {}
+
 class MockNotificationService extends Mock implements NotificationService {}
+
 class MockDonationRepository extends Mock implements IDonationRepository {}
 
 class FakeDateTime extends Fake implements DateTime {}
+
 class FakeTimeOfDay extends Fake implements TimeOfDay {}
 
 void main() {
@@ -46,7 +53,7 @@ void main() {
 
       mockAuthService = MockAuthService();
       mockPreferencesService = MockPreferencesService();
-      
+
       mockKeyStorage = MockSecureKeyStorage();
       mockAppLinks = MockAppLinks();
       mockNotificationService = MockNotificationService();
@@ -56,14 +63,18 @@ void main() {
       // Mock Storage Services
       when(() => mockNotificationService.initialize()).thenAnswer((_) async {});
       when(() => mockNotificationService.cancelNotification(any())).thenAnswer((_) async {});
-      when(() => mockNotificationService.scheduleSingleNotification(
-        id: any(named: 'id'),
-        date: any(named: 'date'),
-        time: any(named: 'time'),
-        title: any(named: 'title'),
-        body: any(named: 'body'),
-      )).thenAnswer((_) async {});
-      when(() => mockKeyStorage.getOrCreateEncryptionKey()).thenAnswer((_) async => List<int>.filled(32, 0));
+      when(
+        () => mockNotificationService.scheduleSingleNotification(
+          id: any(named: 'id'),
+          date: any(named: 'date'),
+          time: any(named: 'time'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockKeyStorage.getOrCreateEncryptionKey(),
+      ).thenAnswer((_) async => List<int>.filled(32, 0));
       when(() => mockAppLinks.uriLinkStream).thenAnswer((_) => const Stream<Uri>.empty());
 
       // Default behavior for smoke test: no biometric lock and no cloud sync
@@ -73,15 +84,25 @@ void main() {
       when(() => mockPreferencesService.getLastSyncTime()).thenAnswer((_) async => null);
       when(() => mockAuthService.isHardwareSupported()).thenAnswer((_) async => false);
       when(() => mockPreferencesService.isNotificationsEnabled()).thenAnswer((_) async => false);
-      when(() => mockPreferencesService.getNotificationTime()).thenAnswer((_) async => const TimeOfDay(hour: 20, minute: 0));
+      when(
+        () => mockPreferencesService.getNotificationTime(),
+      ).thenAnswer((_) async => const TimeOfDay(hour: 20, minute: 0));
       when(() => mockPreferencesService.isPeriodReminderEnabled()).thenAnswer((_) async => false);
       when(() => mockPreferencesService.getPeriodReminderOffset()).thenAnswer((_) async => 1);
-      when(() => mockPreferencesService.getPeriodReminderTime()).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
-      when(() => mockPreferencesService.isFertilityReminderEnabled()).thenAnswer((_) async => false);
+      when(
+        () => mockPreferencesService.getPeriodReminderTime(),
+      ).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
+      when(
+        () => mockPreferencesService.isFertilityReminderEnabled(),
+      ).thenAnswer((_) async => false);
       when(() => mockPreferencesService.getFertilityReminderOffset()).thenAnswer((_) async => 1);
-      when(() => mockPreferencesService.getFertilityReminderTime()).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
+      when(
+        () => mockPreferencesService.getFertilityReminderTime(),
+      ).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
       when(() => mockKeyStorage.getSupporterStatus()).thenAnswer((_) async => false);
-      when(() => mockDonationRepository.isSupporterStream).thenAnswer((_) => const Stream<bool>.empty());
+      when(
+        () => mockDonationRepository.isSupporterStream,
+      ).thenAnswer((_) => const Stream<bool>.empty());
       when(() => mockDonationRepository.isSupporter()).thenAnswer((_) async => false);
     });
 
@@ -106,42 +127,48 @@ void main() {
           donations: mockDonationRepository,
         );
 
-        await tester.pumpWidget(PrivacyTrackerApp(
-          serviceLocator: sl,
-        ));
+        await tester.pumpWidget(PrivacyTrackerApp(serviceLocator: sl));
 
         // Initial pump to start initialization
         await tester.pump();
-        
+
         // Wait for initialization and animations to complete
         int retry = 0;
         bool found = false;
-        while (retry < 150) { 
+        while (retry < 150) {
           // Real-time pump to let microtasks work
           await tester.pump(const Duration(milliseconds: 100));
-          
+
           if (find.text('Private Tracker').evaluate().isNotEmpty) {
             found = true;
             break;
           }
-          
+
           if (retry % 10 == 0) {
-             final currentText = find.byType(Text).evaluate().map((e) => (e.widget as Text).data).join(', ');
-             debugPrint("Smoke test polling [retry $retry], found text: $currentText");
-             // Add a real-time delay to let runAsync tasks progress
-             await Future.delayed(const Duration(milliseconds: 50));
+            final currentText = find
+                .byType(Text)
+                .evaluate()
+                .map((e) => (e.widget as Text).data)
+                .join(', ');
+            debugPrint("Smoke test polling [retry $retry], found text: $currentText");
+            // Add a real-time delay to let runAsync tasks progress
+            await Future.delayed(const Duration(milliseconds: 50));
           }
-          retry++;
+          retry += 1;
         }
-        
+
         // Final pump for any remaining micro-animations
         await tester.pump(const Duration(seconds: 1));
-        
+
         if (!found) {
-          final allText = find.byType(Text).evaluate().map((e) => (e.widget as Text).data).join(', ');
+          final allText = find
+              .byType(Text)
+              .evaluate()
+              .map((e) => (e.widget as Text).data)
+              .join(', ');
           debugPrint("FINAL Available text in tree: $allText");
         }
-        
+
         expect(found, isTrue, reason: "Private Tracker should be found after initialization.");
         expect(find.text('Private Tracker'), findsOneWidget);
         expect(find.byType(HomePage), findsOneWidget);

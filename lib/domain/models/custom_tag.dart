@@ -1,11 +1,19 @@
 import 'package:meta/meta.dart';
 
 /// Represents a user-defined category for health events.
-/// 
+///
 /// 💼 **Domain Context**: This model allows users to personalize the logging
 /// experience by adding categories that are not included by default (e.g., 'Cramp', 'Brain Fog').
 @immutable
 class CustomTag {
+  /// Canonical constructor for [CustomTag].
+  const CustomTag({
+    required this.id,
+    required this.name,
+    this.isDefault = false,
+    required this.updatedAt,
+  });
+
   /// Unique identifier for the tag.
   final String id;
 
@@ -18,20 +26,7 @@ class CustomTag {
   /// The last time this tag metadata was modified.
   final DateTime updatedAt;
 
-  /// Canonical constructor for [CustomTag].
-  const CustomTag({
-    required this.id,
-    required this.name,
-    this.isDefault = false,
-    required this.updatedAt,
-  });
-
-  CustomTag copyWith({
-    String? id,
-    String? name,
-    bool? isDefault,
-    DateTime? updatedAt,
-  }) {
+  CustomTag copyWith({String? id, String? name, bool? isDefault, DateTime? updatedAt}) {
     return CustomTag(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -39,7 +34,6 @@ class CustomTag {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
-
 
   @override
   bool operator ==(Object other) {
@@ -53,11 +47,6 @@ class CustomTag {
 
   @override
   int get hashCode {
-    return Object.hash(
-      id,
-      name,
-      isDefault,
-      updatedAt,
-    );
+    return Object.hash(id, name, isDefault, updatedAt);
   }
 }

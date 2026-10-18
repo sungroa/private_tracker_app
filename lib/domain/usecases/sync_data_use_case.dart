@@ -1,28 +1,28 @@
 import 'dart:isolate';
 import 'dart:typed_data';
+
 import 'package:crypto/crypto.dart';
 
+import '../../core/utils/security_logger.dart';
 import '../repositories/data_source_repository.dart';
 import '../repositories/sync_metadata_repository.dart';
 import '../services/cloud_sync_interface.dart';
-import '../../core/utils/security_logger.dart';
 
 /// Orchestrates the synchronization process with record-level LWW conflict resolution.
-/// 
+///
 /// This use case is completely decoupled from the data layer via [IDataSourceRepository]
 /// and [ISyncMetadataRepository].
 class SyncDataUseCase {
-  final CloudSyncInterface _cloudSync;
-  final IDataSourceRepository _dataSource;
-  final ISyncMetadataRepository _metadata;
-  final Future<List<int>> Function() _keyProvider;
-
   SyncDataUseCase({
     required this._cloudSync,
     required this._dataSource,
     required this._metadata,
     required this._keyProvider,
   });
+  final CloudSyncInterface _cloudSync;
+  final IDataSourceRepository _dataSource;
+  final ISyncMetadataRepository _metadata;
+  final Future<List<int>> Function() _keyProvider;
 
   /// Updates the local recovery salt.
   Future<void> setRecoverySalt(String salt) async {
@@ -47,7 +47,7 @@ class SyncDataUseCase {
   }
 
   /// Executes the synchronization cycle.
-  /// 
+  ///
   /// Returns `true` if changes were applied to the local database.
   Future<bool> execute() async {
     String? currentCloudSalt;
@@ -59,15 +59,20 @@ class SyncDataUseCase {
       final cloudMetadata = await _cloudSync.fetchLatestCloudMetadata();
       final cloudChecksum = cloudMetadata?['checksum'];
       currentCloudSalt = cloudMetadata?['recovery_salt'];
-      
+
       // (W10) Recovery salt management
       final localSalt = await _metadata.getRecoverySalt();
       if (currentCloudSalt != null && localSalt == null) {
         SecurityLogger.logInfo("Sync Cycle: New cloud salt detected. Storing locally.");
         await _metadata.setRecoverySalt(currentCloudSalt);
       } else if (currentCloudSalt != null && localSalt != null && currentCloudSalt != localSalt) {
-        SecurityLogger.logInfo("Sync Cycle: Recovery salt mismatch detected. Triggering recovery prompt.");
-        throw CloudSyncException(CloudSyncException.recoveryRequired, "Recovery salt mismatch between local and cloud.");
+        SecurityLogger.logInfo(
+          "Sync Cycle: Recovery salt mismatch detected. Triggering recovery prompt.",
+        );
+        throw CloudSyncException(
+          CloudSyncException.recoveryRequired,
+          "Recovery salt mismatch between local and cloud.",
+        );
       }
 
       final lastSyncChecksum = await _metadata.getLastSyncChecksum();
@@ -91,10 +96,12 @@ class SyncDataUseCase {
       final fileName = cloudMetadata?['name'] ?? 'unknown';
       final fileId = cloudMetadata?['id'] ?? 'unknown_id';
       final fileSize = cloudMetadata?['size'] ?? 'unknown_size';
-      SecurityLogger.logInfo("Sync Cycle: Found Target File [ $fileName ] (ID: $fileId, Size: $fileSize bytes)");
+      SecurityLogger.logInfo(
+        "Sync Cycle: Found Target File [ $fileName ] (ID: $fileId, Size: $fileSize bytes)",
+      );
 
       final cloudPayload = await _cloudSync.downloadEncryptedBackup();
-      
+
       // Verification (W8): Verify the downloaded payload matches the cloud checksum
       final downloadedHash = sha256.convert(cloudPayload).toString();
       if (cloudChecksum != downloadedHash) {
@@ -109,13 +116,12 @@ class SyncDataUseCase {
       final localDataMap = await _dataSource.getAllDataAsMap();
       final cloudKey = await _keyProvider();
       final cloudDataMap = await _dataSource.parseCloudBackup(cloudPayload, cloudKey);
-      
+
       // 4. Perform merge on background isolate using LWW
       SecurityLogger.logInfo("Sync Cycle: Entering background merge isolate...");
-      final mergedDataMap = await Isolate.run(() => _mergeDataWorkerSer({
-        'local': localDataMap,
-        'cloud': cloudDataMap,
-      }));
+      final mergedDataMap = await Isolate.run(
+        () => _mergeDataWorkerSer({'local': localDataMap, 'cloud': cloudDataMap}),
+      );
       SecurityLogger.logInfo("Sync Cycle: background merge complete.");
 
       // 5. Apply merged results locally
@@ -140,7 +146,8 @@ class SyncDataUseCase {
         final localSalt = await _metadata.getRecoverySalt();
 
         final isIntegrityFailure = e.toString().contains("Integrity check failed");
-        final anySaltExists = currentCloudSalt != null || refreshedSalt != null || localSalt != null;
+        final anySaltExists =
+            currentCloudSalt != null || refreshedSalt != null || localSalt != null;
 
         if (isIntegrityFailure && anySaltExists) {
           // Definitive signal: if a salt exists anywhere, decryption failure means
@@ -150,14 +157,17 @@ class SyncDataUseCase {
           // Orphan key: backup was encrypted with a random machine key that has since
           // been wiped from the Keystore. No passphrase can recover it. The user must
           // choose to overwrite with local data or reset cloud sync entirely.
-          SecurityLogger.logError("Sync Cycle: Orphan key detected. Cloud backup is irrecoverable without data loss.");
+          SecurityLogger.logError(
+            "Sync Cycle: Orphan key detected. Cloud backup is irrecoverable without data loss.",
+          );
           throw CloudSyncException(CloudSyncException.orphanKey, e);
         }
       } catch (secondaryError) {
         // Log secondary errors instead of silently discarding them.
         SecurityLogger.logError(
-            "Sync Cycle: Secondary error during recovery analysis (non-fatal)",
-            error: secondaryError);
+          "Sync Cycle: Secondary error during recovery analysis (non-fatal)",
+          error: secondaryError,
+        );
         // If the secondary error IS a CloudSyncException (recoveryRequired or orphanKey),
         // propagate it — it supersedes the original error.
         if (secondaryError is CloudSyncException) rethrow;
@@ -165,18 +175,18 @@ class SyncDataUseCase {
       rethrow;
     }
   }
-  
+
   Future<void> _performFullUpload() async {
     final cloudKey = await _keyProvider();
     final payload = await _dataSource.exportCloudBackup(cloudKey);
     final checksum = sha256.convert(payload).toString();
-    
+
     // (W10) We should preserve the salt in metadata if it exists
     final localSalt = await _metadata.getRecoverySalt();
 
     await _cloudSync.uploadEncryptedBackup(
-      payload, 
-      checksum, 
+      payload,
+      checksum,
       extraMetadata: localSalt != null ? {'recovery_salt': localSalt} : null,
     );
     await _metadata.setLastSyncChecksum(checksum);
@@ -191,13 +201,13 @@ class SyncDataUseCase {
 }
 
 /// Background worker for merging data using Last-Write-Wins (LWW).
-/// 
+///
 /// **Isolate Boundary**: This function executes on a separate background thread via `Isolate.run`.
-/// This is critical because decrypting/parsing large payloads and merging hundreds of logs 
+/// This is critical because decrypting/parsing large payloads and merging hundreds of logs
 /// can cause jank on the main Flutter UI thread.
-/// 
-/// **Constraint**: Because it crosses the isolate boundary, the `params` map and return value 
-/// must only contain primitive/serializable types (String, int, basic Lists/Maps). Complex 
+///
+/// **Constraint**: Because it crosses the isolate boundary, the `params` map and return value
+/// must only contain primitive/serializable types (String, int, basic Lists/Maps). Complex
 /// classes or connections (like database handles) cannot be passed.
 Map<String, dynamic> _mergeDataWorkerSer(Map<String, dynamic> params) {
   final local = params['local'] as Map<String, dynamic>;
@@ -227,19 +237,18 @@ Map<String, dynamic> _mergeDataWorkerSer(Map<String, dynamic> params) {
 /// 2. Local records are iterated. If a local record doesn't exist in the cloud, it's added.
 /// 3. If a record exists in both, their `updatedAt` timestamps are compared. The newer record wins.
 /// 4. In the extremely rare case of exact millisecond ties, a deterministic tie-breaker is applied.
-List<dynamic> _mergeRecordsSer({
-  required List<dynamic> local,
-  required List<dynamic> cloud,
-}) {
-  final Map<String, dynamic> merged = {};
+List<dynamic> _mergeRecordsSer({required List<dynamic> local, required List<dynamic> cloud}) {
+  final Map<String, Map<String, dynamic>> merged = {};
 
   // Initialize with cloud records
-  for (final record in cloud) {
+  for (final item in cloud) {
+    final record = item as Map<String, dynamic>;
     merged[record['id'] as String] = record;
   }
 
   // Iterate local records. If local is newer, it wins.
-  for (final localRecord in local) {
+  for (final item in local) {
+    final localRecord = item as Map<String, dynamic>;
     final id = localRecord['id'] as String;
     final cloudRecord = merged[id];
 
@@ -256,7 +265,7 @@ List<dynamic> _mergeRecordsSer({
         // ensure all devices resolve the conflict in the exact same way to avoid infinite
         // sync loops. We use the string hash of the unique UUID as the arbiter.
         if ((localRecord['id'] as String).hashCode > (cloudRecord['id'] as String).hashCode) {
-           merged[id] = localRecord;
+          merged[id] = localRecord;
         }
       }
       // Else: Cloud record wins (already in map)

@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:provider/provider.dart';
-import 'package:private_tracker_app/presentation/sheets/unified_logging_sheet.dart';
-import 'package:private_tracker_app/presentation/providers/symptom_provider.dart';
 import 'package:private_tracker_app/presentation/providers/cycle_provider.dart';
+import 'package:private_tracker_app/presentation/providers/symptom_provider.dart';
 import 'package:private_tracker_app/presentation/providers/tag_provider.dart';
-
+import 'package:private_tracker_app/presentation/sheets/unified_logging_sheet.dart';
+import 'package:provider/provider.dart';
 
 class MockSymptomProvider extends Mock implements SymptomProvider {}
+
 class MockCycleProvider extends Mock implements CycleProvider {}
+
 class MockTagProvider extends Mock implements TagProvider {}
 
 void main() {
@@ -35,11 +36,7 @@ void main() {
         ChangeNotifierProvider<TagProvider>.value(value: mockTagProvider),
       ],
       child: MaterialApp(
-        home: Scaffold(
-          body: UnifiedLoggingSheet(
-            selectedDay: DateTime(2023, 10, 10),
-          ),
-        ),
+        home: Scaffold(body: UnifiedLoggingSheet(selectedDay: DateTime(2023, 10, 10))),
       ),
     );
   }

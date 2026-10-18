@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:private_tracker_app/data/storage/data_export_service.dart';
+import 'package:private_tracker_app/domain/models/custom_tag.dart';
 import 'package:private_tracker_app/domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
-import 'package:private_tracker_app/domain/models/custom_tag.dart';
 
 void main() {
   late DataExportService exportService;
@@ -45,9 +45,7 @@ void main() {
         ),
       ];
 
-      final customTags = [
-        CustomTag(id: 't1', name: 'Migraine', updatedAt: DateTime(2026, 1, 1)),
-      ];
+      final customTags = [CustomTag(id: 't1', name: 'Migraine', updatedAt: DateTime(2026, 1, 1))];
 
       final csv = await exportService.exportDataToCsv(
         cycleEvents: cycleLogs,
@@ -56,9 +54,12 @@ void main() {
       );
 
       final lines = csv.split('\r\n');
-      
+
       // Verify Header
-      expect(lines[0], 'Date,Type,End Date,Symptoms,Mood,Flow,BBT,Fluid,LH Test,Notes,Last Updated,ID');
+      expect(
+        lines[0],
+        'Date,Type,End Date,Symptoms,Mood,Flow,BBT,Fluid,LH Test,Notes,Last Updated,ID',
+      );
 
       // Verify Sorting (Newest first: 2026-03-10, then 03-03, then 03-01)
       expect(lines[1], contains('2026-03-10,Symptom'));
@@ -67,7 +68,7 @@ void main() {
 
       // Verify Symptom details (s1)
       expect(lines[2], contains('Cramps; Headache,2,,98.2,Sticky,Positive,Afternoon fatigue'));
-      
+
       // Verify Cycle details (c1)
       expect(lines[3], contains('2026-03-01,Cycle,2026-03-05,,,4/5,,,,Heavier than usual'));
     });

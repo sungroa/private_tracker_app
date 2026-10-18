@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'calendar_day_cell.dart';
-import '../../../domain/models/cycle_log.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
+
+import '../../../domain/models/cycle_log.dart';
+import 'calendar_day_cell.dart';
 
 /// A custom grid-based calendar visualization.
 ///
@@ -9,6 +10,17 @@ import 'package:private_tracker_app/domain/models/symptom_log.dart';
 /// it is responsible for calculating the grid layout (offsets, total cells) and
 /// mapping domain data ([calendarEventMap], [symptomMap]) to individual [CalendarDayCell]s.
 class CustomCalendarGrid extends StatelessWidget {
+  const CustomCalendarGrid({
+    super.key,
+    required this.focusedDay,
+    this.selectedDay,
+    required this.calendarEventMap,
+    required this.symptomMap,
+    this.predictedPeriodStarts = const [],
+    this.predictedFertilityDates = const [],
+    required this.onDaySelected,
+  });
+
   /// The month/year currently focused by the calendar.
   final DateTime focusedDay;
 
@@ -30,17 +42,6 @@ class CustomCalendarGrid extends StatelessWidget {
   /// Callback triggered when a user taps a specific day cell.
   final Function(DateTime) onDaySelected;
 
-  const CustomCalendarGrid({
-    super.key,
-    required this.focusedDay,
-    this.selectedDay,
-    required this.calendarEventMap,
-    required this.symptomMap,
-    this.predictedPeriodStarts = const [],
-    this.predictedFertilityDates = const [],
-    required this.onDaySelected,
-  });
-
   /// Standardizes date keys for map lookups.
   String _formatKey(DateTime date) =>
       "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
@@ -53,18 +54,16 @@ class CustomCalendarGrid extends StatelessWidget {
       final start = DateTime(periodStart.year, periodStart.month, periodStart.day);
       final end = start.add(const Duration(days: 4));
       return dateOnly.isAtSameMomentAs(start) ||
-          (dateOnly.isAfter(start) &&
-              dateOnly.isBefore(end.add(const Duration(days: 1))));
+          (dateOnly.isAfter(start) && dateOnly.isBefore(end.add(const Duration(days: 1))));
     });
   }
 
   /// Local check if a day is within the predicted fertility dates.
   bool _isPredictedFertility(DateTime day) {
     final dateOnly = DateTime(day.year, day.month, day.day);
-    return predictedFertilityDates.any((d) =>
-        d.year == dateOnly.year &&
-        d.month == dateOnly.month &&
-        d.day == dateOnly.day);
+    return predictedFertilityDates.any(
+      (d) => d.year == dateOnly.year && d.month == dateOnly.month && d.day == dateOnly.day,
+    );
   }
 
   /// Checks if there is an active menstruation log recorded for this day.
@@ -77,12 +76,14 @@ class CustomCalendarGrid extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // 1. Calculate grid dimensions
-    final daysInMonth =
-        DateUtils.getDaysInMonth(focusedDay.year, focusedDay.month);
+    final daysInMonth = DateUtils.getDaysInMonth(focusedDay.year, focusedDay.month);
 
     // Determine the weekday offset for the 1st of the month.
     final firstDayOffset = DateUtils.firstDayOffset(
-        focusedDay.year, focusedDay.month, MaterialLocalizations.of(context));
+      focusedDay.year,
+      focusedDay.month,
+      MaterialLocalizations.of(context),
+    );
 
     // Always render 6 full rows (42 cells) to prevent layout overflow during
     // month transitions. A dynamic 35/42 switch causes a transient frame where
@@ -112,8 +113,7 @@ class CustomCalendarGrid extends StatelessWidget {
         // on standard screens, meeting Material touch target guidelines.
         GridView.builder(
           shrinkWrap: true,
-          physics:
-              const NeverScrollableScrollPhysics(), // Handled by parent ListView
+          physics: const NeverScrollableScrollPhysics(), // Handled by parent ListView
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
             mainAxisSpacing: 2,
@@ -124,8 +124,7 @@ class CustomCalendarGrid extends StatelessWidget {
             final dayNumber = index - firstDayOffset + 1;
             final isInside = dayNumber > 0 && dayNumber <= daysInMonth;
 
-            final currentDay =
-                DateTime(focusedDay.year, focusedDay.month, dayNumber);
+            final currentDay = DateTime(focusedDay.year, focusedDay.month, dayNumber);
 
             // 2. Resolve visualization states
             final bleeding = _isBleeding(currentDay);
@@ -133,10 +132,8 @@ class CustomCalendarGrid extends StatelessWidget {
             final predictedFertility = _isPredictedFertility(currentDay);
 
             // Calculate span boundaries for the "pill-shaped" multi-day bleeding indicator.
-            final prevBleeding =
-                _isBleeding(currentDay.subtract(const Duration(days: 1)));
-            final nextBleeding =
-                _isBleeding(currentDay.add(const Duration(days: 1)));
+            final prevBleeding = _isBleeding(currentDay.subtract(const Duration(days: 1)));
+            final nextBleeding = _isBleeding(currentDay.add(const Duration(days: 1)));
 
             return CalendarDayCell(
               date: currentDay,
@@ -146,7 +143,8 @@ class CustomCalendarGrid extends StatelessWidget {
               isPredictedFertility: predictedFertility,
               isStartOfSpan: bleeding && !prevBleeding,
               isEndOfSpan: bleeding && !nextBleeding,
-              isSelected: selectedDay != null &&
+              isSelected:
+                  selectedDay != null &&
                   selectedDay!.year == currentDay.year &&
                   selectedDay!.month == currentDay.month &&
                   selectedDay!.day == currentDay.day,
@@ -166,9 +164,9 @@ class CustomCalendarGrid extends StatelessWidget {
 /// Adapts text color to the current theme brightness for consistent
 /// legibility against both light and dark glassmorphic backgrounds.
 class _WeekdayHeader extends StatelessWidget {
+  const _WeekdayHeader(this.label, {this.isDark = false});
   final String label;
   final bool isDark;
-  const _WeekdayHeader(this.label, {this.isDark = false});
 
   @override
   Widget build(BuildContext context) {

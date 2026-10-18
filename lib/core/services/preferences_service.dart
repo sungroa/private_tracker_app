@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/security_logger.dart';
 
 class PreferencesService {
+  PreferencesService();
   static const String _biometricEnabledKey = 'is_biometric_enabled';
   static const String _notificationsEnabledKey = 'is_notifications_enabled';
   static const String _notificationTimeKey = 'notification_time';
@@ -10,15 +11,13 @@ class PreferencesService {
   static const String _lastSyncTimeKey = 'last_sync_time';
   static const String _recoveryPassphraseSetKey = 'is_recovery_passphrase_set';
   static const String _recoverySaltKey = 'recovery_salt';
-  
+
   static const String _periodReminderEnabledKey = 'is_period_reminder_enabled';
   static const String _periodReminderOffsetKey = 'period_reminder_offset';
   static const String _periodReminderTimeKey = 'period_reminder_time';
   static const String _fertilityReminderEnabledKey = 'is_fertility_reminder_enabled';
   static const String _fertilityReminderOffsetKey = 'fertility_reminder_offset';
   static const String _fertilityReminderTimeKey = 'fertility_reminder_time';
-
-  PreferencesService();
 
   Future<SharedPreferences> get _prefs async => await SharedPreferences.getInstance();
 
@@ -37,7 +36,11 @@ class PreferencesService {
       final p = await _prefs;
       await p.setString(key, value);
     } catch (e, stack) {
-      SecurityLogger.logError("PreferencesService: Failed to write $key", error: e, stackTrace: stack);
+      SecurityLogger.logError(
+        "PreferencesService: Failed to write $key",
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -46,7 +49,11 @@ class PreferencesService {
       final p = await _prefs;
       await p.remove(key);
     } catch (e, stack) {
-      SecurityLogger.logError("PreferencesService: Failed to delete $key", error: e, stackTrace: stack);
+      SecurityLogger.logError(
+        "PreferencesService: Failed to delete $key",
+        error: e,
+        stackTrace: stack,
+      );
     }
   }
 
@@ -73,10 +80,7 @@ class PreferencesService {
     if (value != null) {
       final parts = value.split(':');
       if (parts.length == 2) {
-        return TimeOfDay(
-          hour: int.tryParse(parts[0]) ?? 20,
-          minute: int.tryParse(parts[1]) ?? 0,
-        );
+        return TimeOfDay(hour: int.tryParse(parts[0]) ?? 20, minute: int.tryParse(parts[1]) ?? 0);
       }
     }
     return const TimeOfDay(hour: 20, minute: 0);
@@ -132,7 +136,7 @@ class PreferencesService {
       await _safeWrite(_recoverySaltKey, salt);
     }
   }
-  
+
   // --- Period Reminder ---
 
   Future<bool> isPeriodReminderEnabled() async {
@@ -158,10 +162,7 @@ class PreferencesService {
     if (value != null) {
       final parts = value.split(':');
       if (parts.length == 2) {
-        return TimeOfDay(
-          hour: int.tryParse(parts[0]) ?? 9,
-          minute: int.tryParse(parts[1]) ?? 0,
-        );
+        return TimeOfDay(hour: int.tryParse(parts[0]) ?? 9, minute: int.tryParse(parts[1]) ?? 0);
       }
     }
     return const TimeOfDay(hour: 9, minute: 0);
@@ -197,10 +198,7 @@ class PreferencesService {
     if (value != null) {
       final parts = value.split(':');
       if (parts.length == 2) {
-        return TimeOfDay(
-          hour: int.tryParse(parts[0]) ?? 9,
-          minute: int.tryParse(parts[1]) ?? 0,
-        );
+        return TimeOfDay(hour: int.tryParse(parts[0]) ?? 9, minute: int.tryParse(parts[1]) ?? 0);
       }
     }
     return const TimeOfDay(hour: 9, minute: 0);

@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../theme/app_theme.dart';
-import 'tracking_calendar_page.dart';
-import 'summary_trends_page.dart';
-import 'settings_page.dart';
-import 'privacy_policy_page.dart';
-import '../sheets/donation_sheet.dart';
 import 'package:provider/provider.dart';
-import '../widgets/glass_background.dart';
+
 import '../providers/cycle_provider.dart';
 import '../providers/symptom_provider.dart';
 import '../providers/tag_provider.dart';
+import '../sheets/donation_sheet.dart';
+import '../theme/app_theme.dart';
+import '../widgets/glass_background.dart';
+import 'privacy_policy_page.dart';
+import 'settings_page.dart';
+import 'summary_trends_page.dart';
+import 'tracking_calendar_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -143,7 +144,7 @@ class _HomePageState extends State<HomePage> {
                   color: primary.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
-                )
+                ),
               ],
             ),
             child: ClipRRect(
@@ -165,19 +166,19 @@ class _HomePageState extends State<HomePage> {
                 type: BottomNavigationBarType.fixed,
                 items: const [
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.calendar_today_rounded), 
+                    icon: Icon(Icons.calendar_today_rounded),
                     activeIcon: Icon(Icons.calendar_month_rounded),
-                    label: "Calendar"
+                    label: "Calendar",
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.analytics_outlined), 
+                    icon: Icon(Icons.analytics_outlined),
                     activeIcon: Icon(Icons.analytics_rounded),
-                    label: "Trends"
+                    label: "Trends",
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.settings_outlined), 
+                    icon: Icon(Icons.settings_outlined),
                     activeIcon: Icon(Icons.settings_rounded),
-                    label: "Settings"
+                    label: "Settings",
                   ),
                 ],
               ),

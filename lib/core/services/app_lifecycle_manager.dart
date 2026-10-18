@@ -1,24 +1,20 @@
 import 'dart:async';
+
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:private_tracker_app/core/utils/security_logger.dart';
 import 'package:private_tracker_app/domain/services/partner_sharing_service.dart';
 import 'package:private_tracker_app/presentation/pages/partner_mode_page.dart';
-import 'package:private_tracker_app/core/utils/security_logger.dart';
+import 'package:provider/provider.dart';
 
 /// Manages application-level lifecycle events and deep links.
-/// 
-/// Following "Technical Excellence" principles, this decouples UI-level 
+///
+/// Following "Technical Excellence" principles, this decouples UI-level
 /// navigation orchestration from the main App widget.
 class AppLifecycleManager extends StatefulWidget {
+  const AppLifecycleManager({super.key, required this.child, required this.navigatorKey});
   final Widget child;
   final GlobalKey<NavigatorState> navigatorKey;
-
-  const AppLifecycleManager({
-    super.key,
-    required this.child,
-    required this.navigatorKey,
-  });
 
   @override
   State<AppLifecycleManager> createState() => _AppLifecycleManagerState();
@@ -55,14 +51,12 @@ class _AppLifecycleManagerState extends State<AppLifecycleManager> {
     // Resolve dependency from the nearest context
     final partnerService = context.read<PartnerSharingService>();
     final params = partnerService.parseDeepLink(uri);
-    
+
     if (params != null) {
       widget.navigatorKey.currentState?.push(
         MaterialPageRoute(
-          builder: (context) => PartnerModePage(
-            initialPayload: params['data'],
-            initialKey: params['key'],
-          ),
+          builder: (context) =>
+              PartnerModePage(initialPayload: params['data'], initialKey: params['key']),
         ),
       );
     }

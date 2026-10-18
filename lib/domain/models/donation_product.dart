@@ -3,6 +3,14 @@ import 'package:meta/meta.dart';
 /// Represents a product available for donation.
 @immutable
 class DonationProduct {
+  const DonationProduct({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.formattedPrice,
+    required this.isSubscription,
+  });
+
   /// Unique identifier of the product in the Play Store.
   final String id;
 
@@ -17,14 +25,6 @@ class DonationProduct {
 
   /// Whether this is a recurring subscription or a one-time purchase.
   final bool isSubscription;
-
-  const DonationProduct({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.formattedPrice,
-    required this.isSubscription,
-  });
 
   @override
   bool operator ==(Object other) =>

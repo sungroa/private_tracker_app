@@ -11,18 +11,13 @@ class ExportService {
       final directory = await getTemporaryDirectory();
       final path = '${directory.path}/private_tracker_export.csv';
       tempFile = File(path);
-      
+
       // Write unencrypted data to temp file
       await tempFile.writeAsString(csvString);
-      
+
       // Share it (N7: Use updated SharePlus API)
       final xFile = XFile(tempFile.path, mimeType: 'text/csv');
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [xFile],
-          text: 'My Cycle & Symptom Logs',
-        ),
-      );
+      await SharePlus.instance.share(ShareParams(files: [xFile], text: 'My Cycle & Symptom Logs'));
     } finally {
       // Ensure the temp file is deleted no matter what happens, to prevent unencrypted data leakage.
       // Note: shareXFiles on current share_plus awaits the sheet dismissal before returning,

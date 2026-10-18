@@ -1,27 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:provider/provider.dart';
-import 'package:private_tracker_app/presentation/pages/settings_page.dart';
-import 'package:private_tracker_app/presentation/providers/cloud_sync_provider.dart';
-import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
-import 'package:private_tracker_app/data/storage/backup_orchestrator.dart';
 import 'package:private_tracker_app/core/services/auth_service.dart';
 import 'package:private_tracker_app/core/services/notification_orchestrator.dart';
 import 'package:private_tracker_app/core/services/notification_service.dart';
 import 'package:private_tracker_app/core/services/preferences_service.dart';
+import 'package:private_tracker_app/data/storage/backup_orchestrator.dart';
+import 'package:private_tracker_app/data/storage/encrypted_storage_service.dart';
+import 'package:private_tracker_app/presentation/pages/settings_page.dart';
+import 'package:private_tracker_app/presentation/providers/cloud_sync_provider.dart';
 import 'package:private_tracker_app/presentation/providers/cycle_provider.dart';
+import 'package:provider/provider.dart';
 
 class MockCloudSyncProvider extends Mock implements CloudSyncProvider {}
+
 class MockEncryptedStorageService extends Mock implements EncryptedStorageService {}
+
 class MockBackupOrchestrator extends Mock implements BackupOrchestrator {}
+
 class MockAuthService extends Mock implements AuthService {}
+
 class MockNotificationService extends Mock implements NotificationService {}
+
 class MockPreferencesService extends Mock implements PreferencesService {}
+
 class MockNotificationOrchestrator extends Mock implements NotificationOrchestrator {}
+
 class MockCycleProvider extends Mock implements CycleProvider {}
 
 class FakeDateTime extends Fake implements DateTime {}
+
 class FakeTimeOfDay extends Fake implements TimeOfDay {}
 
 void main() {
@@ -54,15 +62,21 @@ void main() {
     when(() => mockAuthService.isHardwareSupported()).thenAnswer((_) async => true);
     when(() => mockPreferencesService.isBiometricEnabled()).thenAnswer((_) async => false);
     when(() => mockPreferencesService.isNotificationsEnabled()).thenAnswer((_) async => false);
-    when(() => mockPreferencesService.getNotificationTime()).thenAnswer((_) async => const TimeOfDay(hour: 20, minute: 0));
-    
+    when(
+      () => mockPreferencesService.getNotificationTime(),
+    ).thenAnswer((_) async => const TimeOfDay(hour: 20, minute: 0));
+
     when(() => mockPreferencesService.isPeriodReminderEnabled()).thenAnswer((_) async => false);
     when(() => mockPreferencesService.getPeriodReminderOffset()).thenAnswer((_) async => 1);
-    when(() => mockPreferencesService.getPeriodReminderTime()).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
-    
+    when(
+      () => mockPreferencesService.getPeriodReminderTime(),
+    ).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
+
     when(() => mockPreferencesService.isFertilityReminderEnabled()).thenAnswer((_) async => false);
     when(() => mockPreferencesService.getFertilityReminderOffset()).thenAnswer((_) async => 1);
-    when(() => mockPreferencesService.getFertilityReminderTime()).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
+    when(
+      () => mockPreferencesService.getFertilityReminderTime(),
+    ).thenAnswer((_) async => const TimeOfDay(hour: 9, minute: 0));
 
     when(() => mockCycleProvider.trends).thenReturn(null);
     when(() => mockCloudSyncProvider.requiresRecoveryPrompt).thenReturn(false);
@@ -88,11 +102,7 @@ void main() {
         Provider<NotificationOrchestrator>.value(value: mockNotificationOrchestrator),
         ChangeNotifierProvider<CycleProvider>.value(value: mockCycleProvider),
       ],
-      child: const MaterialApp(
-        home: Scaffold(
-          body: SettingsPage(),
-        ),
-      ),
+      child: const MaterialApp(home: Scaffold(body: SettingsPage())),
     );
   }
 
@@ -122,7 +132,7 @@ void main() {
 
   testWidgets('Clicking export data calls storage and shows success', (WidgetTester tester) async {
     when(() => mockEncryptedStorageService.exportDataToCsv()).thenAnswer((_) async => 'csv_data');
-    
+
     await tester.pumpWidget(createSettingsPage());
     await tester.pumpAndSettle();
 

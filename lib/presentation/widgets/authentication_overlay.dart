@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,15 +7,11 @@ import '../../core/services/auth_service.dart';
 import '../theme/app_theme.dart';
 
 class AuthenticationOverlay extends StatelessWidget {
+  const AuthenticationOverlay({super.key, required this.onUnlockSuccess});
   final VoidCallback onUnlockSuccess;
 
-  const AuthenticationOverlay({
-    super.key,
-    required this.onUnlockSuccess,
-  });
-
   Future<void> _handleUnlock(BuildContext context) async {
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
     final bool success = await context.read<AuthService>().authenticate();
     if (success) {
       onUnlockSuccess();
@@ -34,10 +31,12 @@ class AuthenticationOverlay extends StatelessWidget {
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
-              color: isDark ? Colors.black.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.2),
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.4)
+                  : Colors.white.withValues(alpha: 0.2),
             ),
           ),
-          
+
           Center(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 500),
@@ -49,7 +48,7 @@ class AuthenticationOverlay extends StatelessWidget {
                     color: primary.withValues(alpha: 0.1),
                     blurRadius: 50,
                     offset: const Offset(0, 20),
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -61,11 +60,7 @@ class AuthenticationOverlay extends StatelessWidget {
                       color: primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      Icons.lock_person_rounded,
-                      size: 64,
-                      color: primary,
-                    ),
+                    child: Icon(Icons.lock_person_rounded, size: 64, color: primary),
                   ),
                   const SizedBox(height: 32),
                   Text(
@@ -97,20 +92,25 @@ class AuthenticationOverlay extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
                       gradient: LinearGradient(
-                        colors: isDark ? [AppTheme.primaryDarkColor, AppTheme.accentDarkColor] : [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.8)],
+                        colors: isDark
+                            ? [AppTheme.primaryDarkColor, AppTheme.accentDarkColor]
+                            : [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.8)],
                       ),
                     ),
                     child: ElevatedButton.icon(
                       onPressed: () => _handleUnlock(context),
-                      icon: Icon(Icons.fingerprint_rounded, color: isDark ? AppTheme.backgroundDarkColor : Colors.white),
+                      icon: Icon(
+                        Icons.fingerprint_rounded,
+                        color: isDark ? AppTheme.backgroundDarkColor : Colors.white,
+                      ),
                       label: Text(
-                        "UNLOCK NOW", 
+                        "UNLOCK NOW",
                         style: TextStyle(
-                          color: isDark ? AppTheme.backgroundDarkColor : Colors.white, 
+                          color: isDark ? AppTheme.backgroundDarkColor : Colors.white,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.5,
                           fontSize: 15,
-                        )
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,

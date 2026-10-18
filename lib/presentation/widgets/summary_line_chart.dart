@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
+
 import '../../domain/trends_calculator.dart';
+import '../theme/app_theme.dart';
 
 class SummaryLineChart extends StatelessWidget {
+  const SummaryLineChart({super.key, required this.data, this.height = 100});
   final List<MoodPoint> data;
   final double height;
-
-  const SummaryLineChart({
-    super.key,
-    required this.data,
-    this.height = 100,
-  });
 
   String _buildSemanticLabel() {
     if (data.isEmpty) {
@@ -19,7 +15,7 @@ class SummaryLineChart extends StatelessWidget {
     final ratings = data.map((p) => p.rating).toList();
     final avgRating = ratings.reduce((a, b) => a + b) / ratings.length;
     final lastRating = ratings.last;
-    
+
     return "Mood trend chart showing ${data.length} logs. Average mood rating is ${_getMoodLabel(avgRating.round())}. Latest logged mood is ${_getMoodLabel(lastRating.round())}.";
   }
 
@@ -46,10 +42,7 @@ class SummaryLineChart extends StatelessWidget {
       return Container(
         height: height,
         alignment: Alignment.center,
-        child: Text(
-          "No mood data yet",
-          style: TextStyle(color: Colors.grey[400], fontSize: 12),
-        ),
+        child: Text("No mood data yet", style: TextStyle(color: Colors.grey[400], fontSize: 12)),
       );
     }
 
@@ -61,19 +54,16 @@ class SummaryLineChart extends StatelessWidget {
       child: SizedBox(
         height: height,
         width: double.infinity,
-        child: CustomPaint(
-          painter: _LineChartPainter(data, themeColor),
-        ),
+        child: CustomPaint(painter: _LineChartPainter(data, themeColor)),
       ),
     );
   }
 }
 
 class _LineChartPainter extends CustomPainter {
+  _LineChartPainter(this.data, this.themeColor);
   final List<MoodPoint> data;
   final Color themeColor;
-
-  _LineChartPainter(this.data, this.themeColor);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -103,12 +93,8 @@ class _LineChartPainter extends CustomPainter {
         // Simple cubic bezier for smoothness
         final double prevX = (i - 1) * stepX;
         final double prevY = size.height - (data[i - 1].rating / maxY * size.height);
-        
-        path.cubicTo(
-          prevX + stepX / 2, prevY, 
-          x - stepX / 2, y, 
-          x, y
-        );
+
+        path.cubicTo(prevX + stepX / 2, prevY, x - stepX / 2, y, x, y);
       }
     }
 
@@ -122,10 +108,7 @@ class _LineChartPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          themeColor.withValues(alpha: 0.3),
-          themeColor.withValues(alpha: 0.0),
-        ],
+        colors: [themeColor.withValues(alpha: 0.3), themeColor.withValues(alpha: 0.0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     canvas.drawPath(fillPath, fillPaint);
@@ -140,7 +123,7 @@ class _LineChartPainter extends CustomPainter {
     for (int i = 0; i < data.length; i++) {
       final double x = i * stepX;
       final double y = size.height - (data[i].rating / maxY * size.height);
-      
+
       canvas.drawCircle(Offset(x, y), 5, dotBorderPaint);
       canvas.drawCircle(Offset(x, y), 3, dotPaint);
     }
@@ -151,7 +134,8 @@ class _LineChartPainter extends CustomPainter {
     if (oldDelegate.themeColor != themeColor) return true;
     if (oldDelegate.data.length != data.length) return true;
     for (int i = 0; i < data.length; i++) {
-      if (oldDelegate.data[i].rating != data[i].rating || oldDelegate.data[i].date != data[i].date) {
+      if (oldDelegate.data[i].rating != data[i].rating ||
+          oldDelegate.data[i].date != data[i].date) {
         return true;
       }
     }

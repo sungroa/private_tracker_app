@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:private_tracker_app/domain/trends_calculator.dart';
-import 'package:private_tracker_app/domain/cycle_calculator.dart';
 import 'package:private_tracker_app/core/services/clock.dart';
+import 'package:private_tracker_app/domain/cycle_calculator.dart';
+import 'package:private_tracker_app/domain/trends_calculator.dart';
+
 import '../helpers/test_model_factory.dart';
 
 void main() {
@@ -15,9 +16,11 @@ void main() {
 
   group('TrendsCalculator BBT Mapping', () {
     final now = DateTime(2026, 4, 1);
-    
+
     final cycleLogs = [
-      TestModelFactory.createCycleLog(startDate: now.subtract(const Duration(days: 5))), // Cycle started 5 days ago
+      TestModelFactory.createCycleLog(
+        startDate: now.subtract(const Duration(days: 5)),
+      ), // Cycle started 5 days ago
     ];
 
     final symptomLogs = [
@@ -42,18 +45,18 @@ void main() {
 
     test('should map symptom logs to correct cycle days', () {
       final trends = trendsCalculator.calculateTrends(cycleLogs, symptomLogs);
-      
+
       expect(trends.bbtHistory.length, 3);
-      
+
       // Day 1 is the start date (now - 5)
       // log1 is (now - 4) -> Cycle Day 2
       expect(trends.bbtHistory[0].cycleDay, 2);
       expect(trends.bbtHistory[0].temperature, 36.5);
-      
+
       // log2 is (now - 3) -> Cycle Day 3
       expect(trends.bbtHistory[1].cycleDay, 3);
       expect(trends.bbtHistory[1].hasLhSurge, true);
-      
+
       // log3 is (now - 2) -> Cycle Day 4
       expect(trends.bbtHistory[2].cycleDay, 4);
     });
@@ -67,17 +70,21 @@ void main() {
           basalBodyTemperature: null,
         ), // No BBT
       ];
-      
+
       final trends = trendsCalculator.calculateTrends(cycleLogs, logsWithMissingBbt);
       expect(trends.bbtHistory.length, 3);
     });
 
     test('should only include logs from the current cycle', () {
       final multipleCycles = [
-        TestModelFactory.createCycleLog(startDate: now.subtract(const Duration(days: 5))), // Current
-        TestModelFactory.createCycleLog(startDate: now.subtract(const Duration(days: 35))), // Previous
+        TestModelFactory.createCycleLog(
+          startDate: now.subtract(const Duration(days: 5)),
+        ), // Current
+        TestModelFactory.createCycleLog(
+          startDate: now.subtract(const Duration(days: 35)),
+        ), // Previous
       ];
-      
+
       final oldLogs = [
         TestModelFactory.createSymptomLog(
           date: now.subtract(const Duration(days: 34)),
@@ -85,9 +92,9 @@ void main() {
           basalBodyTemperature: 36.8,
         ),
       ];
-      
+
       final trends = trendsCalculator.calculateTrends(multipleCycles, [...oldLogs, ...symptomLogs]);
-      
+
       // Should only have the 3 logs from the current cycle
       expect(trends.bbtHistory.length, 3);
       expect(trends.bbtHistory.every((p) => p.cycleDay < 10), true);
@@ -103,17 +110,13 @@ void main() {
 
     test('predictedNextPeriod getter delegates to predictedPeriodStarts.first', () {
       final cycleStart = DateTime.utc(2026, 1, 1);
-      final logs = [
-        TestModelFactory.createCycleLog(startDate: cycleStart),
-      ];
+      final logs = [TestModelFactory.createCycleLog(startDate: cycleStart)];
       final trends = trendsCalculator.calculateTrends(logs, []);
       expect(trends.predictedNextPeriod, trends.predictedPeriodStarts.first);
     });
 
     test('returns 1 projection for cold start (1 cycle)', () {
-      final logs = [
-        TestModelFactory.createCycleLog(startDate: DateTime.utc(2026, 3, 1)),
-      ];
+      final logs = [TestModelFactory.createCycleLog(startDate: DateTime.utc(2026, 3, 1))];
       final trends = trendsCalculator.calculateTrends(logs, []);
       expect(trends.predictedPeriodStarts.length, 1);
     });
@@ -169,9 +172,7 @@ void main() {
     });
 
     test('isPredictedBleeding returns false for dates well outside all projections', () {
-      final logs = [
-        TestModelFactory.createCycleLog(startDate: DateTime.utc(2026, 3, 1)),
-      ];
+      final logs = [TestModelFactory.createCycleLog(startDate: DateTime.utc(2026, 3, 1))];
       final trends = trendsCalculator.calculateTrends(logs, []);
       // A date far in the past should never match
       expect(trends.isPredictedBleeding(DateTime.utc(2020, 1, 1)), isFalse);

@@ -1,6 +1,5 @@
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
-
 /// Repository interface for managing [SymptomLog] domain objects.
 abstract class SymptomLogRepository {
   /// Retrieves all recorded symptom logs from persistent storage.

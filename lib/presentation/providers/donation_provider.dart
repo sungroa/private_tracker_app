@@ -4,16 +4,15 @@ import '../../domain/repositories/donation_repository.dart';
 
 /// Manages the state for the donation flow.
 class DonationProvider extends ChangeNotifier {
+  DonationProvider(this._repository) {
+    _init();
+  }
   final IDonationRepository _repository;
 
   List<DonationProduct> _products = [];
   bool _isLoading = false;
   bool _isSupporter = false;
   String? _error;
-
-  DonationProvider(this._repository) {
-    _init();
-  }
 
   List<DonationProduct> get products => _products;
   bool get isLoading => _isLoading;

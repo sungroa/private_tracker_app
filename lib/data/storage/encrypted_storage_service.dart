@@ -1,34 +1,26 @@
-import '../../domain/models/cycle_log.dart';
-import '../../domain/models/custom_tag.dart';
-import 'secure_key_storage.dart';
-import 'local_database_manager.dart';
-import 'data_sources/cycle_data_source.dart';
-import 'data_sources/symptom_data_source.dart';
-import 'data_sources/tag_data_source.dart';
-import 'data_sources/data_seeding_service.dart';
-import 'model_mapper.dart';
-import 'data_export_service.dart';
 import 'package:private_tracker_app/domain/models/symptom_log.dart';
 
+import '../../domain/models/custom_tag.dart';
+import '../../domain/models/cycle_log.dart';
+import 'data_export_service.dart';
+import 'data_sources/cycle_data_source.dart';
+import 'data_sources/data_seeding_service.dart';
+import 'data_sources/symptom_data_source.dart';
+import 'data_sources/tag_data_source.dart';
+import 'local_database_manager.dart';
+import 'model_mapper.dart';
+import 'secure_key_storage.dart';
+
 /// Core storage service responsible for secure database lifecycle management.
-/// 
+///
 /// 🏛️ **Architecture**: This service acts as the bridge between low-level Hive
 /// data sources and the domain models. It coordinates encryption key retrieval
 /// from [SecureKeyStorage] and data seeding via [DataSeedingService].
-/// 
-/// 🔒 **Security**: All data persisted through this service is encrypted using 
+///
+/// 🔒 **Security**: All data persisted through this service is encrypted using
 /// the platform-specific master key. It maintains the "Zero-Knowledge" guarantee
 /// by ensuring raw data only exists in memory during active use.
 class EncryptedStorageService {
-  final SecureKeyStorage _keyStorage;
-  final LocalDatabaseManager _dbManager;
-  final DataExportService _exportService;
-  final DataSeedingService _seedingService;
-  
-  final CycleDataSource _cycleDataSource;
-  final SymptomDataSource _symptomDataSource;
-  final TagDataSource _tagDataSource;
-
   EncryptedStorageService({
     required this._keyStorage,
     required this._dbManager,
@@ -38,17 +30,22 @@ class EncryptedStorageService {
     required this._symptomDataSource,
     required this._tagDataSource,
   });
+  final SecureKeyStorage _keyStorage;
+  final LocalDatabaseManager _dbManager;
+  final DataExportService _exportService;
+  final DataSeedingService _seedingService;
+
+  final CycleDataSource _cycleDataSource;
+  final SymptomDataSource _symptomDataSource;
+  final TagDataSource _tagDataSource;
 
   bool get isInitialized => _dbManager.isInitialized;
 
   /// Initializes the Hive database and encryption.
   Future<void> initialize({String? basePath}) async {
     final encryptionKey = await _keyStorage.getOrCreateEncryptionKey();
-    
-    await _dbManager.initialize(
-      basePath: basePath,
-      encryptionKey: encryptionKey,
-    );
+
+    await _dbManager.initialize(basePath: basePath, encryptionKey: encryptionKey);
 
     // Seed default data if necessary (SRP decoupled from DB manager)
     await _seedingService.seedDefaultTags(_tagDataSource.box);
@@ -80,22 +77,22 @@ class EncryptedStorageService {
   }) async {
     if (customTags.isNotEmpty) {
       await _tagDataSource.putAll({
-        for (var tag in customTags) tag.id: ModelMapper.customTagToDto(tag)
+        for (var tag in customTags) tag.id: ModelMapper.customTagToDto(tag),
       });
     }
-    
+
     if (cycleLogs.isNotEmpty) {
       await _cycleDataSource.putAll({
-        for (var log in cycleLogs) log.id: ModelMapper.cycleLogToDto(log)
+        for (var log in cycleLogs) log.id: ModelMapper.cycleLogToDto(log),
       });
     }
-    
+
     if (symptomLogs.isNotEmpty) {
       await _symptomDataSource.putAll({
-        for (var log in symptomLogs) log.id: ModelMapper.symptomLogToDto(log)
+        for (var log in symptomLogs) log.id: ModelMapper.symptomLogToDto(log),
       });
     }
-    
+
     await _dbManager.updateLastModified();
   }
 }
